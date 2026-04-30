@@ -1,0 +1,93 @@
+---
+title: Self-hosting
+description: Docker, Helm, and airgap-friendly deployment patterns.
+---
+
+StateBoard is designed from day one for teams who can't send screenshots of their product to a third-party server. One container, MIT license, zero outbound calls at runtime.
+
+## Docker
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -v stateboard-data:/data \
+  ghcr.io/saschb2b/stateboard:0.1.0
+```
+
+| Volume / port | Purpose                                                   |
+| ------------- | --------------------------------------------------------- |
+| `/data`       | SQLite database + uploaded screenshots. **Back this up.** |
+| `:3000`       | HTTP. The container only ever listens on this port.       |
+
+The image runs as the `node` user (UID 1000). It needs write access on `/data` and nothing else.
+
+### Configuration
+
+| Env var                   | Default   | Purpose                                                |
+| ------------------------- | --------- | ------------------------------------------------------ |
+| `STATEBOARD_DATA_DIR`     | `/data`   | Root for `db/` and `uploads/`.                         |
+| `PORT`                    | `3000`    | HTTP port the Next.js process binds to.                |
+| `HOSTNAME`                | `0.0.0.0` | Listen on all interfaces (don't change in containers). |
+| `NEXT_TELEMETRY_DISABLED` | `1`       | Already off — leave it that way.                       |
+
+## Kubernetes (Helm)
+
+A chart ships in `deploy/helm/stateboard/`. Single-replica, SQLite on a `ReadWriteOnce` PVC.
+
+```bash
+helm install stateboard ./deploy/helm/stateboard \
+  --namespace stateboard --create-namespace \
+  --set image.tag=0.1.0
+```
+
+<Callout type="warn">
+  The chart will refuse to render if `replicaCount > 1`. v0 uses SQLite on
+  a single PVC — running two pods sharing that PVC silently corrupts the
+  DB. Multi-replica + Postgres is a v1+ concern.
+</Callout>
+
+The full values reference lives in [`deploy/helm/stateboard/README.md`](https://github.com/saschb2b/stateboard/blob/main/deploy/helm/stateboard/README.md).
+
+### Production checklist
+
+- **Use a Recreate strategy.** RollingUpdate briefly attaches two pods to the same RWO PVC, which corrupts SQLite. The chart sets `Recreate` by default — leave it.
+- **Pin the image tag.** Don't run `latest` in production; the chart defaults `image.tag` to `Chart.AppVersion`.
+- **Back up the PVC.** A nightly Velero / CSI snapshot of the volume is enough — every board, screen, and region lives there.
+- **Put auth in front of the Ingress.** v0 has no built-in auth. If you expose the service publicly, run an `oauth2-proxy` sidecar via `extraContainers`, or sit it behind a corporate VPN.
+
+## Airgap deployments
+
+StateBoard makes **zero outbound network calls** at runtime:
+
+- No telemetry, no analytics, no error reporting.
+- No license server, no phone-home.
+- No remote font loading at runtime — fonts are bundled at build time via `next/font`.
+- The docs search index is built locally with Orama — no Algolia.
+
+The only outbound traffic is what you initiate at build/install time (pulling the image, fetching dependencies). Once running, the container only talks to the browsers you point at it.
+
+## Storage planning
+
+A typical screenshot is 0.5–2 MB. The default 5 GiB PVC holds thousands. For a team running quarterly reviews on 10 products with ~10 screens each, you'll use under 1 GiB in a year.
+
+The SQLite database itself stays small — a few KB per board, a few hundred bytes per region.
+
+## Upgrading
+
+For a single-replica install:
+
+```bash
+helm upgrade stateboard ./deploy/helm/stateboard \
+  --namespace stateboard \
+  --set image.tag=NEW_VERSION
+```
+
+The PVC carries forward; schema changes are handled by the app itself via `CREATE TABLE IF NOT EXISTS` (v0). When v1 ships, expect a deliberate migration step before upgrade — we'll document it here.
+
+## What we'll add later
+
+- v1: OIDC auth, headless capture from URL, Jira issue linking.
+- v2: scheduled re-capture, time-travel / diff view, Slack notifications.
+- v3: auto region-detection from the DOM, journey views, portfolio rollup.
+
+Until then: stay on the wedge, keep your data on the volume, and don't run more than one replica.

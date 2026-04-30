@@ -1,0 +1,57 @@
+---
+title: Sharing & Present mode
+description: Read-only share links, Present mode, and the keyboard shortcuts that make stakeholder reviews painless.
+---
+
+Once a board has a screen and a few regions, you have two ways to get it in front of someone.
+
+## The share link
+
+Every board has a public read-only URL of the form `/v/{slug}`.
+
+- The slug is generated when you create the board and never changes.
+- Anyone with the link can read the board. There is no auth in v0 — keep this in mind when uploading sensitive screenshots.
+- The share view strips every editor affordance: no upload, no draw, no delete. Tooltips on hover still show labels and notes.
+
+Copy the link from the **Share** button in the editor header (it lives next to **Present**).
+
+<Callout type="warn">
+  Treat the share URL like a Google Drive "anyone with the link" share. v0
+  trusts the network it's deployed on; for v1 we'll add OIDC + per-board
+  permissions.
+</Callout>
+
+## Present mode
+
+Press **`P`** anywhere in the editor or the share view, or click the **Present** button. Present mode is fullscreen and clutter-free — no header, no sidebars, no tabs. It's what you actually want on the screen during a quarterly review.
+
+### Keyboard shortcuts
+
+| Key                  | Action                                                  |
+| -------------------- | ------------------------------------------------------- |
+| `←` / `→`            | Previous / next screen                                  |
+| `Space` / `PageDown` | Next screen                                             |
+| `PageUp`             | Previous screen                                         |
+| `Home` / `End`       | Jump to first / last screen                             |
+| `F`                  | Toggle browser fullscreen                               |
+| `Esc`                | Exit Present mode (and exit fullscreen first if active) |
+
+### What Present mode shows
+
+- The current screen, letterboxed to the largest size that fits the window.
+- All regions painted with their state colors and labels.
+- A small bottom strip with the screen name and a `3 / 8` counter.
+- A top strip with totals — number of `shipped` / `mock` / `missing` regions across the board.
+
+After ~2.5 seconds without mouse movement, the chrome fades away (and the cursor hides) so the screen is the only thing left. Wiggle the mouse to bring it back.
+
+### Tooltips still work
+
+Stakeholders can hover any region during the presentation to see its label and notes — no need to leave Present mode to dig in.
+
+## Workflow that works well
+
+1. Edit screens and regions until the board reflects reality.
+2. Hit **Present** for the quarterly review (or send the share link if it's async).
+3. After the review, take corrections back into the editor while they're fresh.
+4. Next quarter, the board picks up where you left off — no slide deck to rebuild.

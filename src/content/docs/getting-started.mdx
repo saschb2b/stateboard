@@ -1,0 +1,75 @@
+---
+title: Getting started
+description: Create your first board, upload a screen, mark a region — in five minutes.
+---
+
+This walkthrough takes you from a fresh install to your first share link.
+
+## 1. Run StateBoard
+
+The fastest path is the Docker image:
+
+```bash
+docker run --rm -p 3000:3000 -v stateboard-data:/data stateboard
+```
+
+Or run it from source:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). You'll land on the marketing page — click **Open boards** to get to the app.
+
+<Callout type="info">
+  Data — the SQLite database and uploaded screenshots — is written to `./data/`
+  when you run from source, or to the mounted Docker volume in production. Keep
+  this safe; it holds every board.
+</Callout>
+
+## 2. Create a board
+
+On `/boards`, click **New board**. Give it a name — usually a product or a quarter, e.g. `Acme Dashboard / Q2`. The description is optional.
+
+Each board has:
+
+- An **internal id** used in the editor URL (`/b/{id}`).
+- A **public slug** used in the share link (`/v/{slug}`).
+
+Different URLs on purpose: the editor URL is yours, the share URL is what you hand to stakeholders.
+
+## 3. Upload a screen
+
+Inside your board, drop a screenshot onto the upload area or click to browse. Allowed formats: PNG, JPEG, WebP, GIF. Max 25 MB per file.
+
+You can upload as many screens as you want — they appear as tabs. Reorder by upload order for now (drag-and-drop ordering lands in v1).
+
+<Callout type="warn">
+  Don't upload anything you can't show stakeholders. v0 has no auth — anyone
+  with the share link can see every screen on that board.
+</Callout>
+
+## 4. Mark your first region
+
+With a screen open, **click and drag** anywhere on the image to draw a rectangle. When you release, a side panel slides in. Pick a state, give the region a label, optionally add notes.
+
+Three states only — by design:
+
+- **Shipped** · live, real data, fully wired up.
+- **Mock** · UI is in place but data is hardcoded or fake.
+- **Missing** · not built yet.
+
+Press **Esc** at any time to discard a draft region.
+
+## 5. Share it
+
+Click **Share** in the header to copy the read-only URL. Or open the public view in a new tab with the arrow icon next to it.
+
+That URL is the artifact. Hand it to your exec, your designer, your investor — anyone who's about to ask "so what's working right now?" — and they'll get the answer in seconds without needing a Jira tour.
+
+## What's next
+
+- [Annotate like you mean it](/docs/annotating) — when to use each state, label conventions, notes that actually help.
+- [Use Present mode](/docs/sharing-and-presenting) — go fullscreen for a stakeholder review.
+- [Self-host on your cluster](/docs/self-hosting) — Helm, Docker, airgap configurations.

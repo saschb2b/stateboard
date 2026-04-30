@@ -34,7 +34,7 @@ The three v0 states are **load-bearing**. Don't add a fourth state, don't rename
 ## Stack & conventions
 
 - **Framework**: Next.js 16 App Router (`output: "standalone"`).
-- **UI**: React 19 + MUI 7 + Emotion. No Tailwind, no styled-components, no CSS modules. Use MUI's `sx` prop and the theme in `src/lib/theme.ts`.
+- **UI**: React 19 + MUI 7 + Emotion in the marketing + product app (everything outside `/docs`). No Tailwind, no styled-components, no CSS modules in app code — use MUI's `sx` prop and the theme in `src/lib/theme.ts`. The exception is `/docs`, which uses Fumadocs (Tailwind v4 internally) with its own scoped stylesheet at `src/app/docs/docs.css`. Don't import Tailwind utilities into `src/components/` or `src/app/(site)/`.
 - **Persistence**: SQLite via `better-sqlite3`, accessed from `src/lib/db.ts`. **All disk access goes through `src/lib/db.ts` and `src/lib/paths.ts`**. Don't open new file handles or new sqlite connections elsewhere.
 - **File uploads**: Local filesystem under `STATEBOARD_DATA_DIR/uploads`. Served by `src/app/api/uploads/[filename]/route.ts` with a strict filename allowlist regex — preserve that regex when touching the route.
 - **No global state library**. React local state + server-fetched props are sufficient for v0.
@@ -50,14 +50,21 @@ Region coordinates (`x`, `y`, `w`, `h`) are stored and transmitted as relative v
 ```
 src/
 ├── app/
-│   ├── api/{boards,screens,regions,uploads}   REST handlers (route.ts)
-│   ├── b/[id]/                                Editor page (server component)
-│   ├── v/[slug]/                              Public share page (server component)
-│   ├── layout.tsx                             Root + ClientShell wrapper
-│   ├── page.tsx                               Board list
-│   └── not-found.tsx
-├── components/                                React components, "use client" where needed
-└── lib/                                       Server-only helpers (db, paths, image, http, ids)
+│   ├── (site)/                                MUI-themed routes (root layout = ClientShell)
+│   │   ├── page.tsx                           Landing
+│   │   ├── boards/                            Board list
+│   │   ├── b/[id]/                            Editor
+│   │   ├── v/[slug]/                          Public share
+│   │   └── not-found.tsx
+│   ├── docs/                                  Fumadocs (separate visual system, Tailwind v4)
+│   │   ├── layout.tsx                         RootProvider + DocsLayout
+│   │   ├── docs.css                           Tailwind + Fumadocs preset, scoped to /docs
+│   │   └── [[...slug]]/page.tsx
+│   ├── api/{boards,screens,regions,uploads,search}   REST + search handlers
+│   └── layout.tsx                             Minimal root: html + body + fonts
+├── components/                                React + MUI; client where needed
+├── content/docs/                              MDX docs source (do not import outside /docs)
+└── lib/                                       db, paths, image, http, ids, source (Fumadocs)
 ```
 
 Server-only modules import `"server-only"` at the top so they fail loud if pulled into a client bundle. Keep that import on `db.ts` and any future module that touches the filesystem or secrets.

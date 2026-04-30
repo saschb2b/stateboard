@@ -1,0 +1,63 @@
+---
+title: Annotating regions
+description: The three states, drawing rectangles, and writing labels stakeholders trust.
+---
+
+Annotation is the whole product. This page is the rulebook for doing it well.
+
+## The three states
+
+<Callout type="info">
+  These three states are deliberately blunt. There is no fourth state, no "in
+  progress", no "ready for QA". The whole point is that an exec scanning your
+  share link can sort screens into "real / not yet real / not yet here" in three
+  seconds. Adding nuance defeats the artifact.
+</Callout>
+
+| State       | When to use it                                                                                     | Stakeholder reads it as    |
+| ----------- | -------------------------------------------------------------------------------------------------- | -------------------------- |
+| **Shipped** | The UI is live in production AND wired to real data AND interactive features work.                 | "I can rely on this."      |
+| **Mock**    | The UI is built, but at least one of `data`, `interaction`, or `integration` is fake or hardcoded. | "Don't quote this number." |
+| **Missing** | The UI hasn't been built yet — empty state, placeholder, or not present.                           | "Coming soon."             |
+
+The temptation will be to ship a "Mock" region for things that are 90% real. Resist it. Stakeholders will assume mock = nothing real, but they'll trust shipped = entirely real. Falsely shipped = lost credibility forever.
+
+## Drawing a region
+
+- **Click and drag** on the screenshot to mark a rectangle.
+- Release to open the editor panel — pick a state, set a label, optionally add notes.
+- **Click an existing region** to edit or delete it.
+- **Esc** cancels a draft region or deselects the active one.
+
+Coordinates are stored relative (`0..1`), so the region renders correctly at any display size — phones, big monitors, projectors.
+
+## Writing useful labels
+
+A good label answers a question the screen alone doesn't. Good labels:
+
+- `Revenue card`
+- `Active users metric`
+- `Region filter`
+- `Trend chart`
+
+Bad labels:
+
+- `Card 1` (which one?)
+- `This part` (deictic)
+- `WIP` (state belongs in the state, not the label)
+
+If a region needs a sentence to explain it, that's what the **Notes** field is for. The label should fit on the chip; the notes can sprawl.
+
+## Notes — when to use them
+
+Use the notes field for the _why_ that the chip can't carry:
+
+- "Shipped, but only for accounts created after 2025-01-01."
+- "Mock — Stripe integration is feature-flagged off in prod."
+- "Missing — gated behind v2 of the data warehouse migration."
+
+Notes appear in tooltips on hover, both in the editor and in the share view, so they're discoverable without cluttering the visual.
+
+## A quick mental model
+
+If you find yourself thinking _"this region is technically shipped but…"_, look at the **but**. If the **but** would change a stakeholder's decision, the right state is `mock`, not `shipped`. The notes field is where you record the **but**.

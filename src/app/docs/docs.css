@@ -1,0 +1,25 @@
+/*
+ * Docs-only stylesheet.
+ *
+ * Imported once from src/app/docs/layout.tsx. Tailwind v4 + the Fumadocs
+ * preset are scoped here so they DON'T leak into the MUI-styled site.
+ *
+ * If you need new utility classes inside docs, prefer importing existing
+ * MUI components into MDX over reaching for Tailwind.
+ */
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+@source "../../components/**/*.{ts,tsx}";
+@source "../../content/**/*.{md,mdx}";
+@source "../../../node_modules/fumadocs-ui/dist/**/*.js";
+
+/* Tighten StateBoard brand orange into Fumadocs's primary accent so links,
+   the search ⌘K button, and active sidebar items match the rest of the site. */
+:root {
+  --color-fd-primary: oklch(0.7 0.18 47);
+}
+.dark {
+  --color-fd-primary: oklch(0.74 0.16 50);
+}

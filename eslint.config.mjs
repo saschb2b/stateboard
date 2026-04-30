@@ -25,6 +25,7 @@ const config = [
       "out/**",
       "build/**",
       "data/**",
+      ".source/**",
       "next-env.d.ts",
     ],
   },

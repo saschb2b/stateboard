@@ -10,6 +10,7 @@ import GitHubIcon from "@mui/icons-material/GitHub";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import CloudOffOutlinedIcon from "@mui/icons-material/CloudOffOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { AppHeader } from "@/components/app-header";
 import { LandingMockup } from "@/components/landing-mockup";
 import { StateChip } from "@/components/state-chip";
@@ -57,6 +58,19 @@ export default function LandingPage() {
       <AppHeader
         actions={
           <>
+            <Link
+              href="/docs"
+              style={{ textDecoration: "none", color: "inherit" }}
+            >
+              <Button
+                size="small"
+                color="inherit"
+                startIcon={<MenuBookIcon />}
+                sx={{ display: { xs: "none", sm: "inline-flex" } }}
+              >
+                Docs
+              </Button>
+            </Link>
             <Link
               href="https://github.com/saschb2b/stateboard"
               target="_blank"
@@ -468,6 +482,17 @@ export default function LandingPage() {
               StateBoard v0.1 · MIT · Show, don&apos;t tell.
             </Typography>
             <Stack direction="row" spacing={2}>
+              <Link
+                href="/docs"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ "&:hover": { color: "primary.main" } }}
+                >
+                  Docs
+                </Typography>
+              </Link>
               <Link
                 href="https://github.com/saschb2b/stateboard"
                 target="_blank"

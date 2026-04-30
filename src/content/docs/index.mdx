@@ -1,0 +1,63 @@
+---
+title: StateBoard
+description: Status reporting for visual products. Show, don't tell.
+---
+
+**StateBoard** turns screenshots of your webapp into a living status board. You mark regions on the screens, tag each one as `shipped`, `mock`, or `missing`, and share one read-only link your stakeholders can read in 30 seconds.
+
+These docs explain how to use it.
+
+## Why this exists
+
+Every product team building a visual webapp eventually hits the same wall: the more carefully you write user-value stories, the worse they perform as status updates for non-technical leadership.
+
+> _"What's actually working right now? What's still mock data? What hasn't been built yet?"_
+> — Every executive, in every quarterly review, ever
+
+Roadmap tools answer "when will it ship." Demo tools answer "how does it work." Neither answers "what state is it in right now, screen by screen." StateBoard is the missing artifact.
+
+## What you'll find here
+
+<Cards>
+  <Card
+    title="Getting started"
+    href="/docs/getting-started"
+    description="Create your first board, upload a screen, mark a region."
+  />
+  <Card
+    title="Annotating"
+    href="/docs/annotating"
+    description="The three states, region drawing, labels, and notes."
+  />
+  <Card
+    title="Sharing & Present mode"
+    href="/docs/sharing-and-presenting"
+    description="Share links, the fullscreen Present mode, keyboard shortcuts."
+  />
+  <Card
+    title="Self-hosting"
+    href="/docs/self-hosting"
+    description="Docker, Helm, persistent volumes, airgap deployment."
+  />
+  <Card
+    title="FAQ"
+    href="/docs/faq"
+    description="Answers to the questions that come up most."
+  />
+</Cards>
+
+## The current scope (v0)
+
+This is `v0` — the wedge. The build plan in the founder pitch has four staged releases; v0 ships the smallest thing that proves the thesis:
+
+- Manual screenshot upload
+- Region tagging on the image
+- Three states: `shipped` / `mock` / `missing`
+- Read-only public share link
+- Single user, no auth
+
+What's _not_ here yet (and why) lives in the [FAQ](/docs/faq).
+
+## License
+
+MIT. Use it, fork it, ship it inside your product, sell consulting around it.

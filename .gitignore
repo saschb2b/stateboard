@@ -27,6 +27,9 @@ pnpm-debug.log*
 # stateboard data (uploaded screenshots + sqlite db)
 data/
 
+# fumadocs-mdx generated source
+.source/
+
 # os / editor
 .DS_Store
 Thumbs.db
