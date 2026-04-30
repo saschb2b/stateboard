@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -22,26 +21,6 @@ import type { Board } from "@/lib/types";
 
 interface BoardListProps {
   initialBoards: Board[];
-}
-
-/**
- * Suggested starting points for the create-board dialog. The labels
- * demonstrate naming patterns; clicking pre-fills the name field.
- */
-const PRESETS: { label: string; name: () => string }[] = [
-  {
-    label: "Quarterly review",
-    name: () => `Quarterly review · ${quarterTag()}`,
-  },
-  { label: "Product launch", name: () => "Product launch · " },
-  { label: "Demo prep", name: () => "Demo prep · " },
-  { label: "Sprint review", name: () => "Sprint review · " },
-];
-
-function quarterTag(): string {
-  const d = new Date();
-  const q = Math.floor(d.getMonth() / 3) + 1;
-  return `Q${q} ${d.getFullYear()}`;
 }
 
 export function BoardList({ initialBoards }: BoardListProps) {
@@ -82,9 +61,9 @@ export function BoardList({ initialBoards }: BoardListProps) {
     }
   };
 
-  const openCreate = (preset?: (typeof PRESETS)[number]) => {
+  const openCreate = () => {
     setError(null);
-    setName(preset ? preset.name() : "");
+    setName("");
     setDescription("");
     setOpen(true);
   };
@@ -135,7 +114,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
           </Stack>
 
           {boards.length === 0 ? (
-            <EmptyState onCreate={openCreate} />
+            <EmptyState />
           ) : (
             <Box
               sx={{
@@ -159,12 +138,20 @@ export function BoardList({ initialBoards }: BoardListProps) {
       <Dialog
         open={open}
         onClose={() => !creating && setOpen(false)}
-        maxWidth="xs"
+        maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>New board</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
+        <DialogTitle sx={{ pb: 0.5 }}>New board</DialogTitle>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ px: 3, pb: 2 }}
+        >
+          A board collects the screens you want to talk about with stakeholders.
+          You can edit everything later.
+        </Typography>
+        <DialogContent sx={{ pt: 1 }}>
+          <Stack spacing={2.5}>
             <TextField
               autoFocus
               label="Name"
@@ -172,32 +159,67 @@ export function BoardList({ initialBoards }: BoardListProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Acme Dashboard / Q2 2026"
-              helperText="Pick a name like the title of a deck you'd send your CEO."
+              helperText={
+                <>
+                  This is the title stakeholders see at the top of the share
+                  link. Common pattern:{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", color: "text.primary" }}
+                  >
+                    Product / Quarter
+                  </Box>
+                  .
+                </>
+              }
             />
             <TextField
-              label="Description (optional)"
+              label="Subtitle"
               fullWidth
               multiline
               minRows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional · e.g. End-of-Q2 review for the leadership team."
+              helperText="Appears beneath the name on the share link. Useful for context the title can't carry."
             />
-            <Stack
-              direction="row"
-              spacing={0.75}
-              sx={{ flexWrap: "wrap", rowGap: 0.75 }}
+
+            {/* What happens next — anchors the creation moment as the start
+                of a 3-step flow, not the goal. */}
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "background.default",
+                border: 1,
+                borderColor: "divider",
+                borderRadius: 1,
+              }}
             >
-              {PRESETS.map((p) => (
-                <Chip
-                  key={p.label}
-                  label={p.label}
-                  size="small"
-                  variant="outlined"
-                  clickable
-                  onClick={() => setName(p.name())}
-                />
-              ))}
-            </Stack>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                }}
+              >
+                Next, in this board
+              </Typography>
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{ mt: 1, flexWrap: "wrap", rowGap: 1 }}
+              >
+                <NextStep n={1} label="Upload a screenshot" />
+                <StepArrow />
+                <NextStep n={2} label="Mark regions" />
+                <StepArrow />
+                <NextStep n={3} label="Share the link" />
+              </Stack>
+            </Box>
+
             {error ? (
               <Typography variant="caption" color="error">
                 {error}
@@ -205,18 +227,37 @@ export function BoardList({ initialBoards }: BoardListProps) {
             ) : null}
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setOpen(false)} disabled={creating}>
-            Cancel
-          </Button>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 2,
+            justifyContent: "space-between",
+          }}
+        >
           <Button
-            variant="contained"
-            color="primary"
-            onClick={onCreate}
-            disabled={creating}
+            size="small"
+            component={Link}
+            href="/v/demo"
+            target="_blank"
+            rel="noopener"
+            endIcon={<OpenInNewIcon fontSize="inherit" />}
+            sx={{ color: "text.secondary" }}
           >
-            {creating ? "Creating…" : "Create"}
+            See the example first
           </Button>
+          <Stack direction="row" spacing={1}>
+            <Button onClick={() => setOpen(false)} disabled={creating}>
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={onCreate}
+              disabled={creating}
+            >
+              {creating ? "Creating…" : "Create"}
+            </Button>
+          </Stack>
         </DialogActions>
       </Dialog>
     </>
@@ -224,72 +265,86 @@ export function BoardList({ initialBoards }: BoardListProps) {
 }
 
 /**
- * Empty-state when the user has zero boards. Demonstrates the concept by
- * pointing at the live example AND offers preset starting points so the
- * next click is a name rather than a blank prompt.
+ * Empty-state when the user has zero boards.
+ *
+ * One affordance: open the example. That's the only thing that's true
+ * for every user who lands here without a board — they don't yet know
+ * what they're committing to. The "New board" button in the page header
+ * stays as the path forward; we don't double up on it here.
  */
-function EmptyState({
-  onCreate,
-}: {
-  onCreate: (preset?: (typeof PRESETS)[number]) => void;
-}) {
+function EmptyState() {
   return (
-    <Paper sx={{ p: { xs: 3, sm: 5 } }}>
-      <Stack spacing={3}>
-        <Box>
-          <Typography variant="h6" sx={{ mb: 0.5 }}>
-            Start with the example
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            See what a finished board looks like — two screens, twelve regions,
-            three states. Then come back and create your own.
-          </Typography>
-          <Button
-            component={Link}
-            href="/v/demo"
-            target="_blank"
-            rel="noopener"
-            variant="outlined"
-            color="primary"
-            endIcon={<OpenInNewIcon fontSize="inherit" />}
-            sx={{ mt: 2 }}
-          >
-            Open the example
-          </Button>
-        </Box>
-
-        <Box sx={{ borderTop: 1, borderColor: "divider", pt: 3 }}>
-          <Typography variant="h6" sx={{ mb: 0.5 }}>
-            Or start with a name
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Pick the kind of report you&apos;re prepping — we&apos;ll fill in a
-            sensible default name.
-          </Typography>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ flexWrap: "wrap", rowGap: 1 }}
-          >
-            {PRESETS.map((p) => (
-              <Chip
-                key={p.label}
-                label={p.label}
-                variant="outlined"
-                clickable
-                onClick={() => onCreate(p)}
-                sx={{
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    color: "primary.main",
-                  },
-                }}
-              />
-            ))}
-          </Stack>
-        </Box>
-      </Stack>
+    <Paper
+      sx={{
+        p: { xs: 4, sm: 6 },
+        textAlign: "center",
+      }}
+    >
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        Not sure where to start?
+      </Typography>
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ mb: 3, maxWidth: 460, mx: "auto" }}
+      >
+        Open the example board — two screens, twelve regions across all three
+        states. It&apos;s the fastest way to feel what a finished board does.
+      </Typography>
+      <Button
+        component={Link}
+        href="/v/demo"
+        target="_blank"
+        rel="noopener"
+        variant="outlined"
+        color="primary"
+        endIcon={<OpenInNewIcon fontSize="inherit" />}
+      >
+        Open the example
+      </Button>
     </Paper>
+  );
+}
+
+function NextStep({ n, label }: { n: number; label: string }) {
+  return (
+    <Stack direction="row" spacing={0.75} alignItems="center">
+      <Box
+        sx={{
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          bgcolor: "primary.main",
+          color: "primary.contrastText",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 10,
+          fontWeight: 700,
+          flexShrink: 0,
+        }}
+      >
+        {n}
+      </Box>
+      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+        {label}
+      </Typography>
+    </Stack>
+  );
+}
+
+function StepArrow() {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        color: "text.secondary",
+        opacity: 0.5,
+        display: { xs: "none", sm: "inline" },
+      }}
+    >
+      →
+    </Box>
   );
 }
 

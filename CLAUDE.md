@@ -38,12 +38,15 @@ The product's thesis is "show, don't tell." Our own interface has to honor it. *
 When you're filling in a screen, in this order, prefer:
 
 1. **A permanent built-in example.** The app ships a fully-populated example board served from memory at `/v/demo` (source: `src/lib/demo-data.ts`). It is _not_ in the user's database — never seed user-visible sample data, because the moment they delete it the reference is gone. From any empty state where a user might wonder "what is this?", link to the example with a small affordance like "View example ↗". The example is also the right thing for docs callouts and marketing CTAs to deep-link into.
-2. **Concrete examples in placeholders + sensible-default presets.** "e.g. Acme Dashboard / Q2 2026", "Quarterly review", "Demo prep" — clickable chips that pre-fill names, not paragraphs explaining how to name things.
+2. **Concrete examples in placeholders.** "e.g. Acme Dashboard / Q2 2026" inside the input shows the pattern at the moment of typing, without an extra UI element.
 3. **One-line subtitle stating the _grain_.** "One board per product or per quarterly review. Most teams keep 3–8." That answers "how many do I need?" without lecturing.
+4. **Tell the user what each field does + where it appears.** Helper text on a "Description" field shouldn't say "(optional)" alone — say "Appears beneath the name on the share link." So the user knows what filling it in _does_, not just whether it's required.
+5. **Anchor a creation moment as the start of a flow.** A small `1 → 2 → 3` preview ("Upload a screenshot · Mark regions · Share the link") inside a New-X dialog tells the user the journey before they commit.
 
 Avoid:
 
 - **Seeding example content into the user's DB**, even with a "demo" flag. It pollutes the user's workspace, creates pressure to delete it, and the moment they do they lose the teaching reference. Keep the example in code (`demo-data.ts`), not in the user's data.
+- **"Helpful" preset chips that don't reflect how users actually work.** Chips that pre-fill abstract event types ("Quarterly review", "Sprint review") don't help when real teams name boards by _product_ ("Acme Dashboard / Q2"). If a chip can't pre-fill something the user would have typed anyway, it's noise. Remove rather than keep.
 - "What is a board?" / "What does this do?" sections in app chrome.
 - Docs links as the **primary** affordance from an empty state. Docs are for "I want to go deeper", not "I'm stuck right now." (A subtle "Read the docs" link in a sidebar is fine; a giant card pointing to /docs from an empty state is not.)
 - Marketing copy inside the app — that belongs on the landing page, not next to a workspace.
