@@ -25,7 +25,6 @@ import { StateChip } from "./state-chip";
 interface ScreenAnnotatorProps {
   screen: ScreenWithRegions;
   onScreenUpdated: (screen: ScreenWithRegions) => void;
-  onScreenDeleted: () => void;
 }
 
 interface DraftRect {
@@ -41,7 +40,6 @@ const MIN_REGION_SIZE = 0.005;
 export function ScreenAnnotator({
   screen,
   onScreenUpdated,
-  onScreenDeleted,
 }: ScreenAnnotatorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
@@ -53,7 +51,6 @@ export function ScreenAnnotator({
     label: string;
     notes: string;
   }>({ state: "shipped", label: "", notes: "" });
-  const [labelDraft, setLabelDraft] = useState(screen.label ?? "");
 
   // No effect needed to reset on screen change: the parent passes
   // `key={screen.id}`, which remounts this component and re-runs the
@@ -149,7 +146,7 @@ export function ScreenAnnotator({
     const created: Region = await res.json();
     const next = [...regions, created];
     setRegions(next);
-    onScreenUpdated({ ...screen, regions: next, label: labelDraft || null });
+    onScreenUpdated({ ...screen, regions: next });
     setDraft(null);
     setDraftDefaults({ state: "shipped", label: "", notes: "" });
     setSelectedId(created.id);
@@ -177,7 +174,7 @@ export function ScreenAnnotator({
     const updated: Region = await res.json();
     const next = regions.map((r) => (r.id === updated.id ? updated : r));
     setRegions(next);
-    onScreenUpdated({ ...screen, regions: next, label: labelDraft || null });
+    onScreenUpdated({ ...screen, regions: next });
   };
 
   const deleteSelected = async () => {
@@ -189,63 +186,15 @@ export function ScreenAnnotator({
     const next = regions.filter((r) => r.id !== selected.id);
     setRegions(next);
     setSelectedId(null);
-    onScreenUpdated({ ...screen, regions: next, label: labelDraft || null });
-  };
-
-  const persistLabel = async () => {
-    const trimmed = labelDraft.trim();
-    if ((screen.label ?? "") === trimmed) return;
-    const res = await fetch(`/api/screens/${screen.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label: trimmed || null }),
-    });
-    if (!res.ok) return;
-    onScreenUpdated({ ...screen, regions, label: trimmed || null });
-  };
-
-  const deleteScreen = async () => {
-    if (!confirm(`Delete this screen and its ${regions.length} region(s)?`)) {
-      return;
-    }
-    const res = await fetch(`/api/screens/${screen.id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) return;
-    onScreenDeleted();
+    onScreenUpdated({ ...screen, regions: next });
   };
 
   const aspect = `${screen.width} / ${screen.height}`;
 
   return (
-    <Stack direction={{ xs: "column", lg: "row" }} spacing={3} sx={{ mt: 2 }}>
+    <Stack direction={{ xs: "column", lg: "row" }} spacing={3}>
       {/* canvas */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Stack
-          direction="row"
-          spacing={1.5}
-          alignItems="center"
-          sx={{ mb: 1.5 }}
-        >
-          <TextField
-            size="small"
-            label="Screen label"
-            value={labelDraft}
-            onChange={(e) => setLabelDraft(e.target.value)}
-            onBlur={persistLabel}
-            placeholder="e.g. Dashboard / Overview"
-            sx={{ flex: 1, maxWidth: 360 }}
-          />
-          <Button
-            size="small"
-            color="error"
-            variant="outlined"
-            startIcon={<DeleteOutlineIcon />}
-            onClick={deleteScreen}
-          >
-            Delete screen
-          </Button>
-        </Stack>
         <Box
           ref={surfaceRef}
           onMouseDown={handleMouseDown}
@@ -308,13 +257,6 @@ export function ScreenAnnotator({
             />
           ) : null}
         </Box>
-        <Typography
-          variant="caption"
-          sx={{ display: "block", mt: 1, color: "text.secondary" }}
-        >
-          Click and drag on the screen to mark a region. Click an existing
-          region to edit it. Press Esc to cancel.
-        </Typography>
       </Box>
 
       {/* side panel: draft form OR selected region OR placeholder */}

@@ -5,14 +5,15 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
+import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
 import { AppHeader } from "./app-header";
 import { BoardPresenter } from "./board-presenter";
@@ -57,6 +58,18 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
       }
       return next;
     });
+  };
+
+  const deleteCurrentScreen = async () => {
+    if (!active) return;
+    if (
+      !confirm(`Delete this screen and its ${active.regions.length} region(s)?`)
+    ) {
+      return;
+    }
+    const res = await fetch(`/api/screens/${active.id}`, { method: "DELETE" });
+    if (!res.ok) return;
+    handleScreenDeleted(active.id);
   };
 
   const shareUrl =
@@ -106,6 +119,8 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
     return counts;
   }, [screens]);
 
+  const totalRegions = totals.shipped + totals.mock + totals.missing;
+
   return (
     <>
       <AppHeader
@@ -150,48 +165,9 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
           </>
         }
       />
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        {/* Toolbar: state totals + "Add screen" button.
-            Skipped on the empty state — there's nothing to count yet, and
-            the body already owns the dropzone. */}
-        {screens.length > 0 ? (
-          <Stack
-            direction="row"
-            spacing={1.5}
-            alignItems="center"
-            sx={{ mb: 3, flexWrap: "wrap" }}
-          >
-            {REGION_STATES.map((s) => (
-              <Stack
-                key={s}
-                direction="row"
-                spacing={1}
-                alignItems="center"
-                sx={{
-                  px: 1.5,
-                  py: 0.75,
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                }}
-              >
-                <StateChip state={s} size="sm" />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {totals[s]}
-                </Typography>
-              </Stack>
-            ))}
-            <Box sx={{ flex: 1 }} />
-            <ScreenUploader
-              boardId={board.id}
-              onUploaded={handleUploaded}
-              compact
-            />
-          </Stack>
-        ) : null}
-
+      <Container maxWidth="xl" sx={{ py: 2 }}>
         {screens.length === 0 ? (
-          <Stack spacing={1.5}>
+          <Stack spacing={1.5} sx={{ mt: 4 }}>
             <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
             <Typography
               variant="caption"
@@ -215,34 +191,102 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
             </Typography>
           </Stack>
         ) : (
-          <Paper sx={{ p: 0, overflow: "hidden" }}>
-            <Tabs
-              value={activeId}
-              onChange={(_, v) => setActiveId(v as string)}
-              variant="scrollable"
-              scrollButtons="auto"
-              sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}
+          <Stack spacing={1.5}>
+            {/* Single editor chrome row: tabs (when 2+) · screen label ·
+                state totals (when regions) · add screen · delete screen.
+                Everything that would otherwise stack above the canvas. */}
+            <Stack
+              direction="row"
+              spacing={1.5}
+              alignItems="center"
+              sx={{ flexWrap: "wrap", rowGap: 1 }}
             >
-              {screens.map((s, i) => (
-                <Tab
-                  key={s.id}
-                  value={s.id}
-                  label={s.label || `Screen ${i + 1}`}
-                  sx={{ textTransform: "none", fontWeight: 600 }}
-                />
-              ))}
-            </Tabs>
-            <Box sx={{ p: 2.5 }}>
+              {screens.length > 1 ? (
+                <Tabs
+                  value={activeId}
+                  onChange={(_, v) => setActiveId(v as string)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    minHeight: 36,
+                    "& .MuiTab-root": {
+                      minHeight: 36,
+                      py: 0.5,
+                      textTransform: "none",
+                      fontWeight: 600,
+                    },
+                  }}
+                >
+                  {screens.map((s, i) => (
+                    <Tab
+                      key={s.id}
+                      value={s.id}
+                      label={s.label || `Screen ${i + 1}`}
+                    />
+                  ))}
+                </Tabs>
+              ) : null}
+
               {active ? (
-                <ScreenAnnotator
+                <ScreenLabelInput
                   key={active.id}
                   screen={active}
-                  onScreenUpdated={handleScreenUpdated}
-                  onScreenDeleted={() => handleScreenDeleted(active.id)}
+                  onUpdated={handleScreenUpdated}
                 />
               ) : null}
-            </Box>
-          </Paper>
+
+              <Box sx={{ flex: 1 }} />
+
+              {totalRegions > 0
+                ? REGION_STATES.map((s) => (
+                    <Stack
+                      key={s}
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                      sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        border: 1,
+                        borderColor: "divider",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <StateChip state={s} size="sm" />
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {totals[s]}
+                      </Typography>
+                    </Stack>
+                  ))
+                : null}
+
+              <ScreenUploader
+                boardId={board.id}
+                onUploaded={handleUploaded}
+                compact
+              />
+              {active ? (
+                <Tooltip title="Delete this screen and its regions">
+                  <IconButton
+                    size="small"
+                    onClick={deleteCurrentScreen}
+                    aria-label="Delete this screen"
+                    sx={{ color: "text.secondary" }}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              ) : null}
+            </Stack>
+
+            {active ? (
+              <ScreenAnnotator
+                key={active.id}
+                screen={active}
+                onScreenUpdated={handleScreenUpdated}
+              />
+            ) : null}
+          </Stack>
         )}
       </Container>
       {presenting ? (
@@ -257,5 +301,47 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
         />
       ) : null}
     </>
+  );
+}
+
+/**
+ * Small inline-edit field for the active screen's label.
+ *
+ * Owns its own draft state so we can swap the field on screen change via
+ * the parent's `key={active.id}` without an effect — the new mount picks
+ * up the new screen's label in `useState`'s lazy initializer.
+ */
+function ScreenLabelInput({
+  screen,
+  onUpdated,
+}: {
+  screen: ScreenWithRegions;
+  onUpdated: (next: ScreenWithRegions) => void;
+}) {
+  const [draft, setDraft] = useState(screen.label ?? "");
+
+  const persist = async () => {
+    const trimmed = draft.trim();
+    if ((screen.label ?? "") === trimmed) return;
+    const res = await fetch(`/api/screens/${screen.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ label: trimmed || null }),
+    });
+    if (!res.ok) return;
+    onUpdated({ ...screen, label: trimmed || null });
+  };
+
+  return (
+    <TextField
+      size="small"
+      label="Screen label"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={persist}
+      placeholder="e.g. Dashboard / Overview"
+      slotProps={{ inputLabel: { shrink: true } }}
+      sx={{ minWidth: 220, maxWidth: 320 }}
+    />
   );
 }
