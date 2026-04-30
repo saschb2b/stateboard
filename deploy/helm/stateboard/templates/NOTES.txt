@@ -1,0 +1,37 @@
+StateBoard {{ .Chart.AppVersion }} is installing.
+
+Image:    {{ include "stateboard.image" . }}
+Replicas: 1 (v0 is single-replica; SQLite on a RWO PVC)
+Data:     {{ if .Values.persistence.enabled -}}
+PVC {{ include "stateboard.pvcName" . }} ({{ .Values.persistence.size }}) at {{ .Values.persistence.mountPath }}
+{{- else -}}
+emptyDir — boards will vanish on pod restart!
+{{- end }}
+
+How to reach it:
+
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if eq .Values.service.type "NodePort" }}
+  export NODE_PORT=$(kubectl get -n {{ .Release.Namespace }} svc {{ include "stateboard.fullname" . }} -o jsonpath='{.spec.ports[0].nodePort}')
+  export NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}')
+  open "http://$NODE_IP:$NODE_PORT"
+{{- else if eq .Values.service.type "LoadBalancer" }}
+  Wait a minute or two for the LoadBalancer to provision an external IP, then:
+  kubectl get svc -n {{ .Release.Namespace }} {{ include "stateboard.fullname" . }} -w
+{{- else }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "stateboard.fullname" . }} 3000:{{ .Values.service.port }}
+  open http://localhost:3000
+{{- end }}
+
+Reminders:
+  • This is v0. Do not raise replicaCount — SQLite + RWO PVC means more than
+    one pod will silently corrupt the database. The chart will reject it.
+  • Telemetry is off, the app makes no outbound calls. Airgap-friendly.
+  • Back up the PVC ({{ include "stateboard.pvcName" . }}) — that's where every board, screen, and region lives.
+
+See deploy/helm/stateboard/README.md in the source repo for upgrade / values reference.

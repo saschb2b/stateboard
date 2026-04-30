@@ -1,0 +1,21 @@
+apiVersion: v2
+name: stateboard
+description: Status reporting for visual products. Show, don't tell.
+type: application
+# Chart version follows app version while v0 is single-replica + SQLite only.
+# Bump independently once breaking template changes appear.
+version: 0.1.0
+appVersion: "0.1.0"
+home: https://github.com/saschb2b/stateboard
+sources:
+  - https://github.com/saschb2b/stateboard
+keywords:
+  - status-reporting
+  - product-management
+  - screenshots
+  - annotations
+maintainers:
+  - name: StateBoard maintainers
+    url: https://github.com/saschb2b/stateboard
+annotations:
+  category: Productivity

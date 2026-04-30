@@ -2,3 +2,6 @@
 node_modules
 data
 pnpm-lock.yaml
+
+# Helm templates use Go template syntax that prettier can't parse.
+deploy/helm/**/templates/**

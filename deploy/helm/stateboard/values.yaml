@@ -1,0 +1,125 @@
+# Default values for stateboard.
+# This chart matches v0: single replica, SQLite, on-disk uploads, no auth.
+# Multi-replica + Postgres + S3 are v1+ features; do not raise replicaCount.
+
+image:
+  repository: ghcr.io/saschb2b/stateboard
+  tag: "" # defaults to .Chart.AppVersion when empty
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# v0 is hard-pinned to a single replica because SQLite is on a RWO PVC.
+# The deployment template will fail-fast if you raise this.
+replicaCount: 1
+
+# StateBoard writes its SQLite database and uploaded screenshots under /data.
+# Without persistence, both vanish on pod restart.
+persistence:
+  enabled: true
+  # If existingClaim is set, the chart will mount that PVC instead of creating one.
+  existingClaim: ""
+  size: 5Gi
+  storageClass: "" # "" = cluster default
+  accessMode: ReadWriteOnce
+  # If you change the mount path, update STATEBOARD_DATA_DIR in extraEnv too.
+  mountPath: /data
+
+service:
+  type: ClusterIP
+  port: 80 # service port
+  targetPort: 3000 # container port (must match the StateBoard process)
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # nginx.ingress.kubernetes.io/proxy-body-size: 30m
+  hosts:
+    - host: stateboard.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: stateboard-tls
+    #   hosts:
+    #     - stateboard.example.com
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# A Recreate strategy is required while the SQLite file is on a RWO PVC:
+# RollingUpdate would keep the old pod attached during cutover.
+strategy:
+  type: Recreate
+
+# Node-level scheduling knobs.
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod-level security context. The Dockerfile runs as the "node" user (UID 1000).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false # Next.js standalone needs writable .next/cache
+  capabilities:
+    drop: [ALL]
+
+# Liveness / readiness use the home page; it always returns 200.
+probes:
+  enabled: true
+  liveness:
+    initialDelaySeconds: 20
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Extra env vars injected verbatim into the container.
+# STATEBOARD_DATA_DIR is set by the chart from persistence.mountPath.
+extraEnv: []
+  # - name: SOME_VAR
+  #   value: "some-value"
+
+extraEnvFrom: []
+  # - secretRef:
+  #     name: stateboard-secrets
+
+# Optional sidecars / init containers — kept empty to honor the airgap pitch.
+extraContainers: []
+initContainers: []
+
+serviceAccount:
+  create: true
+  name: "" # default: chart fullname
+  annotations: {}
+
+# Pod-level annotations + labels (e.g. for service mesh, Prometheus discovery).
+podAnnotations: {}
+podLabels: {}
+
+# Top-level labels applied to every resource (Deployment, Service, etc).
+commonLabels: {}
+commonAnnotations: {}
+
+# Override the chart name used in resource names. Most users won't need this.
+nameOverride: ""
+fullnameOverride: ""

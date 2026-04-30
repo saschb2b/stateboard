@@ -43,6 +43,16 @@ docker run --rm -p 3000:3000 -v stateboard-data:/data stateboard
 
 That's it. No license server, no phone-home, no telemetry. Mount `/data` as a volume to persist your boards across restarts.
 
+### Kubernetes (Helm)
+
+```bash
+helm install stateboard ./deploy/helm/stateboard \
+  --namespace stateboard --create-namespace \
+  --set image.tag=0.1.0
+```
+
+The chart is single-replica by design (SQLite on a `ReadWriteOnce` PVC) and will refuse to render with `replicaCount > 1`. See [`deploy/helm/stateboard/README.md`](./deploy/helm/stateboard/README.md) for the full values reference.
+
 ## How it works
 
 1. **Create a board** from the home page.

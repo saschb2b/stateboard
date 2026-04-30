@@ -90,6 +90,8 @@ All four must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `
 
 For UI changes, also run `pnpm dev` and exercise the change in a browser. Type checks verify code, not features.
 
+For Helm changes, run `helm lint deploy/helm/stateboard` and `helm template stateboard deploy/helm/stateboard | kubectl apply --dry-run=client -f -`. The chart is hard-pinned to a single replica until v1 introduces Postgres — keep the `fail`-on-`replicaCount > 1` guardrail in `templates/deployment.yaml`. SQLite + `ReadWriteOnce` + `RollingUpdate` corrupts the DB; that's why `strategy.type: Recreate` is the default and shouldn't be changed.
+
 ## API conventions
 
 - All handlers use the helpers in `src/lib/http.ts` (`ok`, `created`, `noContent`, `badRequest`, `notFound`, `serverError`). Don't construct `NextResponse.json` manually — keep the response shape consistent.
