@@ -1,5 +1,9 @@
 # StateBoard
 
+[![CI](https://github.com/saschb2b/stateboard/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/saschb2b/stateboard/actions/workflows/ci.yml)
+[![Docker](https://github.com/saschb2b/stateboard/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/saschb2b/stateboard/actions/workflows/docker.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
 > Status reporting for visual products — built around the screens stakeholders actually see, not the tickets engineers actually file.
 
 **Show, don't tell.** Upload a screenshot of your app. Drag rectangles over the parts you want to talk about. Tag each one as `SHIPPED`, `MOCK`, or `MISSING`. Share one link. Your exec reads it in 30 seconds.

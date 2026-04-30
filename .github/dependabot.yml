@@ -1,0 +1,48 @@
+# Dependabot — opens grouped weekly PRs for routine dep + action upkeep.
+# Major bumps (Next, React, MUI, Fumadocs) come through individually so
+# we can review each one deliberately; everything else is grouped.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    labels: ["deps"]
+    groups:
+      patches:
+        update-types: ["patch"]
+      minor:
+        update-types: ["minor"]
+        # The big runtime deps each get their own PR so we can read the
+        # changelog before merging.
+        exclude-patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@mui/*"
+          - "fumadocs-*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    labels: ["deps", "ci"]
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    labels: ["deps", "docker"]

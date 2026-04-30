@@ -116,6 +116,8 @@ pnpm build
 
 All four must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue** — don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case.
 
+These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts the `replicaCount > 1` guardrail. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. **Don't merge red CI** — if the workflow fails, fix the underlying issue rather than disabling the check.
+
 For UI changes, also run `pnpm dev` and exercise the change in a browser. Type checks verify code, not features.
 
 For Helm changes, run `helm lint deploy/helm/stateboard` and `helm template stateboard deploy/helm/stateboard | kubectl apply --dry-run=client -f -`. The chart is hard-pinned to a single replica until v1 introduces Postgres — keep the `fail`-on-`replicaCount > 1` guardrail in `templates/deployment.yaml`. SQLite + `ReadWriteOnce` + `RollingUpdate` corrupts the DB; that's why `strategy.type: Recreate` is the default and shouldn't be changed.

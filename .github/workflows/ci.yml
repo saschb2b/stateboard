@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same ref so a fast-follow push doesn't
+# pile up CI minutes for code nobody will look at again.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: typecheck · lint · format · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # better-sqlite3 builds a native addon during install. The pinned
+      # `pnpm.onlyBuiltDependencies` allowlist in package.json runs that
+      # build automatically; ubuntu runners already have python + g++.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Build
+        run: pnpm build
+
+  helm:
+    name: helm lint · server-side dry run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+
+      - name: helm lint
+        run: helm lint deploy/helm/stateboard
+
+      - name: helm template | kubectl --dry-run=client
+        run: |
+          helm template stateboard deploy/helm/stateboard \
+            | kubectl apply --dry-run=client -f -
+
+      # The chart hard-fails if replicaCount > 1 (SQLite + RWO PVC).
+      # Verify that guardrail still fires so a future refactor can't
+      # silently disable it.
+      - name: Confirm replicaCount > 1 fails
+        run: |
+          if helm template stateboard deploy/helm/stateboard \
+              --set replicaCount=2 > /dev/null 2>&1; then
+            echo "::error::Chart accepted replicaCount=2 — the v0 single-replica guard is broken."
+            exit 1
+          fi
+          echo "OK: chart correctly refused replicaCount=2."
