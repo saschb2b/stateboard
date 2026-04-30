@@ -4,7 +4,7 @@ import { customAlphabet, nanoid } from "nanoid";
 export const newId = (): string => nanoid(12);
 
 /**
- * 10-char URL-safe slug used in public share links: /v/{slug}.
+ * 10-char URL-safe slug used in public share links: /share/{slug}.
  * Lowercase + digits only so links are easy to read aloud.
  */
 const slugAlphabet = "abcdefghijkmnpqrstuvwxyz23456789";

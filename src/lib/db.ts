@@ -66,7 +66,7 @@ function applyMigrations(db: Database.Database): void {
   `);
 
   // Cleanup: an earlier iteration seeded a demo board into the DB. The demo
-  // is now served from memory at /v/demo, so any leftover row is just noise
+  // is now served from memory at /share/demo, so any leftover row is just noise
   // in the user's boards grid. Drop it (cascades to screens + regions).
   // Idempotent: no-op once is_demo column doesn't exist or no rows match.
   const cols = db

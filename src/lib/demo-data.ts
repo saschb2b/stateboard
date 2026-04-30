@@ -1,5 +1,5 @@
 /**
- * Permanent example board, served from memory at /v/demo.
+ * Permanent example board, served from memory at /share/demo.
  *
  * The demo is part of the binary, not the user's data — never written to
  * the database, never copied into uploads/, never mixed into the user's
@@ -329,7 +329,7 @@ const SCREEN_DEFS: DemoScreenDef[] = [
   },
 ];
 
-/** Stable slug used by `/v/demo`. */
+/** Stable slug used by `/share/demo`. */
 export const DEMO_SLUG = "demo";
 
 const DEMO_BOARD: Board = {
@@ -342,7 +342,7 @@ const DEMO_BOARD: Board = {
   updatedAt: 0,
 };
 
-/** Public read of the demo board for `/v/demo`. */
+/** Public read of the demo board for `/share/demo`. */
 export function getDemoBoard(): { board: Board; screens: ScreenWithRegions[] } {
   const screens: ScreenWithRegions[] = SCREEN_DEFS.map((def, i) => {
     const screen: Screen = {

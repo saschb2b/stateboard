@@ -3,10 +3,10 @@ import { BoardShare } from "@/components/board-share";
 import { getDemoBoard } from "@/lib/demo-data";
 
 /**
- * Permanent example board, served from memory at /v/demo.
+ * Permanent example board, served from memory at /share/demo.
  *
- * Lives next to /v/[slug] in the route tree but takes precedence over the
- * dynamic segment (Next.js prefers literal paths). Never touches the DB.
+ * Lives next to /share/[slug] in the route tree but takes precedence over
+ * the dynamic segment (Next.js prefers literal paths). Never touches the DB.
  */
 
 export const metadata: Metadata = {

@@ -55,7 +55,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
       setOpen(false);
       setName("");
       setDescription("");
-      router.push(`/b/${created.id}`);
+      router.push(`/boards/${created.id}`);
     } finally {
       setCreating(false);
     }
@@ -94,7 +94,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
                 variant="text"
                 color="inherit"
                 component={Link}
-                href="/v/demo"
+                href="/share/demo"
                 target="_blank"
                 rel="noopener"
                 endIcon={<OpenInNewIcon fontSize="inherit" />}
@@ -237,7 +237,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
           <Button
             size="small"
             component={Link}
-            href="/v/demo"
+            href="/share/demo"
             target="_blank"
             rel="noopener"
             endIcon={<OpenInNewIcon fontSize="inherit" />}
@@ -293,7 +293,7 @@ function EmptyState() {
       </Typography>
       <Button
         component={Link}
-        href="/v/demo"
+        href="/share/demo"
         target="_blank"
         rel="noopener"
         variant="outlined"
@@ -352,7 +352,7 @@ function BoardCard({ board }: { board: Board }) {
   return (
     <Paper
       component={Link}
-      href={`/b/${board.id}`}
+      href={`/boards/${board.id}`}
       sx={{
         p: 2.5,
         textDecoration: "none",
@@ -388,7 +388,7 @@ function BoardCard({ board }: { board: Board }) {
         color="text.secondary"
         sx={{ fontFamily: "monospace" }}
       >
-        /v/{board.slug}
+        /share/{board.slug}
       </Typography>
     </Paper>
   );

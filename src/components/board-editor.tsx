@@ -61,8 +61,8 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
 
   const shareUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/v/${board.slug}`
-      : `/v/${board.slug}`;
+      ? `${window.location.origin}/share/${board.slug}`
+      : `/share/${board.slug}`;
 
   const copyShare = async () => {
     try {
@@ -140,7 +140,7 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
               <IconButton
                 size="small"
                 component="a"
-                href={`/v/${board.slug}`}
+                href={`/share/${board.slug}`}
                 target="_blank"
                 rel="noopener"
               >
@@ -197,7 +197,7 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
               Not sure what to upload?{" "}
               <Box
                 component="a"
-                href="/v/demo"
+                href="/share/demo"
                 target="_blank"
                 rel="noopener"
                 sx={{

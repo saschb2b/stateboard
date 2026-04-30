@@ -74,9 +74,8 @@ src/
 ├── app/
 │   ├── (site)/                                MUI-themed routes (root layout = ClientShell)
 │   │   ├── page.tsx                           Landing
-│   │   ├── boards/                            Board list
-│   │   ├── b/[id]/                            Editor
-│   │   ├── v/[slug]/                          Public share
+│   │   ├── boards/                            Board list (page.tsx) + editor ([id]/page.tsx)
+│   │   ├── share/                             Public read-only share ([slug]/) + /share/demo
 │   │   └── not-found.tsx
 │   ├── docs/                                  Fumadocs (separate visual system, Tailwind v4)
 │   │   ├── layout.tsx                         RootProvider + DocsLayout
