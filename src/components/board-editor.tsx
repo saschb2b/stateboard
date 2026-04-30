@@ -151,40 +151,44 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
         }
       />
       <Container maxWidth="xl" sx={{ py: 3 }}>
-        {/* status totals */}
-        <Stack
-          direction="row"
-          spacing={1.5}
-          alignItems="center"
-          sx={{ mb: 3, flexWrap: "wrap" }}
-        >
-          {REGION_STATES.map((s) => (
-            <Stack
-              key={s}
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{
-                px: 1.5,
-                py: 0.75,
-                border: 1,
-                borderColor: "divider",
-                borderRadius: 1,
-              }}
-            >
-              <StateChip state={s} size="sm" />
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {totals[s]}
-              </Typography>
-            </Stack>
-          ))}
-          <Box sx={{ flex: 1 }} />
-          <ScreenUploader
-            boardId={board.id}
-            onUploaded={handleUploaded}
-            compact={screens.length > 0}
-          />
-        </Stack>
+        {/* Toolbar: state totals + "Add screen" button.
+            Skipped on the empty state — there's nothing to count yet, and
+            the body already owns the dropzone. */}
+        {screens.length > 0 ? (
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            sx={{ mb: 3, flexWrap: "wrap" }}
+          >
+            {REGION_STATES.map((s) => (
+              <Stack
+                key={s}
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{
+                  px: 1.5,
+                  py: 0.75,
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                }}
+              >
+                <StateChip state={s} size="sm" />
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {totals[s]}
+                </Typography>
+              </Stack>
+            ))}
+            <Box sx={{ flex: 1 }} />
+            <ScreenUploader
+              boardId={board.id}
+              onUploaded={handleUploaded}
+              compact
+            />
+          </Stack>
+        ) : null}
 
         {screens.length === 0 ? (
           <Stack spacing={1.5}>
