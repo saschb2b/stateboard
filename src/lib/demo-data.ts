@@ -184,6 +184,11 @@ const DEMO_BOARD: Board = {
   updatedAt: 0,
 };
 
+// Prepended to absolute asset paths so the static-export deploy under
+// /stateboard/ resolves correctly. Empty string for the regular standalone
+// build (basePath = "/"). Inlined at build time by Next.
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 /** Public read of the demo board for `/share/demo`. */
 export function getDemoBoard(): { board: Board; screens: ScreenWithRegions[] } {
   const screens: ScreenWithRegions[] = SCREEN_DEFS.map((def, i) => {
@@ -197,7 +202,7 @@ export function getDemoBoard(): { board: Board; screens: ScreenWithRegions[] } {
       label: def.label,
       position: i,
       createdAt: 0,
-      mediaUrl: `/demo/${def.name}.svg`,
+      mediaUrl: `${BASE_PATH}/demo/${def.name}.svg`,
     };
     const regions: Region[] = def.regions.map((r, j) => ({
       id: `demo-${def.name}-${j}`,
