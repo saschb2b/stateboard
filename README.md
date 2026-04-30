@@ -2,7 +2,10 @@
 
 [![CI](https://github.com/saschb2b/stateboard/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/saschb2b/stateboard/actions/workflows/ci.yml)
 [![Docker](https://github.com/saschb2b/stateboard/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/saschb2b/stateboard/actions/workflows/docker.yml)
+[![Pages](https://github.com/saschb2b/stateboard/actions/workflows/pages.yml/badge.svg?branch=main)](https://saschb2b.github.io/stateboard/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
+🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)** — explore the example board, hover regions, try Present mode. The editor itself needs the self-hosted version (link below).
 
 > Status reporting for visual products — built around the screens stakeholders actually see, not the tickets engineers actually file.
 

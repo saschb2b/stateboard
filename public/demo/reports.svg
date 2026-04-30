@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <defs>
+    <linearGradient id="rcard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#162028"/>
+      <stop offset="1" stop-color="#0F1418"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="#0E1418"/>
+
+  <rect x="0" y="0" width="220" height="720" fill="#101820"/>
+  <rect x="24" y="28" width="120" height="14" rx="3" fill="#3A4750"/>
+  <rect x="24" y="80"  width="170" height="34" rx="6" fill="#1F2A30"/>
+  <rect x="24" y="120" width="170" height="34" rx="6" fill="#1B2730"/>
+  <rect x="40" y="132" width="110" height="10" rx="3" fill="#2C3A41"/>
+
+  <rect x="220" y="0" width="1060" height="64" fill="#0F1418"/>
+  <text x="252" y="118" font-family="system-ui,-apple-system,sans-serif" font-size="28" font-weight="700" fill="#ECECEC">Reports</text>
+  <text x="252" y="146" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#7A8A92">Build, schedule, and export your team's reports.</text>
+
+  <rect x="252" y="178" width="1000" height="48" rx="8" fill="url(#rcard)" stroke="#1E2A32"/>
+  <rect x="272" y="194" width="160" height="16" rx="4" fill="#1B2730"/>
+  <rect x="448" y="194" width="120" height="16" rx="4" fill="#1B2730"/>
+  <rect x="1140" y="190" width="100" height="24" rx="6" fill="#F26B2D"/>
+  <text x="1163" y="207" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#0E1418">+ New report</text>
+
+  <rect x="252" y="248" width="1000" height="44" rx="6" fill="#101820"/>
+  <text x="272" y="275" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#7A8A92" letter-spacing="1">NAME</text>
+  <text x="500" y="275" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#7A8A92" letter-spacing="1">SCHEDULE</text>
+  <text x="700" y="275" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#7A8A92" letter-spacing="1">LAST RUN</text>
+  <text x="900" y="275" font-family="system-ui,-apple-system,sans-serif" font-size="11" font-weight="600" fill="#7A8A92" letter-spacing="1">OWNER</text>
+
+  <g transform="translate(252, 300)">
+    <rect x="0"   y="0"   width="1000" height="56" fill="url(#rcard)" stroke="#1E2A32"/>
+    <text x="20"  y="32" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#ECECEC">Q2 board review</text>
+    <text x="248" y="32" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">Weekly · Mondays 09:00</text>
+    <text x="448" y="32" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">2 days ago</text>
+    <text x="648" y="32" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">Sasha</text>
+
+    <rect x="0"   y="56"  width="1000" height="56" fill="url(#rcard)" stroke="#1E2A32"/>
+    <text x="20"  y="88" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#ECECEC">Revenue snapshot</text>
+    <text x="248" y="88" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">Daily · 06:00</text>
+    <text x="448" y="88" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">14 hours ago</text>
+    <text x="648" y="88" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">Finance</text>
+
+    <rect x="0"   y="112" width="1000" height="56" fill="url(#rcard)" stroke="#1E2A32"/>
+    <text x="20"  y="144" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#7A8A92">Cohort retention</text>
+    <text x="248" y="144" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#475763">Not scheduled</text>
+    <text x="448" y="144" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#475763">Never</text>
+    <text x="648" y="144" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#7A8A92">—</text>
+  </g>
+
+  <rect x="252" y="496" width="488" height="180" rx="8" fill="url(#rcard)" stroke="#1E2A32"/>
+  <text x="276" y="528" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#ECECEC">Slack export</text>
+  <text x="276" y="552" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7A8A92">Send a digest to #leadership every Monday.</text>
+  <rect x="276" y="572" width="200" height="32" rx="4" fill="#1B2730"/>
+  <text x="296" y="592" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7A8A92">#leadership</text>
+  <rect x="276" y="616" width="120" height="28" rx="4" fill="#3A4750"/>
+  <text x="296" y="635" font-family="system-ui,-apple-system,sans-serif" font-size="12" font-weight="600" fill="#ECECEC">Connect Slack</text>
+
+  <rect x="764" y="496" width="488" height="180" rx="8" fill="url(#rcard)" stroke="#1E2A32"/>
+  <text x="788" y="528" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="600" fill="#ECECEC">PDF export</text>
+  <text x="788" y="552" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7A8A92">Generate a printable summary.</text>
+  <rect x="788" y="572" width="80" height="64" rx="4" fill="#1B2730"/>
+  <text x="800" y="612" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="#7A8A92">PDF</text>
+</svg>

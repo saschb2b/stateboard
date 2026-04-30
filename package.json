@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:pages": "node scripts/pages-prebuild.mjs && STATEBOARD_PAGES=1 next build"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

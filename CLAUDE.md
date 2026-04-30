@@ -116,7 +116,17 @@ pnpm build
 
 All four must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue** — don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case.
 
-These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts the `replicaCount > 1` guardrail. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. **Don't merge red CI** — if the workflow fails, fix the underlying issue rather than disabling the check.
+These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts the `replicaCount > 1` guardrail. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main` — see "Pages demo" below. **Don't merge red CI** — if the workflow fails, fix the underlying issue rather than disabling the check.
+
+### Pages demo
+
+A static export of the marketing + docs + example-board surface is published at `https://saschb2b.github.io/stateboard/`. The editor and all DB-backed routes don't run there (no Node server on Pages). Build path:
+
+1. `scripts/pages-prebuild.mjs` (gated by `PAGES_BUILD=1` so it can't ruin a local clone) deletes `src/app/api/`, `src/app/(site)/boards/[id]/`, and `src/app/(site)/share/[slug]/`, and replaces `src/app/(site)/boards/page.tsx` with a stub pointing at the example + self-host instructions.
+2. `STATEBOARD_PAGES=1 next build` switches `next.config.mjs` into `output: "export"` mode with `basePath`/`assetPrefix` set to the Pages base path.
+3. `actions/upload-pages-artifact` + `actions/deploy-pages` push `out/` to Pages.
+
+When you change anything in `src/app/(site)/boards`, `src/app/(site)/share`, or `src/app/api`, also think about whether the Pages stub still makes sense — it's the visitor's only signpost from those URLs.
 
 For UI changes, also run `pnpm dev` and exercise the change in a browser. Type checks verify code, not features.
 
