@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -15,11 +16,32 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { AppHeader } from "./app-header";
 import type { Board } from "@/lib/types";
 
 interface BoardListProps {
   initialBoards: Board[];
+}
+
+/**
+ * Suggested starting points for the create-board dialog. The labels
+ * demonstrate naming patterns; clicking pre-fills the name field.
+ */
+const PRESETS: { label: string; name: () => string }[] = [
+  {
+    label: "Quarterly review",
+    name: () => `Quarterly review · ${quarterTag()}`,
+  },
+  { label: "Product launch", name: () => "Product launch · " },
+  { label: "Demo prep", name: () => "Demo prep · " },
+  { label: "Sprint review", name: () => "Sprint review · " },
+];
+
+function quarterTag(): string {
+  const d = new Date();
+  const q = Math.floor(d.getMonth() / 3) + 1;
+  return `Q${q} ${d.getFullYear()}`;
 }
 
 export function BoardList({ initialBoards }: BoardListProps) {
@@ -60,6 +82,13 @@ export function BoardList({ initialBoards }: BoardListProps) {
     }
   };
 
+  const openCreate = (preset?: (typeof PRESETS)[number]) => {
+    setError(null);
+    setName(preset ? preset.name() : "");
+    setDescription("");
+    setOpen(true);
+  };
+
   return (
     <>
       <AppHeader />
@@ -76,44 +105,37 @@ export function BoardList({ initialBoards }: BoardListProps) {
                 Boards
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Status reporting for visual products. Show, don&apos;t tell.
+                One board per product or per quarterly review. Most teams keep
+                3–8.
               </Typography>
             </Box>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AddIcon />}
-              onClick={() => setOpen(true)}
-            >
-              New board
-            </Button>
-          </Stack>
-
-          {boards.length === 0 ? (
-            <Paper
-              sx={{
-                p: 6,
-                textAlign: "center",
-                borderStyle: "dashed",
-              }}
-            >
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                No boards yet
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Create your first board, upload a screenshot, and mark regions
-                as <strong>shipped</strong>, <strong>mock</strong>, or{" "}
-                <strong>missing</strong>.
-              </Typography>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Button
+                size="small"
+                variant="text"
+                color="inherit"
+                component={Link}
+                href="/v/demo"
+                target="_blank"
+                rel="noopener"
+                endIcon={<OpenInNewIcon fontSize="inherit" />}
+                sx={{ color: "text.secondary" }}
+              >
+                View example
+              </Button>
               <Button
                 variant="contained"
                 color="primary"
                 startIcon={<AddIcon />}
-                onClick={() => setOpen(true)}
+                onClick={() => openCreate()}
               >
-                Create your first board
+                New board
               </Button>
-            </Paper>
+            </Stack>
+          </Stack>
+
+          {boards.length === 0 ? (
+            <EmptyState onCreate={openCreate} />
           ) : (
             <Box
               sx={{
@@ -127,48 +149,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
               }}
             >
               {boards.map((b) => (
-                <Paper
-                  key={b.id}
-                  component={Link}
-                  href={`/b/${b.id}`}
-                  sx={{
-                    p: 2.5,
-                    textDecoration: "none",
-                    color: "inherit",
-                    display: "block",
-                    transition: "transform 120ms ease, border-color 120ms ease",
-                    "&:hover": {
-                      borderColor: "primary.main",
-                      transform: "translateY(-2px)",
-                    },
-                  }}
-                >
-                  <Typography variant="h6" sx={{ mb: 0.5 }}>
-                    {b.name}
-                  </Typography>
-                  {b.description ? (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{
-                        mb: 1.5,
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {b.description}
-                    </Typography>
-                  ) : null}
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontFamily: "monospace" }}
-                  >
-                    /v/{b.slug}
-                  </Typography>
-                </Paper>
+                <BoardCard key={b.id} board={b} />
               ))}
             </Box>
           )}
@@ -190,7 +171,8 @@ export function BoardList({ initialBoards }: BoardListProps) {
               fullWidth
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Acme Dashboard / Q2"
+              placeholder="e.g. Acme Dashboard / Q2 2026"
+              helperText="Pick a name like the title of a deck you'd send your CEO."
             />
             <TextField
               label="Description (optional)"
@@ -200,6 +182,22 @@ export function BoardList({ initialBoards }: BoardListProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            <Stack
+              direction="row"
+              spacing={0.75}
+              sx={{ flexWrap: "wrap", rowGap: 0.75 }}
+            >
+              {PRESETS.map((p) => (
+                <Chip
+                  key={p.label}
+                  label={p.label}
+                  size="small"
+                  variant="outlined"
+                  clickable
+                  onClick={() => setName(p.name())}
+                />
+              ))}
+            </Stack>
             {error ? (
               <Typography variant="caption" color="error">
                 {error}
@@ -222,5 +220,121 @@ export function BoardList({ initialBoards }: BoardListProps) {
         </DialogActions>
       </Dialog>
     </>
+  );
+}
+
+/**
+ * Empty-state when the user has zero boards. Demonstrates the concept by
+ * pointing at the live example AND offers preset starting points so the
+ * next click is a name rather than a blank prompt.
+ */
+function EmptyState({
+  onCreate,
+}: {
+  onCreate: (preset?: (typeof PRESETS)[number]) => void;
+}) {
+  return (
+    <Paper sx={{ p: { xs: 3, sm: 5 } }}>
+      <Stack spacing={3}>
+        <Box>
+          <Typography variant="h6" sx={{ mb: 0.5 }}>
+            Start with the example
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            See what a finished board looks like — two screens, twelve regions,
+            three states. Then come back and create your own.
+          </Typography>
+          <Button
+            component={Link}
+            href="/v/demo"
+            target="_blank"
+            rel="noopener"
+            variant="outlined"
+            color="primary"
+            endIcon={<OpenInNewIcon fontSize="inherit" />}
+            sx={{ mt: 2 }}
+          >
+            Open the example
+          </Button>
+        </Box>
+
+        <Box sx={{ borderTop: 1, borderColor: "divider", pt: 3 }}>
+          <Typography variant="h6" sx={{ mb: 0.5 }}>
+            Or start with a name
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Pick the kind of report you&apos;re prepping — we&apos;ll fill in a
+            sensible default name.
+          </Typography>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ flexWrap: "wrap", rowGap: 1 }}
+          >
+            {PRESETS.map((p) => (
+              <Chip
+                key={p.label}
+                label={p.label}
+                variant="outlined"
+                clickable
+                onClick={() => onCreate(p)}
+                sx={{
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    color: "primary.main",
+                  },
+                }}
+              />
+            ))}
+          </Stack>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+}
+
+function BoardCard({ board }: { board: Board }) {
+  return (
+    <Paper
+      component={Link}
+      href={`/b/${board.id}`}
+      sx={{
+        p: 2.5,
+        textDecoration: "none",
+        color: "inherit",
+        display: "block",
+        transition: "transform 120ms ease, border-color 120ms ease",
+        "&:hover": {
+          borderColor: "primary.main",
+          transform: "translateY(-2px)",
+        },
+      }}
+    >
+      <Typography variant="h6" sx={{ mb: 0.5 }}>
+        {board.name}
+      </Typography>
+      {board.description ? (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            mb: 1.5,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {board.description}
+        </Typography>
+      ) : null}
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ fontFamily: "monospace" }}
+      >
+        /v/{board.slug}
+      </Typography>
+    </Paper>
   );
 }

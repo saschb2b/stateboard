@@ -29,6 +29,7 @@ function applyMigrations(db: Database.Database): void {
       slug        TEXT NOT NULL UNIQUE,
       name        TEXT NOT NULL,
       description TEXT,
+      is_demo     INTEGER NOT NULL DEFAULT 0,
       created_at  INTEGER NOT NULL,
       updated_at  INTEGER NOT NULL
     );
@@ -63,6 +64,17 @@ function applyMigrations(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_regions_screen ON regions(screen_id);
   `);
+
+  // Cleanup: an earlier iteration seeded a demo board into the DB. The demo
+  // is now served from memory at /v/demo, so any leftover row is just noise
+  // in the user's boards grid. Drop it (cascades to screens + regions).
+  // Idempotent: no-op once is_demo column doesn't exist or no rows match.
+  const cols = db
+    .prepare<[], { name: string }>(`PRAGMA table_info(boards)`)
+    .all();
+  if (cols.some((c) => c.name === "is_demo")) {
+    db.exec(`DELETE FROM boards WHERE is_demo = 1`);
+  }
 }
 
 interface BoardRow {
@@ -122,6 +134,7 @@ function mapScreen(row: ScreenRow): Screen {
     label: row.label,
     position: row.position,
     createdAt: row.created_at,
+    mediaUrl: `/api/uploads/${row.filename}`,
   };
 }
 
@@ -278,6 +291,7 @@ export function createScreen(input: {
     label: input.label,
     position: next,
     createdAt: now,
+    mediaUrl: `/api/uploads/${input.filename}`,
   };
 }
 

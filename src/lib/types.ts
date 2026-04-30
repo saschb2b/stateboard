@@ -27,6 +27,14 @@ export interface Screen {
   label: string | null;
   position: number;
   createdAt: number;
+  /**
+   * Where the rendering surface should fetch the image bytes.
+   *
+   * For DB-loaded screens this is `/api/uploads/{filename}`. The static
+   * demo board uses `/demo/{name}.svg` and bypasses the uploads pipeline
+   * entirely — see `getDemoBoard()`.
+   */
+  mediaUrl: string;
 }
 
 export interface Region {

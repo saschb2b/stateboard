@@ -187,7 +187,29 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
         </Stack>
 
         {screens.length === 0 ? (
-          <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
+          <Stack spacing={1.5}>
+            <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textAlign: "center" }}
+            >
+              Not sure what to upload?{" "}
+              <Box
+                component="a"
+                href="/v/demo"
+                target="_blank"
+                rel="noopener"
+                sx={{
+                  color: "primary.main",
+                  textDecoration: "none",
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                See the example board ↗
+              </Box>
+            </Typography>
+          </Stack>
         ) : (
           <Paper sx={{ p: 0, overflow: "hidden" }}>
             <Tabs

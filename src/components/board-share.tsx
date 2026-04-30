@@ -164,7 +164,7 @@ export function BoardShare({ board, screens }: BoardShareProps) {
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/api/uploads/${active.filename}`}
+                    src={active.mediaUrl}
                     alt={active.label ?? "screen"}
                     style={{
                       position: "absolute",

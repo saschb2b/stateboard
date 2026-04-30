@@ -268,7 +268,7 @@ export function ScreenAnnotator({
           {/* background image */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/uploads/${screen.filename}`}
+            src={screen.mediaUrl}
             alt={screen.label ?? "screen"}
             draggable={false}
             style={{

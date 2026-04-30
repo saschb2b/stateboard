@@ -279,7 +279,7 @@ export function BoardPresenter({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/uploads/${active.filename}`}
+            src={active.mediaUrl}
             alt={active.label ?? `Screen ${index + 1}`}
             style={{
               position: "absolute",
