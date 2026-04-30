@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -13,7 +13,9 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import SlideshowIcon from "@mui/icons-material/Slideshow";
 import { AppHeader } from "./app-header";
+import { BoardPresenter } from "./board-presenter";
 import { ScreenAnnotator } from "./screen-annotator";
 import { ScreenUploader } from "./screen-uploader";
 import { StateChip } from "./state-chip";
@@ -31,6 +33,7 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
     initialScreens[0]?.id ?? null,
   );
   const [copied, setCopied] = useState(false);
+  const [presenting, setPresenting] = useState(false);
 
   const active = useMemo(
     () => screens.find((s) => s.id === activeId) ?? null,
@@ -71,6 +74,29 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
     }
   };
 
+  // global "P" shortcut → enter presentation mode (skipped while typing)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "p" && e.key !== "P") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+      if (presenting) return;
+      if (screens.length === 0) return;
+      e.preventDefault();
+      setPresenting(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [presenting, screens.length]);
+
   // count regions by state across all screens (status overview)
   const totals = useMemo(() => {
     const counts = { shipped: 0, mock: 0, missing: 0 };
@@ -86,6 +112,20 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
         crumb={board.name}
         actions={
           <>
+            <Tooltip title="Present (P)">
+              <span>
+                <Button
+                  size="small"
+                  startIcon={<SlideshowIcon />}
+                  onClick={() => setPresenting(true)}
+                  variant="contained"
+                  color="primary"
+                  disabled={screens.length === 0}
+                >
+                  Present
+                </Button>
+              </span>
+            </Tooltip>
             <Tooltip title={copied ? "Copied!" : "Copy share link"}>
               <Button
                 size="small"
@@ -179,6 +219,17 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
           </Paper>
         )}
       </Container>
+      {presenting ? (
+        <BoardPresenter
+          boardName={board.name}
+          screens={screens}
+          initialIndex={Math.max(
+            0,
+            screens.findIndex((s) => s.id === activeId),
+          )}
+          onClose={() => setPresenting(false)}
+        />
+      ) : null}
     </>
   );
 }

@@ -1,14 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import SlideshowIcon from "@mui/icons-material/Slideshow";
 import { AppHeader } from "./app-header";
+import { BoardPresenter } from "./board-presenter";
 import { RegionOverlay } from "./region-overlay";
 import { StateChip } from "./state-chip";
 import type { Board, ScreenWithRegions } from "@/lib/types";
@@ -30,6 +34,7 @@ export function BoardShare({ board, screens }: BoardShareProps) {
   const [activeId, setActiveId] = useState<string | null>(
     screens[0]?.id ?? null,
   );
+  const [presenting, setPresenting] = useState(false);
 
   const active = useMemo(
     () => screens.find((s) => s.id === activeId) ?? null,
@@ -44,9 +49,39 @@ export function BoardShare({ board, screens }: BoardShareProps) {
     return counts;
   }, [screens]);
 
+  // global "P" hotkey for presentation mode
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "p" && e.key !== "P") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (presenting || screens.length === 0) return;
+      e.preventDefault();
+      setPresenting(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [presenting, screens.length]);
+
   return (
     <>
-      <AppHeader crumb={board.name} />
+      <AppHeader
+        crumb={board.name}
+        actions={
+          screens.length > 0 ? (
+            <Tooltip title="Present (P)">
+              <Button
+                size="small"
+                variant="contained"
+                color="primary"
+                startIcon={<SlideshowIcon />}
+                onClick={() => setPresenting(true)}
+              >
+                Present
+              </Button>
+            </Tooltip>
+          ) : null
+        }
+      />
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {board.description ? (
           <Typography
@@ -146,6 +181,17 @@ export function BoardShare({ board, screens }: BoardShareProps) {
           </Paper>
         )}
       </Container>
+      {presenting ? (
+        <BoardPresenter
+          boardName={board.name}
+          screens={screens}
+          initialIndex={Math.max(
+            0,
+            screens.findIndex((s) => s.id === activeId),
+          )}
+          onClose={() => setPresenting(false)}
+        />
+      ) : null}
     </>
   );
 }
