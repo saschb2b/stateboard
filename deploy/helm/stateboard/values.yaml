@@ -1,6 +1,9 @@
-# Default values for stateboard.
-# This chart matches v0: single replica, SQLite, on-disk uploads, no auth.
-# Multi-replica + Postgres + S3 are v1+ features; do not raise replicaCount.
+# Default values for the StateBoard Helm chart (v1).
+#
+# v1 = multi-user, OIDC via Keycloak, Postgres-backed. The chart can run
+# with the bundled Bitnami Postgres sub-chart (default) or against an
+# external Postgres by flipping postgresql.enabled to false and setting
+# externalDatabaseUrl.
 
 image:
   repository: ghcr.io/saschb2b/stateboard
@@ -9,26 +12,28 @@ image:
 
 imagePullSecrets: []
 
-# v0 is hard-pinned to a single replica because SQLite is on a RWO PVC.
-# The deployment template will fail-fast if you raise this.
+# Replicas. Postgres handles concurrent connections fine, so this can
+# safely scale > 1. The only caveat is the uploads PVC: if replicaCount
+# > 1, persistence.accessMode must be ReadWriteMany or you must move
+# uploads to S3-compatible storage (planned for v2).
 replicaCount: 1
 
-# StateBoard writes its SQLite database and uploaded screenshots under /data.
-# Without persistence, both vanish on pod restart.
+# Uploaded screenshots live on a PersistentVolume. Postgres data lives
+# in the bundled sub-chart's PVC, not here.
 persistence:
   enabled: true
-  # If existingClaim is set, the chart will mount that PVC instead of creating one.
   existingClaim: ""
-  size: 5Gi
+  size: 10Gi
   storageClass: "" # "" = cluster default
+  # Use ReadWriteMany when running multiple replicas. ReadWriteOnce is
+  # fine for replicaCount=1 (the default).
   accessMode: ReadWriteOnce
-  # If you change the mount path, update STATEBOARD_DATA_DIR in extraEnv too.
   mountPath: /data
 
 service:
   type: ClusterIP
-  port: 80 # service port
-  targetPort: 3000 # container port (must match the StateBoard process)
+  port: 80
+  targetPort: 3000
 
 ingress:
   enabled: false
@@ -48,23 +53,24 @@ ingress:
 
 resources:
   requests:
-    cpu: 50m
-    memory: 128Mi
+    cpu: 100m
+    memory: 256Mi
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m
+    memory: 768Mi
 
-# A Recreate strategy is required while the SQLite file is on a RWO PVC:
-# RollingUpdate would keep the old pod attached during cutover.
+# RollingUpdate is safe in v1 (Postgres handles concurrency). v0's
+# `Recreate` was a SQLite workaround; that constraint is gone.
 strategy:
-  type: Recreate
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
 
-# Node-level scheduling knobs.
 nodeSelector: {}
 tolerations: []
 affinity: {}
 
-# Pod-level security context. The Dockerfile runs as the "node" user (UID 1000).
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 1000
@@ -79,7 +85,6 @@ containerSecurityContext:
   capabilities:
     drop: [ALL]
 
-# Liveness / readiness use the home page; it always returns 200.
 probes:
   enabled: true
   liveness:
@@ -93,33 +98,82 @@ probes:
     timeoutSeconds: 5
     failureThreshold: 3
 
+# ---- Auth (Keycloak / OIDC) ------------------------------------------------
+# Required for sign-in to work. Provide either inline values OR point at
+# a pre-created Secret via auth.existingSecret.
+auth:
+  # Public URL the app reaches itself at. Must match Keycloak's
+  # "Valid redirect URIs" (StateBoard registers /api/auth/callback/keycloak).
+  baseUrl: "https://stateboard.example.com"
+  # Random string used to sign session cookies. Generate with:
+  #   openssl rand -base64 32
+  secret: ""
+  keycloak:
+    # Realm URL — e.g. https://keycloak.example.com/realms/acme
+    issuer: ""
+    clientId: "stateboard"
+    clientSecret: ""
+  # Comma-separated email-domain allowlist. Empty = any signed-in
+  # Keycloak user (subject to whatever the realm enforces).
+  allowedEmailDomains: ""
+  # Default role for newly-signed-in users (after the first user, who
+  # always becomes owner). One of: owner | editor | viewer
+  defaultRole: "editor"
+  # If set, all auth values above are ignored — read from this Secret
+  # instead. Keys: BETTER_AUTH_SECRET, KEYCLOAK_ISSUER, KEYCLOAK_CLIENT_ID,
+  # KEYCLOAK_CLIENT_SECRET, STATEBOARD_BASE_URL, STATEBOARD_ALLOWED_EMAIL_DOMAINS,
+  # STATEBOARD_DEFAULT_ROLE.
+  existingSecret: ""
+
+# ---- Database --------------------------------------------------------------
+# Either use the bundled Postgres (default) or point at an external one.
+postgresql:
+  enabled: true
+  auth:
+    username: stateboard
+    password: "change-me"
+    database: stateboard
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# When postgresql.enabled is false, set this to a Postgres connection
+# string (postgres://user:pass@host:5432/dbname). May reference an
+# existingSecret key — see externalDatabaseUrlExistingSecret.
+externalDatabaseUrl: ""
+
+# Optional: read DATABASE_URL from a Secret instead of inline.
+# Set both name + key. Takes precedence over externalDatabaseUrl.
+externalDatabaseUrlExistingSecret:
+  name: ""
+  key: "DATABASE_URL"
+
+# ---- Migration job ---------------------------------------------------------
+# Runs `pnpm migrate` (node scripts/migrate.mjs) as a Helm pre-install +
+# pre-upgrade hook. Disable if you'd rather run migrations out-of-band.
+migrate:
+  enabled: true
+  backoffLimit: 3
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
 # Extra env vars injected verbatim into the container.
-# STATEBOARD_DATA_DIR is set by the chart from persistence.mountPath.
 extraEnv: []
-  # - name: SOME_VAR
-  #   value: "some-value"
-
 extraEnvFrom: []
-  # - secretRef:
-  #     name: stateboard-secrets
-
-# Optional sidecars / init containers — kept empty to honor the airgap pitch.
 extraContainers: []
 initContainers: []
 
 serviceAccount:
   create: true
-  name: "" # default: chart fullname
+  name: ""
   annotations: {}
 
-# Pod-level annotations + labels (e.g. for service mesh, Prometheus discovery).
 podAnnotations: {}
 podLabels: {}
-
-# Top-level labels applied to every resource (Deployment, Service, etc).
 commonLabels: {}
 commonAnnotations: {}
 
-# Override the chart name used in resource names. Most users won't need this.
 nameOverride: ""
 fullnameOverride: ""

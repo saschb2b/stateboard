@@ -18,16 +18,17 @@ Three things follow from this and you must protect them:
 2. **The artifact is the share link**. The editor exists to produce a thing an exec can read in 30 seconds without a login. Every change must be evaluated against "does this make the share link better, or does it just add knobs for the editor?"
 3. **Self-hosted, airgap-ready, MIT**. No phone-home, no analytics, no license server, no `fetch` to a third-party domain at runtime. If you're tempted to add one, stop and ask. The teams who need this most (defense, health, finance, gov) can't use a SaaS — that's the whole distribution thesis.
 
-## Scope guardrails (v0)
+## Scope guardrails (v1)
 
-The current stage is **v0 — the wedge**. The build plan in the pitch deck is staged. **Do not implement v1+ features in v0** unless explicitly asked. The full staging:
+The current stage is **v1 — team-ready**. The build plan in the pitch deck is staged. **Do not implement v2+ features in v1** unless explicitly asked. The full staging:
 
-- **v0**: manual upload, region tagging, three states (`shipped` / `mock` / `missing`), share link, single user, no auth.
-- **v1**: multi-user + OIDC, headless capture from URL, Jira issue linking, custom states, public GitHub release.
+- **v0** ✅ : manual upload, region tagging, three states, share link, single user, no auth.
+- **v1** ✅ (you are here): multi-user via OIDC (Keycloak), workspace + member roles, revocable share-link tokens, append-only audit log, Postgres-backed.
+- **v1.x** (still scope-OK): headless capture from URL, Jira issue linking, custom states.
 - **v2**: scheduled re-capture, time-travel / diff view, two-way Jira sync, Slack notifications, Notion/Confluence embed.
-- **v3**: auto region-detection (DOM), journey-level views, portfolio rollup, SSO, audit log, template gallery.
+- **v3**: auto region-detection (DOM), journey-level views, portfolio rollup, SAML/SSO beyond OIDC, audit-log UI, template gallery.
 
-If the user asks for something that smells like v1+ work (auth, capture-from-URL, Jira, Slack, multi-user), confirm before building. Cite the stage it belongs to.
+If the user asks for something that smells like v2+ work (scheduled capture, diff/time-travel, Jira sync, Slack), confirm before building. Cite the stage it belongs to.
 
 The three v0 states are **load-bearing**. Don't add a fourth state, don't rename them, don't make them configurable, don't soften "missing" to "planned". Their force comes from being three blunt categories that match how stakeholders actually think.
 
@@ -57,10 +58,13 @@ When in doubt, ask: _would I rather show this user one real example, or explain 
 
 - **Framework**: Next.js 16 App Router (`output: "standalone"`).
 - **UI**: React 19 + MUI 7 + Emotion in the marketing + product app (everything outside `/docs`). No Tailwind, no styled-components, no CSS modules in app code — use MUI's `sx` prop and the theme in `src/lib/theme.ts`. The exception is `/docs`, which uses Fumadocs (Tailwind v4 internally) with its own scoped stylesheet at `src/app/docs/docs.css`. Don't import Tailwind utilities into `src/components/` or `src/app/(site)/`.
-- **Persistence**: SQLite via `better-sqlite3`, accessed from `src/lib/db.ts`. **All disk access goes through `src/lib/db.ts` and `src/lib/paths.ts`**. Don't open new file handles or new sqlite connections elsewhere.
-- **File uploads**: Local filesystem under `STATEBOARD_DATA_DIR/uploads`. Served by `src/app/api/uploads/[filename]/route.ts` with a strict filename allowlist regex — preserve that regex when touching the route.
-- **No global state library**. React local state + server-fetched props are sufficient for v0.
-- **No external network calls** from server code. The product must work in an airgapped environment. If you need a library that pings home, find another one.
+- **Persistence**: Postgres via `pg`, accessed from `src/lib/db.ts`. **All DB access goes through `src/lib/db.ts`**. Don't open new pools or run raw SQL outside it. Schema lives as plain SQL files under `migrations/` — never inline `CREATE TABLE IF NOT EXISTS` in app code; add a numbered file and update `scripts/migrate.mjs` runs it on startup.
+- **Auth**: Better Auth in `src/lib/auth.ts` (server) and `src/lib/auth-client.ts` (browser). OIDC-only — no email/password. Keycloak is the documented default but any OIDC provider works (the `genericOAuth` plugin doesn't care). Sessions are DB-backed in the same Postgres. Server components use `requirePageMember(role?)`; route handlers use `requireApiMember(role?)` from `src/lib/auth-helpers.ts`.
+- **Workspaces**: single workspace per deployed instance (`id = 'default'`, minted on first sign-in). Boards belong to workspaces, never directly to users — when a member leaves, their content stays. The schema supports multiple workspaces per instance, but no UI to create them in v1.
+- **File uploads**: Local filesystem under `STATEBOARD_DATA_DIR/uploads`. Served by `src/app/api/uploads/[filename]/route.ts` with a strict filename allowlist regex — preserve that regex when touching the route. Multi-replica deployments need a `ReadWriteMany` PVC.
+- **Audit log**: every board / region / share-link / member mutation writes a row via `writeAudit({...})` from `db.ts`. No UI for it yet (v3); rows are read directly from Postgres for now.
+- **No global state library**. React local state + server-fetched props are sufficient.
+- **No external network calls** from server code, except to the configured OIDC provider (Keycloak). The product must work airgap-adjacent: the IdP is inside the same network as the app.
 - **TypeScript strict** (`noUncheckedIndexedAccess` is on). Don't loosen `tsconfig.json` to make a type error go away — fix the call site.
 
 ### Coordinates are normalized
@@ -70,25 +74,38 @@ Region coordinates (`x`, `y`, `w`, `h`) are stored and transmitted as relative v
 ### File layout
 
 ```
+migrations/                                    Plain-SQL schema files, applied by scripts/migrate.mjs
+scripts/
+├── migrate.mjs                                Apply pending migrations
+├── migrate-from-sqlite.mjs                    One-shot v0 → v1 importer
+└── pages-prebuild.mjs                         Strips runtime routes for the GH Pages export
 src/
 ├── app/
 │   ├── (site)/                                MUI-themed routes (root layout = ClientShell)
 │   │   ├── page.tsx                           Landing
 │   │   ├── boards/                            Board list (page.tsx) + editor ([id]/page.tsx)
-│   │   ├── share/                             Public read-only share ([slug]/) + /share/demo
+│   │   ├── share/                             Public share ([token]/) + /share/demo
+│   │   ├── settings/members/                  Owner-only roster
+│   │   ├── sign-in/                           Keycloak entry point
 │   │   └── not-found.tsx
 │   ├── docs/                                  Fumadocs (separate visual system, Tailwind v4)
 │   │   ├── layout.tsx                         RootProvider + DocsLayout
 │   │   ├── docs.css                           Tailwind + Fumadocs preset, scoped to /docs
 │   │   └── [[...slug]]/page.tsx
-│   ├── api/{boards,screens,regions,uploads,search}   REST + search handlers
-│   └── layout.tsx                             Minimal root: html + body + fonts
+│   ├── api/
+│   │   ├── auth/[...all]/                     Better Auth catch-all
+│   │   ├── boards/[id]/share-links/           Mint share tokens
+│   │   ├── share-links/[token]/               Revoke
+│   │   ├── workspace/members/                 List + per-user PATCH/DELETE
+│   │   └── {boards,screens,regions,uploads,search}/   REST + search
+│   ├── layout.tsx                             Minimal root: html + body + fonts
+│   └── proxy.ts                               Next 16 "proxy" auth gate (renamed from middleware)
 ├── components/                                React + MUI; client where needed
 ├── content/docs/                              MDX docs source (do not import outside /docs)
-└── lib/                                       db, paths, image, http, ids, source (Fumadocs)
+└── lib/                                       db, paths, image, http, ids, auth, auth-client, auth-helpers, source (Fumadocs)
 ```
 
-Server-only modules import `"server-only"` at the top so they fail loud if pulled into a client bundle. Keep that import on `db.ts` and any future module that touches the filesystem or secrets.
+Server-only modules import `"server-only"` at the top so they fail loud if pulled into a client bundle. Keep that import on `db.ts`, `auth.ts`, `auth-helpers.ts`, and any future module that touches the filesystem or secrets.
 
 ### Naming
 
@@ -116,21 +133,21 @@ pnpm build
 
 All four must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue** — don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case.
 
-These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts the `replicaCount > 1` guardrail. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main` — see "Pages demo" below. **Don't merge red CI** — if the workflow fails, fix the underlying issue rather than disabling the check.
+These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts that `auth.secret` is required. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main` — see "Pages demo" below. **Don't merge red CI** — if the workflow fails, fix the underlying issue rather than disabling the check.
 
 ### Pages demo
 
-A static export of the marketing + docs + example-board surface is published at `https://saschb2b.github.io/stateboard/`. The editor and all DB-backed routes don't run there (no Node server on Pages). Build path:
+A static export of the marketing + docs + example-board surface is published at `https://saschb2b.github.io/stateboard/`. The editor, auth, and all DB-backed routes don't run there (no Node server on Pages). Build path:
 
-1. `scripts/pages-prebuild.mjs` (gated by `PAGES_BUILD=1` so it can't ruin a local clone) deletes `src/app/api/`, `src/app/(site)/boards/[id]/`, and `src/app/(site)/share/[slug]/`, and replaces `src/app/(site)/boards/page.tsx` with a stub pointing at the example + self-host instructions.
+1. `scripts/pages-prebuild.mjs` (gated by `PAGES_BUILD=1` so it can't ruin a local clone) deletes `src/app/api/`, `src/app/(site)/boards/[id]/`, `src/app/(site)/share/[token]/`, `src/app/(site)/sign-in/`, `src/app/(site)/settings/`, and `src/proxy.ts`. It then replaces `src/app/(site)/boards/page.tsx` with a stub pointing at the example + self-host instructions.
 2. `STATEBOARD_PAGES=1 next build` switches `next.config.mjs` into `output: "export"` mode with `basePath`/`assetPrefix` set to the Pages base path.
 3. `actions/upload-pages-artifact` + `actions/deploy-pages` push `out/` to Pages.
 
-When you change anything in `src/app/(site)/boards`, `src/app/(site)/share`, or `src/app/api`, also think about whether the Pages stub still makes sense — it's the visitor's only signpost from those URLs.
+When you change anything in `src/app/(site)/boards`, `src/app/(site)/share`, `src/app/(site)/sign-in`, `src/app/(site)/settings`, or `src/app/api`, also think about whether the Pages stub still makes sense — it's the visitor's only signpost from those URLs.
 
-For UI changes, also run `pnpm dev` and exercise the change in a browser. Type checks verify code, not features.
+For UI changes, also run `pnpm dev` (against the docker-compose Postgres + Keycloak) and exercise the change in a browser. Type checks verify code, not features.
 
-For Helm changes, run `helm lint deploy/helm/stateboard` and `helm template stateboard deploy/helm/stateboard | kubectl apply --dry-run=client -f -`. The chart is hard-pinned to a single replica until v1 introduces Postgres — keep the `fail`-on-`replicaCount > 1` guardrail in `templates/deployment.yaml`. SQLite + `ReadWriteOnce` + `RollingUpdate` corrupts the DB; that's why `strategy.type: Recreate` is the default and shouldn't be changed.
+For Helm changes, run `helm dependency build deploy/helm/stateboard`, then `helm lint deploy/helm/stateboard --set auth.secret=test` and `helm template stateboard deploy/helm/stateboard --set auth.secret=test ... | kubectl apply --dry-run=client -f -`. The chart fails closed if `auth.secret` is empty — that's deliberate, don't disable it.
 
 ## API conventions
 
@@ -143,15 +160,17 @@ For Helm changes, run `helm lint deploy/helm/stateboard` and `helm template stat
 
 These are tempting and wrong for the current stage:
 
-- **Auth, accounts, teams, sharing permissions** → v1.
-- **Pulling in a Jira/Linear/Slack SDK** → v1/v2.
-- **Headless screenshot capture (Playwright, Puppeteer)** → v1.
+- **Pulling in a Jira/Linear/Slack SDK** → v1.x / v2.
+- **Headless screenshot capture (Playwright, Puppeteer)** → v1.x.
+- **Scheduled re-capture, time-travel / diff** → v2.
 - **Real-time collab (yjs, websockets, presence)** → never, probably. The use case is asynchronous review.
-- **An undo stack, version history, or audit log** → v2/v3.
-- **A "rich" markdown notes field with an editor** → notes are plaintext for v0.
+- **An undo stack** → v2.
+- **A "rich" markdown notes field with an editor** → notes are plaintext.
 - **Comment threads on regions** → out of scope. We are not Figma.
 - **A region search / filter UI** → maybe v3 once portfolios exist.
-- **DB migrations beyond the inline `CREATE TABLE IF NOT EXISTS`** → v0 schema is small. When v1 needs migrations, introduce them deliberately, not opportunistically.
+- **An audit-log UI** → v3. Rows are written today; surfacing comes later.
+- **An invite/email flow** → not needed while OIDC handles identity. If a use-case forces it, surface the trade-off first.
+- **Adding more OAuth providers in code** → Better Auth's `genericOAuth` already accepts any OIDC discovery URL. Document the env vars; don't add per-provider helpers casually.
 
 ## When you're stuck
 

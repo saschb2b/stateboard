@@ -1,0 +1,62 @@
+# Local development stack.
+#
+# Brings up Postgres + a single-realm Keycloak so a dev clone can sign in
+# end-to-end without any external dependencies. The StateBoard app itself
+# runs separately via `pnpm dev` against this stack.
+#
+# Usage:
+#   cp .env.example .env
+#   docker compose up -d
+#   pnpm install
+#   pnpm migrate
+#   pnpm dev
+#   open http://localhost:3000
+#
+# Default Keycloak admin: admin / admin (http://localhost:8080)
+# Default test user: alice@stateboard.dev / alice (created in the realm export below)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: stateboard
+      POSTGRES_PASSWORD: stateboard
+      POSTGRES_DB: stateboard
+      # Separate db for Keycloak so its schema doesn't clutter ours.
+      POSTGRES_MULTIPLE_DATABASES: keycloak
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./scripts/pg-init-multidb.sh:/docker-entrypoint-initdb.d/00-multidb.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stateboard"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: stateboard
+      KC_DB_PASSWORD: stateboard
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./deploy/keycloak/realm-stateboard.json:/opt/keycloak/data/import/realm-stateboard.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pg-data:

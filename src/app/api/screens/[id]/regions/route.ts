@@ -1,5 +1,13 @@
 import type { NextRequest } from "next/server";
-import { createRegion, getScreen, listRegions } from "@/lib/db";
+import { NextResponse } from "next/server";
+import {
+  createRegion,
+  getBoard,
+  getScreen,
+  listRegions,
+  writeAudit,
+} from "@/lib/db";
+import { requireApiMember } from "@/lib/auth-helpers";
 import { newId } from "@/lib/ids";
 import { REGION_STATES, type RegionState } from "@/lib/types";
 import { badRequest, created, notFound, ok } from "@/lib/http";
@@ -11,15 +19,33 @@ interface Ctx {
 const isFiniteIn01 = (n: unknown): n is number =>
   typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
 
+async function loadOwnedScreen(id: string, workspaceId: string) {
+  const screen = await getScreen(id);
+  if (!screen) return null;
+  const board = await getBoard(screen.boardId);
+  if (!board || board.workspaceId !== workspaceId) return null;
+  return screen;
+}
+
 export async function GET(_req: NextRequest, { params }: Ctx) {
+  const member = await requireApiMember("viewer");
+  if (member instanceof NextResponse) return member;
+
   const { id } = await params;
-  if (!getScreen(id)) return notFound("screen not found");
-  return ok(listRegions(id));
+  if (!(await loadOwnedScreen(id, member.workspaceId))) {
+    return notFound("screen not found");
+  }
+  return ok(await listRegions(id));
 }
 
 export async function POST(req: NextRequest, { params }: Ctx) {
+  const member = await requireApiMember("editor");
+  if (member instanceof NextResponse) return member;
+
   const { id: screenId } = await params;
-  if (!getScreen(screenId)) return notFound("screen not found");
+  if (!(await loadOwnedScreen(screenId, member.workspaceId))) {
+    return notFound("screen not found");
+  }
 
   const body = (await req.json().catch(() => null)) as {
     x?: unknown;
@@ -62,16 +88,29 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       ? body.notes.trim()
       : null;
 
-  const region = createRegion({
-    id: newId(),
-    screenId,
-    x: body.x,
-    y: body.y,
-    w: body.w,
-    h: body.h,
-    state: body.state as RegionState,
-    label,
-    notes,
+  const region = await createRegion(
+    {
+      id: newId(),
+      screenId,
+      x: body.x,
+      y: body.y,
+      w: body.w,
+      h: body.h,
+      state: body.state as RegionState,
+      label,
+      notes,
+    },
+    member.user.id,
+  );
+
+  await writeAudit({
+    workspaceId: member.workspaceId,
+    actorId: member.user.id,
+    action: "region.create",
+    targetType: "region",
+    targetId: region.id,
+    meta: { screenId, state: region.state },
   });
+
   return created(region);
 }

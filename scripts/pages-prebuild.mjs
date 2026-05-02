@@ -26,10 +26,15 @@ const repoRoot = path.resolve(fileURLToPath(import.meta.url), "..", "..");
 const REMOVE = [
   // All API route handlers — incompatible with `output: "export"`.
   "src/app/api",
-  // The editor page — reads SQLite at request time.
+  // The editor page — reads Postgres + requires auth.
   "src/app/(site)/boards/[id]",
   // The dynamic public share view — same problem. /share/demo stays.
-  "src/app/(site)/share/[slug]",
+  "src/app/(site)/share/[token]",
+  // Auth surfaces — Better Auth needs a Node runtime.
+  "src/app/(site)/sign-in",
+  "src/app/(site)/settings",
+  // Next 16 "proxy" (auth gate) — also Node-only.
+  "src/proxy.ts",
 ];
 
 for (const rel of REMOVE) {

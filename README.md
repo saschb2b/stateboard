@@ -11,119 +11,104 @@
 
 **Show, don't tell.** Upload a screenshot of your app. Drag rectangles over the parts you want to talk about. Tag each one as `SHIPPED`, `MOCK`, or `MISSING`. Share one link. Your exec reads it in 30 seconds.
 
-Open source. Self-hosted. Airgap-ready. MIT.
+Open source. Self-hosted. Airgap-ready (except for your own SSO). MIT.
 
 ---
 
-## v0 (the wedge)
+## v1 (team-ready)
 
-This is `v0` — the smallest thing that proves the thesis.
+This is `v1` — the cut you can deploy in a company.
 
 - Manual screenshot upload (PNG / JPEG / WebP / GIF, up to 25 MB)
 - Region tagging on the image (click + drag)
 - Three states: `shipped` / `mock` / `missing`
-- Public read-only share link
-- Single user, no auth — designed to live behind your VPN or on `localhost`
-- One container. SQLite. Zero outbound calls.
+- Public read-only share links — revocable, multiple per board
+- **Multi-user via Keycloak / OIDC** (any OIDC-compliant IdP works; Keycloak is the documented default)
+- **Roles**: owner / editor / viewer
+- **Append-only audit log** of mutations (read directly from Postgres for now)
+- Postgres-backed, multi-replica safe (with `ReadWriteMany` for uploads)
+- One container + one Postgres. Zero outbound calls except to your IdP.
 
-What's not here yet (by design — see [the build plan](#roadmap)): multi-user auth, headless capture, Jira sync, scheduled re-capture, diffs, journeys.
+What's not here yet (by design — see [the build plan](#roadmap)): headless capture, Jira sync, scheduled re-capture, diffs, journeys.
 
-## Quick start
+## Quick start (local dev)
 
-### Local development
+The repo ships a `docker-compose.yaml` with Postgres + Keycloak pre-seeded with two test users (`alice` / `bob`, password = same as username).
 
 ```bash
+cp .env.example .env
+docker compose up -d           # starts postgres + keycloak
 pnpm install
+pnpm migrate                    # creates tables
 pnpm dev
 ```
 
-Open <http://localhost:3000>.
+Open <http://localhost:3000>, click **Continue with Keycloak**, sign in as `alice`. The first sign-in becomes the workspace owner.
 
-Data — the SQLite database and uploaded screenshots — is written to `./data/`. You can point this elsewhere with `STATEBOARD_DATA_DIR=/some/path`.
-
-### Docker
+## Production: Helm
 
 ```bash
-docker build -t stateboard .
-docker run --rm -p 3000:3000 -v stateboard-data:/data stateboard
-```
-
-That's it. No license server, no phone-home, no telemetry. Mount `/data` as a volume to persist your boards across restarts.
-
-### Kubernetes (Helm)
-
-```bash
+helm dependency build deploy/helm/stateboard
 helm install stateboard ./deploy/helm/stateboard \
   --namespace stateboard --create-namespace \
-  --set image.tag=0.1.0
+  --set auth.baseUrl=https://stateboard.example.com \
+  --set auth.secret="$(openssl rand -base64 32)" \
+  --set auth.keycloak.issuer=https://keycloak.example.com/realms/acme \
+  --set auth.keycloak.clientSecret=... \
+  --set postgresql.auth.password="$(openssl rand -base64 16)"
 ```
 
-The chart is single-replica by design (SQLite on a `ReadWriteOnce` PVC) and will refuse to render with `replicaCount > 1`. See [`deploy/helm/stateboard/README.md`](./deploy/helm/stateboard/README.md) for the full values reference.
+The chart bundles a Bitnami Postgres sub-chart by default. Disable with `--set postgresql.enabled=false` and provide `--set externalDatabaseUrl=...` (or read it from a Secret via `externalDatabaseUrlExistingSecret`). See [`deploy/helm/stateboard/values.yaml`](./deploy/helm/stateboard/values.yaml) for the full reference.
 
-## How it works
-
-1. **Create a board** from the home page.
-2. **Upload a screenshot.** StateBoard records its dimensions and stores the image under `./data/uploads/`.
-3. **Drag a rectangle** on the screenshot. A side panel opens — pick a state, label the region, add notes if you want.
-4. **Repeat** for every region you care about.
-5. **Click Share.** You get a link of the form `/v/{slug}` that anyone can read. No login. The share view is the same screens, painted with state.
-
-Region coordinates are stored as relative `[0..1]` values, so the same annotations render correctly at any display size.
+A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up. Disable with `--set migrate.enabled=false` if you'd rather run schema changes out-of-band.
 
 ## Architecture
 
-| Piece        | Choice                               | Why                                           |
-| ------------ | ------------------------------------ | --------------------------------------------- |
-| Framework    | Next.js 16 (App Router)              | One process serves UI + API + uploads         |
-| UI           | React 19 + MUI 7                     | Solid component library, small enough to skin |
-| Persistence  | SQLite via `better-sqlite3`          | Zero-ops, fits the "one container" pitch      |
-| File storage | Local filesystem (`./data/uploads/`) | Same volume as the DB, no S3 dependency       |
-| Auth         | None (v0)                            | Single user, behind your network              |
-| Telemetry    | None                                 | Airgap by default — that's the point          |
+| Piece        | Choice                  | Why                                                  |
+| ------------ | ----------------------- | ---------------------------------------------------- |
+| Framework    | Next.js 16 (App Router) | One process serves UI + API + uploads                |
+| UI           | React 19 + MUI 7        | Solid component library, small enough to skin        |
+| Persistence  | Postgres via `pg`       | Multi-replica safe; standard ops your team knows     |
+| Auth         | Better Auth + OIDC      | First-class Keycloak helper; sessions in the same DB |
+| File storage | Local filesystem        | RWX PVC for v1; S3-compatible adapter planned for v2 |
+| Telemetry    | None                    | Airgap by default — that's the point                 |
 
-Source layout:
-
-```
-src/
-├── app/                 # Next.js App Router
-│   ├── api/             # REST endpoints (boards, screens, regions, uploads)
-│   ├── b/[id]/          # Board editor
-│   ├── v/[slug]/        # Public read-only share
-│   ├── layout.tsx
-│   └── page.tsx         # Board list
-├── components/          # React components (client + server)
-└── lib/                 # db, types, theme, image utils
-```
-
-Everything that touches disk lives in `src/lib/db.ts` and `src/lib/paths.ts`.
+Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/lib/auth.ts` (server) and `src/lib/auth-client.ts` (browser). Schema is plain SQL under `migrations/`, applied by `scripts/migrate.mjs`.
 
 ## Scripts
 
-| Command             | What it does             |
-| ------------------- | ------------------------ |
-| `pnpm dev`          | Run on `localhost:3000`  |
-| `pnpm build`        | Production build         |
-| `pnpm start`        | Run the production build |
-| `pnpm lint`         | ESLint                   |
-| `pnpm typecheck`    | `tsc --noEmit`           |
-| `pnpm format:check` | Prettier check           |
-| `pnpm format`       | Prettier write           |
+| Command             | What it does                                        |
+| ------------------- | --------------------------------------------------- |
+| `pnpm dev`          | Run on `localhost:3000`                             |
+| `pnpm build`        | Production build                                    |
+| `pnpm start`        | Run the production build                            |
+| `pnpm migrate`      | Apply pending SQL migrations against `DATABASE_URL` |
+| `pnpm lint`         | ESLint                                              |
+| `pnpm typecheck`    | `tsc --noEmit`                                      |
+| `pnpm format:check` | Prettier check                                      |
+| `pnpm format`       | Prettier write                                      |
 
 ## Configuration
 
-| Env var               | Default  | Purpose                                       |
-| --------------------- | -------- | --------------------------------------------- |
-| `STATEBOARD_DATA_DIR` | `./data` | Root of all on-disk state (`db/`, `uploads/`) |
-| `PORT`                | `3000`   | HTTP port                                     |
+| Env var                            | Default       | Purpose                                                               |
+| ---------------------------------- | ------------- | --------------------------------------------------------------------- |
+| `DATABASE_URL`                     | _required_    | Postgres connection string                                            |
+| `STATEBOARD_BASE_URL`              | _required_    | Public URL the app reaches itself at                                  |
+| `BETTER_AUTH_SECRET`               | _required_    | 32-byte base64 secret for session cookies (`openssl rand -base64 32`) |
+| `KEYCLOAK_ISSUER`                  | _required_    | Realm URL, e.g. `https://keycloak.example.com/realms/acme`            |
+| `KEYCLOAK_CLIENT_ID`               | _required_    | Confidential client id                                                |
+| `KEYCLOAK_CLIENT_SECRET`           | _required_    | Client secret                                                         |
+| `STATEBOARD_ALLOWED_EMAIL_DOMAINS` | _empty_ (any) | Comma-separated allowlist                                             |
+| `STATEBOARD_DEFAULT_ROLE`          | `editor`      | Role given to non-first sign-ins                                      |
+| `STATEBOARD_DATA_DIR`              | `./data`      | Root of upload storage                                                |
+| `PORT`                             | `3000`        | HTTP port                                                             |
 
 ## Roadmap
 
-This is `v0`. The pitch deck has a four-stage build plan:
-
-- **v0 — the wedge** (you are here): manual upload, region tagging, three states, share link, single user
-- **v1 — team-ready**: multi-user, OIDC, headless capture from URL, Jira issue linking, custom states, public GitHub release
+- **v0 — the wedge**: manual upload, region tagging, three states, share link, single user ✅
+- **v1 — team-ready** (you are here): multi-user, OIDC, audit log, Postgres ✅
 - **v2 — make it living**: scheduled re-capture, time-travel / diff view, two-way Jira sync, Slack notifications, Notion/Confluence embed
-- **v3 — defensible**: auto region-detection from the DOM, journey-level views, portfolio rollup, SSO, audit log, public template gallery
+- **v3 — defensible**: auto region-detection from the DOM, journey-level views, portfolio rollup, SSO, audit log UI, public template gallery
 
 The temptation will be to chase roadmap-tool features. We won't. The lane is **screens, regions, states, and the integrations that keep them honest** — and nothing else.
 

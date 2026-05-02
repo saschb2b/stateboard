@@ -25,6 +25,13 @@ import { StateChip } from "./state-chip";
 interface ScreenAnnotatorProps {
   screen: ScreenWithRegions;
   onScreenUpdated: (screen: ScreenWithRegions) => void;
+  /**
+   * Viewer-role members can navigate into a board's editor URL but must
+   * not be able to mutate anything. When true, drawing is disabled, the
+   * draft form is suppressed, and the side panel renders existing regions
+   * read-only.
+   */
+  readOnly?: boolean;
 }
 
 interface DraftRect {
@@ -40,6 +47,7 @@ const MIN_REGION_SIZE = 0.005;
 export function ScreenAnnotator({
   screen,
   onScreenUpdated,
+  readOnly = false,
 }: ScreenAnnotatorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
@@ -79,6 +87,7 @@ export function ScreenAnnotator({
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (readOnly) return;
       if (e.button !== 0) return;
       // ignore drags that started on a child overlay (region click)
       if (e.target !== surfaceRef.current && e.target !== e.currentTarget) {
@@ -90,7 +99,7 @@ export function ScreenAnnotator({
       setDraft({ x: rel.x, y: rel.y, w: 0, h: 0 });
       setDrawing(true);
     },
-    [toRel],
+    [readOnly, toRel],
   );
 
   const handleMouseMove = useCallback(
@@ -210,7 +219,7 @@ export function ScreenAnnotator({
             borderColor: "divider",
             borderRadius: 1,
             overflow: "hidden",
-            cursor: drawing ? "crosshair" : "crosshair",
+            cursor: readOnly ? "default" : "crosshair",
             userSelect: "none",
           }}
         >
@@ -261,7 +270,50 @@ export function ScreenAnnotator({
 
       {/* side panel: draft form OR selected region OR placeholder */}
       <Paper sx={{ p: 2.5, width: { xs: "100%", lg: 320 }, flexShrink: 0 }}>
-        {draft && draft.w >= MIN_REGION_SIZE && draft.h >= MIN_REGION_SIZE ? (
+        {readOnly && selected ? (
+          <Stack spacing={2}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Region
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setSelectedId(null)}
+                aria-label="Close"
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <StateChip state={selected.state} size="sm" />
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {selected.label || "Untitled"}
+              </Typography>
+            </Stack>
+            {selected.notes ? (
+              <Typography variant="body2" color="text.secondary">
+                {selected.notes}
+              </Typography>
+            ) : null}
+          </Stack>
+        ) : readOnly ? (
+          <Stack spacing={2}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Read-only
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              You have viewer access to this workspace. Click any region to see
+              its label and notes; ask an editor if you need to change
+              something.
+            </Typography>
+          </Stack>
+        ) : draft &&
+          draft.w >= MIN_REGION_SIZE &&
+          draft.h >= MIN_REGION_SIZE ? (
           <Stack spacing={2}>
             <Stack
               direction="row"

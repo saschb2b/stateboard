@@ -1,13 +1,9 @@
 {{- /*
-v0 of StateBoard uses SQLite on a ReadWriteOnce PVC. Running more than one
-replica will silently corrupt the database — the chart refuses to render in
-that case so the user sees the issue at `helm template` time, not at 3am.
-Multi-replica + Postgres is a v1+ concern and will land with a Postgres
-sub-chart and a different storage path.
+v1 deployment: multi-replica safe (Postgres handles concurrency). Uploads
+still live on a PVC — set persistence.accessMode to ReadWriteMany when
+running with replicaCount > 1, or move to S3-compatible storage in v2.
 */ -}}
-{{- if gt (int .Values.replicaCount) 1 -}}
-{{- fail "stateboard chart v0 only supports replicaCount=1 (SQLite on RWO PVC). Set replicaCount: 1 or wait for v1 (Postgres + multi-replica)." -}}
-{{- end -}}
+{{- $dbUrl := include "stateboard.databaseUrl" . -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,9 +15,9 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   strategy:
-    type: {{ .Values.strategy.type }}
+    {{- toYaml .Values.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "stateboard.selectorLabels" . | nindent 6 }}
@@ -73,13 +69,25 @@ spec:
               value: "0.0.0.0"
             - name: STATEBOARD_DATA_DIR
               value: {{ .Values.persistence.mountPath | quote }}
+            {{- if $dbUrl }}
+            - name: DATABASE_URL
+              value: {{ $dbUrl | quote }}
+            {{- else if .Values.externalDatabaseUrlExistingSecret.name }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalDatabaseUrlExistingSecret.name | quote }}
+                  key: {{ .Values.externalDatabaseUrlExistingSecret.key | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-          {{- with .Values.extraEnvFrom }}
           envFrom:
+            - secretRef:
+                name: {{ include "stateboard.authSecretName" . }}
+            {{- with .Values.extraEnvFrom }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- end }}
           {{- if .Values.probes.enabled }}
           livenessProbe:
             httpGet:

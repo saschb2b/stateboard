@@ -10,27 +10,44 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { AppHeader } from "./app-header";
+import { UserMenu } from "./user-menu";
 import type { Board } from "@/lib/types";
+import type { CurrentMember } from "@/lib/auth";
 
-interface BoardListProps {
-  initialBoards: Board[];
+export interface BoardListItem {
+  board: Board;
+  /** Most-recent active share-link token, or null if none. */
+  shareToken: string | null;
 }
 
-export function BoardList({ initialBoards }: BoardListProps) {
+interface BoardListProps {
+  initialItems: BoardListItem[];
+  viewer: CurrentMember;
+}
+
+const canEdit = (role: CurrentMember["role"]) =>
+  role === "owner" || role === "editor";
+
+export function BoardList({ initialItems, viewer }: BoardListProps) {
   const router = useRouter();
-  const [boards, setBoards] = useState<Board[]>(initialBoards);
+  const [items, setItems] = useState<BoardListItem[]>(initialItems);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const editable = canEdit(viewer.role);
 
   const onCreate = async () => {
     setError(null);
@@ -51,7 +68,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
         return;
       }
       const created: Board = await res.json();
-      setBoards((prev) => [created, ...prev]);
+      setItems((prev) => [{ board: created, shareToken: null }, ...prev]);
       setOpen(false);
       setName("");
       setDescription("");
@@ -70,7 +87,26 @@ export function BoardList({ initialBoards }: BoardListProps) {
 
   return (
     <>
-      <AppHeader />
+      <AppHeader
+        actions={
+          <>
+            <Button
+              size="small"
+              variant="text"
+              color="inherit"
+              component={Link}
+              href="/share/demo"
+              target="_blank"
+              rel="noopener"
+              endIcon={<OpenInNewIcon fontSize="inherit" />}
+              sx={{ color: "text.secondary" }}
+            >
+              View example
+            </Button>
+            <UserMenu user={viewer.user} role={viewer.role} />
+          </>
+        }
+      />
       <Container maxWidth="lg" sx={{ py: 6 }}>
         <Stack spacing={4}>
           <Stack
@@ -88,20 +124,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
                 3–8.
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <Button
-                size="small"
-                variant="text"
-                color="inherit"
-                component={Link}
-                href="/share/demo"
-                target="_blank"
-                rel="noopener"
-                endIcon={<OpenInNewIcon fontSize="inherit" />}
-                sx={{ color: "text.secondary" }}
-              >
-                View example
-              </Button>
+            {editable ? (
               <Button
                 variant="contained"
                 color="primary"
@@ -110,11 +133,11 @@ export function BoardList({ initialBoards }: BoardListProps) {
               >
                 New board
               </Button>
-            </Stack>
+            ) : null}
           </Stack>
 
-          {boards.length === 0 ? (
-            <EmptyState />
+          {items.length === 0 ? (
+            <EmptyState canCreate={editable} />
           ) : (
             <Box
               sx={{
@@ -127,8 +150,8 @@ export function BoardList({ initialBoards }: BoardListProps) {
                 },
               }}
             >
-              {boards.map((b) => (
-                <BoardCard key={b.id} board={b} />
+              {items.map((it) => (
+                <BoardCard key={it.board.id} item={it} editable={editable} />
               ))}
             </Box>
           )}
@@ -184,8 +207,6 @@ export function BoardList({ initialBoards }: BoardListProps) {
               helperText="Appears beneath the name on the share link. Useful for context the title can't carry."
             />
 
-            {/* What happens next — anchors the creation moment as the start
-                of a 3-step flow, not the goal. */}
             <Box
               sx={{
                 p: 2,
@@ -264,15 +285,7 @@ export function BoardList({ initialBoards }: BoardListProps) {
   );
 }
 
-/**
- * Empty-state when the user has zero boards.
- *
- * One affordance: open the example. That's the only thing that's true
- * for every user who lands here without a board — they don't yet know
- * what they're committing to. The "New board" button in the page header
- * stays as the path forward; we don't double up on it here.
- */
-function EmptyState() {
+function EmptyState({ canCreate }: { canCreate: boolean }) {
   return (
     <Paper
       sx={{
@@ -281,15 +294,16 @@ function EmptyState() {
       }}
     >
       <Typography variant="h6" sx={{ mb: 1 }}>
-        Not sure where to start?
+        {canCreate ? "Not sure where to start?" : "No boards yet"}
       </Typography>
       <Typography
         variant="body2"
         color="text.secondary"
         sx={{ mb: 3, maxWidth: 460, mx: "auto" }}
       >
-        Open the example board — two screens, twelve regions across all three
-        states. It&apos;s the fastest way to feel what a finished board does.
+        {canCreate
+          ? "Open the example board — two screens, twelve regions across all three states. It's the fastest way to feel what a finished board does."
+          : "An editor in this workspace hasn't created any boards yet. Open the example to see what one looks like."}
       </Typography>
       <Button
         component={Link}
@@ -348,11 +362,42 @@ function StepArrow() {
   );
 }
 
-function BoardCard({ board }: { board: Board }) {
+function BoardCard({
+  item,
+  editable,
+}: {
+  item: BoardListItem;
+  editable: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+  const { board, shareToken } = item;
+
+  const copyShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!shareToken) return;
+    const url = `${window.location.origin}/share/${shareToken}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Editors land on the editor; viewers go straight to the public share
+  // view (read-only) so the editor's edit affordances aren't a tease.
+  const href = editable
+    ? `/boards/${board.id}`
+    : shareToken
+      ? `/share/${shareToken}`
+      : `/boards/${board.id}`;
+
   return (
     <Paper
       component={Link}
-      href={`/boards/${board.id}`}
+      href={href}
       sx={{
         p: 2.5,
         textDecoration: "none",
@@ -365,9 +410,27 @@ function BoardCard({ board }: { board: Board }) {
         },
       }}
     >
-      <Typography variant="h6" sx={{ mb: 0.5 }}>
-        {board.name}
-      </Typography>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="flex-start"
+        justifyContent="space-between"
+      >
+        <Typography variant="h6" sx={{ mb: 0.5, flex: 1 }}>
+          {board.name}
+        </Typography>
+        {shareToken ? (
+          <Tooltip title={copied ? "Copied!" : "Copy share link"}>
+            <IconButton
+              size="small"
+              onClick={copyShare}
+              aria-label="Copy share link"
+            >
+              <ContentCopyIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ) : null}
+      </Stack>
       {board.description ? (
         <Typography
           variant="body2"
@@ -383,13 +446,23 @@ function BoardCard({ board }: { board: Board }) {
           {board.description}
         </Typography>
       ) : null}
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ fontFamily: "monospace" }}
-      >
-        /share/{board.slug}
-      </Typography>
+      {shareToken ? (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontFamily: "monospace" }}
+        >
+          /share/{shareToken.slice(0, 8)}…
+        </Typography>
+      ) : (
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ fontStyle: "italic" }}
+        >
+          No active share link
+        </Typography>
+      )}
     </Paper>
   );
 }

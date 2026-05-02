@@ -1,5 +1,14 @@
 import type { NextRequest } from "next/server";
-import { deleteRegion, updateRegion } from "@/lib/db";
+import { NextResponse } from "next/server";
+import {
+  deleteRegion,
+  getBoard,
+  getRegion,
+  getScreen,
+  updateRegion,
+  writeAudit,
+} from "@/lib/db";
+import { requireApiMember } from "@/lib/auth-helpers";
 import { REGION_STATES, type RegionState } from "@/lib/types";
 import { badRequest, noContent, notFound, ok } from "@/lib/http";
 
@@ -10,8 +19,27 @@ interface Ctx {
 const isFiniteIn01 = (n: unknown): n is number =>
   typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
 
+async function ensureRegionInWorkspace(
+  id: string,
+  workspaceId: string,
+): Promise<boolean> {
+  const region = await getRegion(id);
+  if (!region) return false;
+  const screen = await getScreen(region.screenId);
+  if (!screen) return false;
+  const board = await getBoard(screen.boardId);
+  return !!board && board.workspaceId === workspaceId;
+}
+
 export async function PATCH(req: NextRequest, { params }: Ctx) {
+  const member = await requireApiMember("editor");
+  if (member instanceof NextResponse) return member;
+
   const { id } = await params;
+  if (!(await ensureRegionInWorkspace(id, member.workspaceId))) {
+    return notFound("region not found");
+  }
+
   const body = (await req.json().catch(() => null)) as Record<
     string,
     unknown
@@ -50,13 +78,40 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     }
   }
 
-  const updated = updateRegion(id, patch);
+  const updated = await updateRegion(id, patch, member.user.id);
   if (!updated) return notFound("region not found");
+
+  await writeAudit({
+    workspaceId: member.workspaceId,
+    actorId: member.user.id,
+    action: "region.update",
+    targetType: "region",
+    targetId: id,
+    meta: patch,
+  });
+
   return ok(updated);
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
+  const member = await requireApiMember("editor");
+  if (member instanceof NextResponse) return member;
+
   const { id } = await params;
-  if (!deleteRegion(id)) return notFound("region not found");
+  if (!(await ensureRegionInWorkspace(id, member.workspaceId))) {
+    return notFound("region not found");
+  }
+  if (!(await deleteRegion(id, member.user.id))) {
+    return notFound("region not found");
+  }
+
+  await writeAudit({
+    workspaceId: member.workspaceId,
+    actorId: member.user.id,
+    action: "region.delete",
+    targetType: "region",
+    targetId: id,
+  });
+
   return noContent();
 }

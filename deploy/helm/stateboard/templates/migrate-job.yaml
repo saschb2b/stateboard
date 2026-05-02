@@ -1,0 +1,64 @@
+{{- /*
+Pre-install / pre-upgrade hook that runs `pnpm migrate` against the
+configured Postgres before any pods come up. Idempotent: schema_migrations
+tracks applied filenames, so re-running on every chart upgrade is a no-op
+if there's nothing new to apply.
+
+We use the same image as the app (it ships node + scripts/migrate.mjs)
+and reuse the auth Secret only for the DATABASE_URL surface — the
+migrate job does NOT need the BETTER_AUTH_* vars.
+*/ -}}
+{{- if .Values.migrate.enabled -}}
+{{- $dbUrl := include "stateboard.databaseUrl" . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "stateboard.fullname" . }}-migrate
+  labels:
+    {{- include "stateboard.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        {{- include "stateboard.selectorLabels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ include "stateboard.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: migrate
+          image: {{ include "stateboard.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command: ["node", "scripts/migrate.mjs"]
+          env:
+            {{- if $dbUrl }}
+            - name: DATABASE_URL
+              value: {{ $dbUrl | quote }}
+            {{- else if .Values.externalDatabaseUrlExistingSecret.name }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalDatabaseUrlExistingSecret.name | quote }}
+                  key: {{ .Values.externalDatabaseUrlExistingSecret.key | quote }}
+            {{- end }}
+          {{- with .Values.migrate.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

@@ -1,13 +1,20 @@
 import type { NextRequest } from "next/server";
-import { createBoard, listBoards } from "@/lib/db";
-import { newId, newSlug } from "@/lib/ids";
+import { NextResponse } from "next/server";
+import { createBoard, createShareLink, listBoards, writeAudit } from "@/lib/db";
+import { requireApiMember } from "@/lib/auth-helpers";
+import { newId, newShareToken } from "@/lib/ids";
 import { badRequest, created, ok } from "@/lib/http";
 
 export async function GET() {
-  return ok(listBoards());
+  const member = await requireApiMember("viewer");
+  if (member instanceof NextResponse) return member;
+  return ok(await listBoards(member.workspaceId));
 }
 
 export async function POST(req: NextRequest) {
+  const member = await requireApiMember("editor");
+  if (member instanceof NextResponse) return member;
+
   const body = (await req.json().catch(() => null)) as {
     name?: unknown;
     description?: unknown;
@@ -22,11 +29,31 @@ export async function POST(req: NextRequest) {
       ? body.description.trim()
       : null;
 
-  const board = createBoard({
+  const board = await createBoard({
     id: newId(),
-    slug: newSlug(),
+    workspaceId: member.workspaceId,
     name,
     description,
+    createdBy: member.user.id,
   });
+
+  // Auto-mint one share link on creation so the editor's "Share" button
+  // works immediately. Additional links can be minted via /api/boards/:id/share-links.
+  await createShareLink({
+    token: newShareToken(),
+    boardId: board.id,
+    label: null,
+    createdBy: member.user.id,
+  });
+
+  await writeAudit({
+    workspaceId: member.workspaceId,
+    actorId: member.user.id,
+    action: "board.create",
+    targetType: "board",
+    targetId: board.id,
+    meta: { name },
+  });
+
   return created(board);
 }

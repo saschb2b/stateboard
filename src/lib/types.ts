@@ -8,13 +8,18 @@
 export const REGION_STATES = ["shipped", "mock", "missing"] as const;
 export type RegionState = (typeof REGION_STATES)[number];
 
+export const WORKSPACE_ROLES = ["owner", "editor", "viewer"] as const;
+export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
+
 export interface Board {
   id: string;
-  slug: string;
+  workspaceId: string;
   name: string;
   description: string | null;
+  createdBy: string | null;
   createdAt: number;
   updatedAt: number;
+  updatedBy: string | null;
 }
 
 export interface Screen {
@@ -49,6 +54,7 @@ export interface Region {
   notes: string | null;
   createdAt: number;
   updatedAt: number;
+  updatedBy: string | null;
 }
 
 export interface BoardWithScreens extends Board {
@@ -57,4 +63,23 @@ export interface BoardWithScreens extends Board {
 
 export interface ScreenWithRegions extends Screen {
   regions: Region[];
+}
+
+export interface ShareLink {
+  token: string;
+  boardId: string;
+  label: string | null;
+  createdBy: string | null;
+  createdAt: number;
+  revokedAt: number | null;
+}
+
+export interface WorkspaceMember {
+  userId: string;
+  role: WorkspaceRole;
+  createdAt: number;
+  /** Joined from the auth `user` table for convenience in the UI. */
+  name: string | null;
+  email: string | null;
+  image: string | null;
 }

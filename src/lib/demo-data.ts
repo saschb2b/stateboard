@@ -171,17 +171,19 @@ const SCREEN_DEFS: DemoScreenDef[] = [
   },
 ];
 
-/** Stable slug used by `/share/demo`. */
-export const DEMO_SLUG = "demo";
+/** Stable token used by `/share/demo` — also the literal route segment. */
+export const DEMO_TOKEN = "demo";
 
 const DEMO_BOARD: Board = {
   id: "demo",
-  slug: DEMO_SLUG,
+  workspaceId: "demo",
   name: "Acme Dashboard / Q2 — example",
   description:
     "A worked example of how a product team uses StateBoard. Two screens, three states, real notes — explore the regions to get a feel for it.",
+  createdBy: null,
   createdAt: 0,
   updatedAt: 0,
+  updatedBy: null,
 };
 
 // Prepended to absolute asset paths so the static-export deploy under
@@ -216,6 +218,7 @@ export function getDemoBoard(): { board: Board; screens: ScreenWithRegions[] } {
       notes: r.notes,
       createdAt: 0,
       updatedAt: 0,
+      updatedBy: null,
     }));
     return { ...screen, regions };
   });

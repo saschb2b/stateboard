@@ -82,3 +82,36 @@ Resolved container image reference.
 {{- $tag := default .Chart.AppVersion .Values.image.tag -}}
 {{- printf "%s:%s" .Values.image.repository $tag -}}
 {{- end -}}
+
+{{/*
+Name of the Secret holding auth env vars (BETTER_AUTH_SECRET +
+KEYCLOAK_*). Either user-provided (auth.existingSecret) or generated
+in templates/auth-secret.yaml under this name.
+*/}}
+{{- define "stateboard.authSecretName" -}}
+{{- if .Values.auth.existingSecret -}}
+{{- .Values.auth.existingSecret -}}
+{{- else -}}
+{{- printf "%s-auth" (include "stateboard.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+DATABASE_URL resolution.
+- if postgresql.enabled, build from sub-chart values
+- else if externalDatabaseUrlExistingSecret.name, mount via envFrom
+- else use externalDatabaseUrl literal
+
+Returns "" when env should be sourced from a Secret instead.
+*/}}
+{{- define "stateboard.databaseUrl" -}}
+{{- if .Values.postgresql.enabled -}}
+{{- $u := .Values.postgresql.auth.username -}}
+{{- $p := .Values.postgresql.auth.password -}}
+{{- $db := .Values.postgresql.auth.database -}}
+{{- $host := printf "%s-postgresql" .Release.Name -}}
+{{- printf "postgres://%s:%s@%s:5432/%s" $u $p $host $db -}}
+{{- else if not .Values.externalDatabaseUrlExistingSecret.name -}}
+{{- .Values.externalDatabaseUrl -}}
+{{- end -}}
+{{- end -}}

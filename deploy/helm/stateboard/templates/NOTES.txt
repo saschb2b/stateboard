@@ -1,11 +1,16 @@
 StateBoard {{ .Chart.AppVersion }} is installing.
 
 Image:    {{ include "stateboard.image" . }}
-Replicas: 1 (v0 is single-replica; SQLite on a RWO PVC)
-Data:     {{ if .Values.persistence.enabled -}}
+Replicas: {{ .Values.replicaCount }}
+Database: {{ if .Values.postgresql.enabled -}}
+bundled Postgres ({{ .Release.Name }}-postgresql)
+{{- else -}}
+external (DATABASE_URL{{ if .Values.externalDatabaseUrlExistingSecret.name }} from Secret {{ .Values.externalDatabaseUrlExistingSecret.name }}/{{ .Values.externalDatabaseUrlExistingSecret.key }}{{ end }})
+{{- end }}
+Uploads:  {{ if .Values.persistence.enabled -}}
 PVC {{ include "stateboard.pvcName" . }} ({{ .Values.persistence.size }}) at {{ .Values.persistence.mountPath }}
 {{- else -}}
-emptyDir — boards will vanish on pod restart!
+emptyDir — uploaded screenshots will vanish on pod restart!
 {{- end }}
 
 How to reach it:
@@ -28,10 +33,18 @@ How to reach it:
   open http://localhost:3000
 {{- end }}
 
-Reminders:
-  • This is v0. Do not raise replicaCount — SQLite + RWO PVC means more than
-    one pod will silently corrupt the database. The chart will reject it.
-  • Telemetry is off, the app makes no outbound calls. Airgap-friendly.
-  • Back up the PVC ({{ include "stateboard.pvcName" . }}) — that's where every board, screen, and region lives.
+Auth setup checklist:
+  1. In Keycloak, create a confidential client with the redirect URI
+     {{ .Values.auth.baseUrl }}/api/auth/callback/keycloak
+  2. Copy the client secret into auth.keycloak.clientSecret (or your
+     existingSecret as KEYCLOAK_CLIENT_SECRET).
+  3. Set auth.secret to a 32-byte random string: openssl rand -base64 32
+  4. The first user to sign in becomes the workspace owner. Subsequent
+     users land as {{ .Values.auth.defaultRole }} (configurable via auth.defaultRole).
 
-See deploy/helm/stateboard/README.md in the source repo for upgrade / values reference.
+Reminders:
+  • Telemetry is off, the app makes no outbound calls except to Keycloak. Airgap-friendly.
+  • Back up the Postgres database AND the uploads PVC ({{ include "stateboard.pvcName" . }}).
+  • If running replicaCount > 1, set persistence.accessMode: ReadWriteMany.
+
+See deploy/helm/stateboard/README.md in the source repo for the full values reference.

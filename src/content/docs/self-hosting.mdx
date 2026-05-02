@@ -1,93 +1,129 @@
 ---
 title: Self-hosting
-description: Docker, Helm, and airgap-friendly deployment patterns.
+description: Docker Compose, Helm, Keycloak setup, airgap-friendly deployment.
 ---
 
-StateBoard is designed from day one for teams who can't send screenshots of their product to a third-party server. One container, MIT license, zero outbound calls at runtime.
+StateBoard v1 is designed to deploy inside a company's own perimeter. One container + Postgres + your existing IdP. No outbound calls except to your IdP at runtime.
 
-## Docker
+## Local dev (Docker Compose)
+
+The repo ships a `docker-compose.yaml` with Postgres + a pre-seeded Keycloak realm. Two test users (`alice@stateboard.dev`, `bob@stateboard.dev`) with passwords matching their usernames.
+
+```bash
+cp .env.example .env
+docker compose up -d
+pnpm install
+pnpm migrate
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), click **Continue with Keycloak**, sign in as `alice`. The first sign-in becomes the workspace owner.
+
+## Production: Docker
+
+The shipped image only contains the Node app — bring your own Postgres and IdP.
 
 ```bash
 docker run --rm \
   -p 3000:3000 \
-  -v stateboard-data:/data \
-  ghcr.io/saschb2b/stateboard:0.1.0
+  -v stateboard-uploads:/data \
+  -e DATABASE_URL=postgres://user:pass@db:5432/stateboard \
+  -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+  -e STATEBOARD_BASE_URL=https://stateboard.example.com \
+  -e KEYCLOAK_ISSUER=https://keycloak.example.com/realms/acme \
+  -e KEYCLOAK_CLIENT_ID=stateboard \
+  -e KEYCLOAK_CLIENT_SECRET=... \
+  ghcr.io/saschb2b/stateboard:1.0.0
 ```
 
-| Volume / port | Purpose                                                   |
-| ------------- | --------------------------------------------------------- |
-| `/data`       | SQLite database + uploaded screenshots. **Back this up.** |
-| `:3000`       | HTTP. The container only ever listens on this port.       |
+Schema is managed by `pnpm migrate` (or `node scripts/migrate.mjs`) — run it once after bringing up Postgres, and on every upgrade.
 
-The image runs as the `node` user (UID 1000). It needs write access on `/data` and nothing else.
-
-### Configuration
-
-| Env var                   | Default   | Purpose                                                |
-| ------------------------- | --------- | ------------------------------------------------------ |
-| `STATEBOARD_DATA_DIR`     | `/data`   | Root for `db/` and `uploads/`.                         |
-| `PORT`                    | `3000`    | HTTP port the Next.js process binds to.                |
-| `HOSTNAME`                | `0.0.0.0` | Listen on all interfaces (don't change in containers). |
-| `NEXT_TELEMETRY_DISABLED` | `1`       | Already off — leave it that way.                       |
-
-## Kubernetes (Helm)
-
-A chart ships in `deploy/helm/stateboard/`. Single-replica, SQLite on a `ReadWriteOnce` PVC.
+## Production: Helm
 
 ```bash
+helm dependency build deploy/helm/stateboard
 helm install stateboard ./deploy/helm/stateboard \
   --namespace stateboard --create-namespace \
-  --set image.tag=0.1.0
+  --set auth.baseUrl=https://stateboard.example.com \
+  --set auth.secret="$(openssl rand -base64 32)" \
+  --set auth.keycloak.issuer=https://keycloak.example.com/realms/acme \
+  --set auth.keycloak.clientSecret=$KC_SECRET \
+  --set postgresql.auth.password="$(openssl rand -base64 16)"
 ```
 
+The chart bundles a Bitnami Postgres sub-chart by default. A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up.
+
+To use an external Postgres:
+
+```bash
+--set postgresql.enabled=false \
+--set externalDatabaseUrl=postgres://user:pass@db.example.com:5432/stateboard
+```
+
+Or read the URL from a Secret via `externalDatabaseUrlExistingSecret.{name,key}`.
+
 <Callout type="warn">
-  The chart will refuse to render if `replicaCount > 1`. v0 uses SQLite on
-  a single PVC — running two pods sharing that PVC silently corrupts the
-  DB. Multi-replica + Postgres is a v1+ concern.
+  Multi-replica deployments need `persistence.accessMode: ReadWriteMany` for the
+  uploads volume — Postgres handles concurrent connections fine on its own, but
+  two pods writing screenshots to the same RWO PVC will not.
 </Callout>
 
-The full values reference lives in [`deploy/helm/stateboard/README.md`](https://github.com/saschb2b/stateboard/blob/main/deploy/helm/stateboard/README.md).
+## Keycloak setup
 
-### Production checklist
+1. In your realm, create a confidential client with id `stateboard` (or anything you set in `KEYCLOAK_CLIENT_ID`).
+2. Set the **Valid redirect URI** to `https://stateboard.example.com/api/auth/callback/keycloak`.
+3. Set **Web origins** to `https://stateboard.example.com`.
+4. Copy the client secret into `KEYCLOAK_CLIENT_SECRET`.
+5. Set `KEYCLOAK_ISSUER` to the realm URL: `https://keycloak.example.com/realms/<realm>`.
 
-- **Use a Recreate strategy.** RollingUpdate briefly attaches two pods to the same RWO PVC, which corrupts SQLite. The chart sets `Recreate` by default — leave it.
-- **Pin the image tag.** Don't run `latest` in production; the chart defaults `image.tag` to `Chart.AppVersion`.
-- **Back up the PVC.** A nightly Velero / CSI snapshot of the volume is enough — every board, screen, and region lives there.
-- **Put auth in front of the Ingress.** v0 has no built-in auth. If you expose the service publicly, run an `oauth2-proxy` sidecar via `extraContainers`, or sit it behind a corporate VPN.
+That's it — StateBoard discovers all OIDC endpoints from the issuer's `.well-known/openid-configuration`.
 
-## Airgap deployments
+### Email-domain allowlist
 
-StateBoard makes **zero outbound network calls** at runtime:
+By default, anyone Keycloak considers signed-in can join the workspace (subject to whatever the realm enforces). To narrow further:
 
-- No telemetry, no analytics, no error reporting.
-- No license server, no phone-home.
-- No remote font loading at runtime — fonts are bundled at build time via `next/font`.
-- The docs search index is built locally with Orama — no Algolia.
+```
+STATEBOARD_ALLOWED_EMAIL_DOMAINS=acme.com,acme.de
+```
 
-The only outbound traffic is what you initiate at build/install time (pulling the image, fetching dependencies). Once running, the container only talks to the browsers you point at it.
+Sign-ins from other domains see a "your email domain isn't allowed" error during the OIDC return.
 
-## Storage planning
+### First user becomes owner
 
-A typical screenshot is 0.5–2 MB. The default 5 GiB PVC holds thousands. For a team running quarterly reviews on 10 products with ~10 screens each, you'll use under 1 GiB in a year.
+The first user to complete sign-in becomes the workspace `owner`. Subsequent users land as `editor` by default — change this with `STATEBOARD_DEFAULT_ROLE=viewer` if you want new sign-ins to be read-only until promoted.
 
-The SQLite database itself stays small — a few KB per board, a few hundred bytes per region.
+The owner can change roles or remove members at `/settings/members`.
+
+## Airgap considerations
+
+The runtime makes **only one** outbound call: to your configured Keycloak issuer (and only during sign-in). No telemetry, no analytics, no license server, no phone-home, no remote font loading. The docs search index is built locally with Orama.
+
+If your IdP is inside the same network as StateBoard (which it almost certainly is), the deployment is airgap-clean.
+
+## Backups
+
+Two things to back up:
+
+1. **Postgres** — every board, screen, region, member, and audit row.
+2. **Uploads PVC** (`/data`) — the screenshot files themselves. Filenames are recorded in the DB, so the two backups must restore in lockstep.
+
+A typical screenshot is 0.5–2 MB. A team running quarterly reviews on 10 products with ~10 screens each will use well under 1 GiB per year.
 
 ## Upgrading
 
-For a single-replica install:
+Helm:
 
 ```bash
+helm dependency build deploy/helm/stateboard
 helm upgrade stateboard ./deploy/helm/stateboard \
-  --namespace stateboard \
+  --namespace stateboard --reuse-values \
   --set image.tag=NEW_VERSION
 ```
 
-The PVC carries forward; schema changes are handled by the app itself via `CREATE TABLE IF NOT EXISTS` (v0). When v1 ships, expect a deliberate migration step before upgrade — we'll document it here.
+The migrate Job runs automatically before the new pods come up. If you disabled it (`migrate.enabled=false`), run `pnpm migrate` against the database manually first.
 
 ## What we'll add later
 
-- v1: OIDC auth, headless capture from URL, Jira issue linking.
-- v2: scheduled re-capture, time-travel / diff view, Slack notifications.
-- v3: auto region-detection from the DOM, journey views, portfolio rollup.
-
-Until then: stay on the wedge, keep your data on the volume, and don't run more than one replica.
+- v1.x: headless capture from URL, Jira issue linking.
+- v2: scheduled re-capture, time-travel / diff view, Slack notifications, Notion / Confluence embed.
+- v3: auto region-detection from the DOM, journey views, portfolio rollup, audit-log UI.

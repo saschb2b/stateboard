@@ -20,25 +20,45 @@ import { BoardPresenter } from "./board-presenter";
 import { ScreenAnnotator } from "./screen-annotator";
 import { ScreenUploader } from "./screen-uploader";
 import { StateChip } from "./state-chip";
-import type { Board, ScreenWithRegions } from "@/lib/types";
+import { UserMenu } from "./user-menu";
+import type { Board, ScreenWithRegions, ShareLink } from "@/lib/types";
 import { REGION_STATES } from "@/lib/types";
+import type { CurrentMember } from "@/lib/auth";
 
 interface BoardEditorProps {
   board: Board;
   initialScreens: ScreenWithRegions[];
+  initialShareLinks: ShareLink[];
+  viewer: CurrentMember;
 }
 
-export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
+const canEdit = (role: CurrentMember["role"]) =>
+  role === "owner" || role === "editor";
+
+export function BoardEditor({
+  board,
+  initialScreens,
+  initialShareLinks,
+  viewer,
+}: BoardEditorProps) {
   const [screens, setScreens] = useState<ScreenWithRegions[]>(initialScreens);
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>(initialShareLinks);
   const [activeId, setActiveId] = useState<string | null>(
     initialScreens[0]?.id ?? null,
   );
   const [copied, setCopied] = useState(false);
   const [presenting, setPresenting] = useState(false);
 
+  const editable = canEdit(viewer.role);
+
   const active = useMemo(
     () => screens.find((s) => s.id === activeId) ?? null,
     [screens, activeId],
+  );
+
+  const activeShareLink = useMemo(
+    () => shareLinks.find((l) => l.revokedAt === null) ?? null,
+    [shareLinks],
   );
 
   const handleUploaded = (screen: ScreenWithRegions) => {
@@ -72,14 +92,25 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
     handleScreenDeleted(active.id);
   };
 
-  const shareUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/share/${board.slug}`
-      : `/share/${board.slug}`;
+  const ensureShareLink = async (): Promise<ShareLink | null> => {
+    if (activeShareLink) return activeShareLink;
+    const res = await fetch(`/api/boards/${board.id}/share-links`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) return null;
+    const link: ShareLink = await res.json();
+    setShareLinks((prev) => [link, ...prev]);
+    return link;
+  };
 
   const copyShare = async () => {
+    const link = await ensureShareLink();
+    if (!link) return;
+    const url = `${window.location.origin}/share/${link.token}`;
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -151,24 +182,46 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
                 {copied ? "Copied" : "Share"}
               </Button>
             </Tooltip>
-            <Tooltip title="Open share view">
-              <IconButton
-                size="small"
-                component="a"
-                href={`/share/${board.slug}`}
-                target="_blank"
-                rel="noopener"
-              >
-                <OpenInNewIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            {activeShareLink ? (
+              <Tooltip title="Open share view">
+                <IconButton
+                  size="small"
+                  component="a"
+                  href={`/share/${activeShareLink.token}`}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            <UserMenu user={viewer.user} role={viewer.role} />
           </>
         }
       />
       <Container maxWidth="xl" sx={{ py: 2 }}>
         {screens.length === 0 ? (
           <Stack spacing={1.5} sx={{ mt: 4 }}>
-            <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
+            {editable ? (
+              <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
+            ) : (
+              <Box
+                sx={{
+                  p: 6,
+                  border: 1,
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  textAlign: "center",
+                }}
+              >
+                <Typography variant="h6" sx={{ mb: 0.5 }}>
+                  No screens yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  An editor hasn&apos;t uploaded any screenshots to this board.
+                </Typography>
+              </Box>
+            )}
             <Typography
               variant="caption"
               color="text.secondary"
@@ -192,9 +245,6 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
           </Stack>
         ) : (
           <Stack spacing={1.5}>
-            {/* Single editor chrome row: tabs (when 2+) · screen label ·
-                state totals (when regions) · add screen · delete screen.
-                Everything that would otherwise stack above the canvas. */}
             <Stack
               direction="row"
               spacing={1.5}
@@ -227,7 +277,7 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
                 </Tabs>
               ) : null}
 
-              {active ? (
+              {active && editable ? (
                 <ScreenLabelInput
                   key={active.id}
                   screen={active}
@@ -260,12 +310,14 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
                   ))
                 : null}
 
-              <ScreenUploader
-                boardId={board.id}
-                onUploaded={handleUploaded}
-                compact
-              />
-              {active ? (
+              {editable ? (
+                <ScreenUploader
+                  boardId={board.id}
+                  onUploaded={handleUploaded}
+                  compact
+                />
+              ) : null}
+              {active && editable ? (
                 <Tooltip title="Delete this screen and its regions">
                   <IconButton
                     size="small"
@@ -284,6 +336,7 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
                 key={active.id}
                 screen={active}
                 onScreenUpdated={handleScreenUpdated}
+                readOnly={!editable}
               />
             ) : null}
           </Stack>
@@ -304,13 +357,6 @@ export function BoardEditor({ board, initialScreens }: BoardEditorProps) {
   );
 }
 
-/**
- * Small inline-edit field for the active screen's label.
- *
- * Owns its own draft state so we can swap the field on screen change via
- * the parent's `key={active.id}` without an effect — the new mount picks
- * up the new screen's label in `useState`'s lazy initializer.
- */
 function ScreenLabelInput({
   screen,
   onUpdated,

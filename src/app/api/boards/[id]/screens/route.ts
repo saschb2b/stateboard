@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { createScreen, getBoard } from "@/lib/db";
+import { createScreen, getBoard, writeAudit } from "@/lib/db";
+import { requireApiMember } from "@/lib/auth-helpers";
 import { newId } from "@/lib/ids";
 import { ensureDataDirs, UPLOADS_DIR } from "@/lib/paths";
 import { readImageDims } from "@/lib/image";
@@ -20,8 +22,14 @@ interface Ctx {
 }
 
 export async function POST(req: NextRequest, { params }: Ctx) {
+  const member = await requireApiMember("editor");
+  if (member instanceof NextResponse) return member;
+
   const { id: boardId } = await params;
-  if (!getBoard(boardId)) return notFound("board not found");
+  const board = await getBoard(boardId);
+  if (!board || board.workspaceId !== member.workspaceId) {
+    return notFound("board not found");
+  }
 
   const form = await req.formData().catch(() => null);
   if (!form) return badRequest("expected multipart/form-data");
@@ -62,14 +70,26 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const label =
     typeof labelRaw === "string" && labelRaw.trim() ? labelRaw.trim() : null;
 
-  const screen = createScreen({
-    id: screenId,
-    boardId,
-    filename,
-    mimeType: dims.mimeType,
-    width: dims.width,
-    height: dims.height,
-    label,
+  const screen = await createScreen(
+    {
+      id: screenId,
+      boardId,
+      filename,
+      mimeType: dims.mimeType,
+      width: dims.width,
+      height: dims.height,
+      label,
+    },
+    member.user.id,
+  );
+
+  await writeAudit({
+    workspaceId: member.workspaceId,
+    actorId: member.user.id,
+    action: "screen.create",
+    targetType: "screen",
+    targetId: screen.id,
+    meta: { boardId, filename },
   });
 
   return created(screen);
