@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import Box from "@mui/material/Box";
+import InputBase from "@mui/material/InputBase";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 
@@ -10,6 +14,11 @@ interface AppHeaderProps {
   actions?: React.ReactNode;
   /** Optional crumb shown after the wordmark, e.g. board name in editor. */
   crumb?: string;
+  /**
+   * When provided, the crumb becomes inline-editable: click to edit,
+   * blur or Enter to save, Escape to cancel. Empty values are rejected.
+   */
+  onCrumbChange?: (next: string) => void;
 }
 
 /**
@@ -18,7 +27,7 @@ interface AppHeaderProps {
  * The orange square + wordmark mirrors the pitch deck identity: the small
  * filled square next to "STATEBOARD" is the brand mark, not decoration.
  */
-export function AppHeader({ actions, crumb }: AppHeaderProps) {
+export function AppHeader({ actions, crumb, onCrumbChange }: AppHeaderProps) {
   return (
     <AppBar position="sticky">
       <Toolbar
@@ -56,13 +65,17 @@ export function AppHeader({ actions, crumb }: AppHeaderProps) {
             >
               /
             </Typography>
-            <Typography
-              variant="subtitle1"
-              noWrap
-              sx={{ color: "text.secondary", fontWeight: 500, flex: 1 }}
-            >
-              {crumb}
-            </Typography>
+            {onCrumbChange ? (
+              <EditableCrumb value={crumb} onCommit={onCrumbChange} />
+            ) : (
+              <Typography
+                variant="subtitle1"
+                noWrap
+                sx={{ color: "text.secondary", fontWeight: 500, flex: 1 }}
+              >
+                {crumb}
+              </Typography>
+            )}
           </>
         ) : (
           <Box sx={{ flex: 1 }} />
@@ -74,5 +87,84 @@ export function AppHeader({ actions, crumb }: AppHeaderProps) {
         ) : null}
       </Toolbar>
     </AppBar>
+  );
+}
+
+function EditableCrumb({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  const startEditing = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    setEditing(false);
+    if (!trimmed || trimmed === value) return;
+    onCommit(trimmed);
+  };
+
+  if (editing) {
+    return (
+      <InputBase
+        inputRef={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            (e.target as HTMLInputElement).blur();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setDraft(value);
+            setEditing(false);
+          }
+        }}
+        autoFocus
+        sx={{
+          flex: 1,
+          color: "text.primary",
+          fontWeight: 500,
+          fontSize: "1rem",
+          "& input": { p: 0.25, px: 0.5, borderRadius: 0.5 },
+          "& input:focus": { bgcolor: "action.hover", outline: "none" },
+        }}
+      />
+    );
+  }
+
+  return (
+    <Typography
+      variant="subtitle1"
+      noWrap
+      onClick={startEditing}
+      title="Click to rename"
+      sx={{
+        color: "text.secondary",
+        fontWeight: 500,
+        flex: 1,
+        cursor: "text",
+        px: 0.5,
+        borderRadius: 0.5,
+        "&:hover": { color: "text.primary", bgcolor: "action.hover" },
+        transition: "color 120ms ease, background-color 120ms ease",
+      }}
+    >
+      {value}
+    </Typography>
   );
 }

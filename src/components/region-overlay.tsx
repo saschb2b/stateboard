@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { STATE_META } from "@/lib/state-meta";
-import type { Region } from "@/lib/types";
+import type { Region, RegionState } from "@/lib/types";
 import { StateChip } from "./state-chip";
 
 interface RegionOverlayProps {
@@ -16,6 +16,12 @@ interface RegionOverlayProps {
   interactive?: boolean;
   selectedId?: string | null;
   onSelect?: (id: string) => void;
+  /**
+   * When set, regions whose state does not match are rendered dimmed,
+   * so a viewer can isolate one state at a time. Used by the editor's
+   * clickable state-counter pills.
+   */
+  filterState?: RegionState | null;
 }
 
 /**
@@ -23,12 +29,18 @@ interface RegionOverlayProps {
  * positioned overlay. Coordinates are read straight from each region in
  * normalized [0..1] space, so the overlay scales with whatever container
  * sits behind it (the screenshot).
+ *
+ * Each region's state chip + label are combined into one tab anchored to
+ * the rectangle's top-left edge, half-protruding above the box. This keeps
+ * the label visually attached to its region — a chip floating in dead
+ * space between two adjacent regions reads as orphaned.
  */
 export function RegionOverlay({
   regions,
   interactive = false,
   selectedId,
   onSelect,
+  filterState = null,
 }: RegionOverlayProps) {
   return (
     <Box
@@ -43,6 +55,7 @@ export function RegionOverlay({
       {regions.map((r) => {
         const meta = STATE_META[r.state];
         const isSelected = selectedId === r.id;
+        const dimmed = filterState !== null && r.state !== filterState;
         return (
           <Tooltip
             key={r.id}
@@ -88,40 +101,49 @@ export function RegionOverlay({
                 pointerEvents: interactive ? "auto" : "none",
                 outline: isSelected ? `2px solid ${meta.color}` : "none",
                 outlineOffset: isSelected ? 2 : 0,
-                transition: "outline-offset 120ms ease",
+                opacity: dimmed ? 0.18 : 1,
+                transition: "outline-offset 120ms ease, opacity 160ms ease",
               }}
             >
+              {/* Combined state chip + label, anchored to top-left edge.
+                  Sits half-above the box so it reads as glued-on rather
+                  than as a chip floating in space. */}
               <Box
                 sx={{
                   position: "absolute",
-                  top: -2,
-                  right: -2,
-                  transform: "translateY(-100%)",
+                  top: 0,
+                  left: 0,
+                  transform: "translateY(-50%)",
+                  display: "inline-flex",
+                  alignItems: "stretch",
+                  maxWidth: "calc(100% + 4px)",
+                  borderRadius: 1,
+                  overflow: "hidden",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.45)",
                 }}
               >
                 <StateChip state={r.state} size="sm" />
+                {r.label ? (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      px: 0.75,
+                      bgcolor: "rgba(0,0,0,0.85)",
+                      color: "#fff",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      maxWidth: 200,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {r.label}
+                  </Box>
+                ) : null}
               </Box>
-              {r.label ? (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    bgcolor: "rgba(0,0,0,0.65)",
-                    color: "#fff",
-                    px: 0.75,
-                    py: 0.25,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {r.label}
-                </Box>
-              ) : null}
             </Box>
           </Tooltip>
         );

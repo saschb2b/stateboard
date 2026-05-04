@@ -32,6 +32,8 @@ interface ScreenAnnotatorProps {
    * read-only.
    */
   readOnly?: boolean;
+  /** When set, dim regions whose state does not match (filter pills). */
+  filterState?: RegionState | null;
 }
 
 interface DraftRect {
@@ -48,6 +50,7 @@ export function ScreenAnnotator({
   screen,
   onScreenUpdated,
   readOnly = false,
+  filterState = null,
 }: ScreenAnnotatorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
@@ -125,18 +128,6 @@ export function ScreenAnnotator({
     }
   }, [drawing, draft]);
 
-  // cancel an in-flight draft on Escape
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setDraft(null);
-        setSelectedId(null);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   // --- API actions -------------------------------------------------------
 
   const persistDraft = async () => {
@@ -161,32 +152,33 @@ export function ScreenAnnotator({
     setSelectedId(created.id);
   };
 
-  const updateSelected = async (
-    patch: Partial<Pick<Region, "state" | "label" | "notes">>,
-  ) => {
-    if (!selected) return;
-    // optimistic
-    const optimistic = regions.map((r) =>
-      r.id === selected.id ? { ...r, ...patch } : r,
-    );
-    setRegions(optimistic);
-    const res = await fetch(`/api/regions/${selected.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    if (!res.ok) {
-      // revert on failure
-      setRegions(regions);
-      return;
-    }
-    const updated: Region = await res.json();
-    const next = regions.map((r) => (r.id === updated.id ? updated : r));
-    setRegions(next);
-    onScreenUpdated({ ...screen, regions: next });
-  };
+  const updateSelected = useCallback(
+    async (patch: Partial<Pick<Region, "state" | "label" | "notes">>) => {
+      if (!selected) return;
+      // optimistic
+      const optimistic = regions.map((r) =>
+        r.id === selected.id ? { ...r, ...patch } : r,
+      );
+      setRegions(optimistic);
+      const res = await fetch(`/api/regions/${selected.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        // revert on failure
+        setRegions(regions);
+        return;
+      }
+      const updated: Region = await res.json();
+      const next = regions.map((r) => (r.id === updated.id ? updated : r));
+      setRegions(next);
+      onScreenUpdated({ ...screen, regions: next });
+    },
+    [selected, regions, screen, onScreenUpdated],
+  );
 
-  const deleteSelected = async () => {
+  const deleteSelected = useCallback(async () => {
     if (!selected) return;
     const res = await fetch(`/api/regions/${selected.id}`, {
       method: "DELETE",
@@ -196,9 +188,54 @@ export function ScreenAnnotator({
     setRegions(next);
     setSelectedId(null);
     onScreenUpdated({ ...screen, regions: next });
-  };
+  }, [selected, regions, screen, onScreenUpdated]);
+
+  // --- keyboard ----------------------------------------------------------
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // skip while typing in form fields
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === "Escape") {
+        setDraft(null);
+        setSelectedId(null);
+        return;
+      }
+
+      // shortcuts that act on the currently-selected region. Disabled in
+      // read-only mode — viewer-role members must not mutate anything.
+      if (readOnly || !selectedId) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === "1") {
+        e.preventDefault();
+        void updateSelected({ state: "shipped" });
+      } else if (e.key === "2") {
+        e.preventDefault();
+        void updateSelected({ state: "mock" });
+      } else if (e.key === "3") {
+        e.preventDefault();
+        void updateSelected({ state: "missing" });
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        void deleteSelected();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, readOnly, updateSelected, deleteSelected]);
 
   const aspect = `${screen.width} / ${screen.height}`;
+  const hintVisible = !readOnly && Boolean(selectedId);
 
   return (
     <Stack direction={{ xs: "column", lg: "row" }} spacing={3}>
@@ -248,6 +285,7 @@ export function ScreenAnnotator({
               setDraft(null);
               setSelectedId(id);
             }}
+            filterState={filterState}
           />
 
           {/* live draft rectangle */}
@@ -266,9 +304,26 @@ export function ScreenAnnotator({
             />
           ) : null}
         </Box>
+
+        {/* keyboard shortcut hint, only useful while a region is selected
+            in editable mode (viewers can't act on these keys) */}
+        <Typography
+          variant="caption"
+          sx={{
+            display: "block",
+            mt: 0.75,
+            color: "text.secondary",
+            fontFamily: "monospace",
+            opacity: hintVisible ? 1 : 0,
+            transition: "opacity 160ms ease",
+            minHeight: "1.4em",
+          }}
+        >
+          1 shipped · 2 mock · 3 missing · ⌫ delete · esc deselect
+        </Typography>
       </Box>
 
-      {/* side panel: draft form OR selected region OR placeholder */}
+      {/* side panel: draft form OR selected region OR region list / help */}
       <Paper sx={{ p: 2.5, width: { xs: "100%", lg: 320 }, flexShrink: 0 }}>
         {readOnly && selected ? (
           <Stack spacing={2}>
@@ -301,16 +356,24 @@ export function ScreenAnnotator({
             ) : null}
           </Stack>
         ) : readOnly ? (
-          <Stack spacing={2}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Read-only
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              You have viewer access to this workspace. Click any region to see
-              its label and notes; ask an editor if you need to change
-              something.
-            </Typography>
-          </Stack>
+          regions.length > 0 ? (
+            <RegionList
+              regions={regions}
+              onSelect={setSelectedId}
+              filterState={filterState}
+              readOnly
+            />
+          ) : (
+            <Stack spacing={2}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Read-only
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                You have viewer access to this workspace. There are no regions
+                on this screen yet — ask an editor to add some.
+              </Typography>
+            </Stack>
+          )
         ) : draft &&
           draft.w >= MIN_REGION_SIZE &&
           draft.h >= MIN_REGION_SIZE ? (
@@ -390,6 +453,7 @@ export function ScreenAnnotator({
             <TextField
               size="small"
               label="Label"
+              helperText="Appears on the share link"
               value={selected.label ?? ""}
               onChange={(e) => updateSelected({ label: e.target.value })}
             />
@@ -410,13 +474,20 @@ export function ScreenAnnotator({
               Delete region
             </Button>
           </Stack>
+        ) : regions.length > 0 ? (
+          <RegionList
+            regions={regions}
+            onSelect={setSelectedId}
+            filterState={filterState}
+          />
         ) : (
           <Stack spacing={2}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Annotate
+              Drag to mark a region
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Drag on the screen to mark a region with one of three states.
+              Click and drag anywhere on the screenshot. You&apos;ll pick one of
+              three states for what you draw:
             </Typography>
             <Stack spacing={1}>
               {REGION_STATES.map((s) => (
@@ -481,6 +552,84 @@ function StateSelector({
           </ToggleButton>
         ))}
       </ToggleButtonGroup>
+    </Stack>
+  );
+}
+
+/**
+ * Idle-state region list. Replaces the static three-state legend once
+ * the user has any regions, since the legend at that point is just
+ * describing what they've already done.
+ */
+function RegionList({
+  regions,
+  onSelect,
+  filterState,
+  readOnly = false,
+}: {
+  regions: Region[];
+  onSelect: (id: string) => void;
+  filterState: RegionState | null;
+  readOnly?: boolean;
+}) {
+  return (
+    <Stack spacing={1.5}>
+      <Stack direction="row" alignItems="baseline" spacing={1}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+          Regions
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {regions.length}
+        </Typography>
+      </Stack>
+      <Stack spacing={0.5}>
+        {regions.map((r, i) => {
+          const dimmed = filterState !== null && r.state !== filterState;
+          return (
+            <Box
+              key={r.id}
+              onClick={() => onSelect(r.id)}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                px: 1,
+                py: 0.75,
+                borderRadius: 1,
+                cursor: "pointer",
+                opacity: dimmed ? 0.4 : 1,
+                "&:hover": { bgcolor: "action.hover" },
+                transition: "opacity 160ms ease",
+              }}
+            >
+              <StateChip state={r.state} size="sm" />
+              <Typography
+                variant="body2"
+                sx={{
+                  flex: 1,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  color: r.label ? "text.primary" : "text.secondary",
+                  fontStyle: r.label ? "normal" : "italic",
+                }}
+              >
+                {r.label ?? `Region ${i + 1}`}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Stack>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ pt: 0.5, borderTop: 1, borderColor: "divider", mt: 1 }}
+      >
+        {readOnly
+          ? "Click a region to see its label and notes."
+          : "Drag on the screenshot to add another, or click a region above to edit it."}
+      </Typography>
     </Stack>
   );
 }

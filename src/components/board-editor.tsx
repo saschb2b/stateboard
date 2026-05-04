@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
+import InputBase from "@mui/material/InputBase";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
-import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import CloseIcon from "@mui/icons-material/Close";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
 import { AppHeader } from "./app-header";
 import { BoardPresenter } from "./board-presenter";
@@ -21,7 +22,12 @@ import { ScreenAnnotator } from "./screen-annotator";
 import { ScreenUploader } from "./screen-uploader";
 import { StateChip } from "./state-chip";
 import { UserMenu } from "./user-menu";
-import type { Board, ScreenWithRegions, ShareLink } from "@/lib/types";
+import type {
+  Board,
+  RegionState,
+  ScreenWithRegions,
+  ShareLink,
+} from "@/lib/types";
 import { REGION_STATES } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
@@ -41,6 +47,7 @@ export function BoardEditor({
   initialShareLinks,
   viewer,
 }: BoardEditorProps) {
+  const [boardName, setBoardName] = useState(board.name);
   const [screens, setScreens] = useState<ScreenWithRegions[]>(initialScreens);
   const [shareLinks, setShareLinks] = useState<ShareLink[]>(initialShareLinks);
   const [activeId, setActiveId] = useState<string | null>(
@@ -48,6 +55,8 @@ export function BoardEditor({
   );
   const [copied, setCopied] = useState(false);
   const [presenting, setPresenting] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [filterState, setFilterState] = useState<RegionState | null>(null);
 
   const editable = canEdit(viewer.role);
 
@@ -80,16 +89,43 @@ export function BoardEditor({
     });
   };
 
-  const deleteCurrentScreen = async () => {
-    if (!active) return;
+  const deleteScreenById = async (id: string) => {
+    const screen = screens.find((s) => s.id === id);
+    if (!screen) return;
     if (
-      !confirm(`Delete this screen and its ${active.regions.length} region(s)?`)
+      !confirm(`Delete this screen and its ${screen.regions.length} region(s)?`)
     ) {
       return;
     }
-    const res = await fetch(`/api/screens/${active.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/screens/${id}`, { method: "DELETE" });
     if (!res.ok) return;
-    handleScreenDeleted(active.id);
+    handleScreenDeleted(id);
+  };
+
+  const renameScreen = async (id: string, label: string) => {
+    const trimmed = label.trim();
+    const screen = screens.find((s) => s.id === id);
+    if (!screen) return;
+    if ((screen.label ?? "") === trimmed) return;
+    const res = await fetch(`/api/screens/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ label: trimmed || null }),
+    });
+    if (!res.ok) return;
+    handleScreenUpdated({ ...screen, label: trimmed || null });
+  };
+
+  const renameBoard = async (next: string) => {
+    setBoardName(next); // optimistic so the input doesn't snap back
+    const res = await fetch(`/api/boards/${board.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: next }),
+    });
+    if (!res.ok) {
+      setBoardName(board.name); // revert on failure
+    }
   };
 
   const ensureShareLink = async (): Promise<ShareLink | null> => {
@@ -141,7 +177,7 @@ export function BoardEditor({
     return () => window.removeEventListener("keydown", onKey);
   }, [presenting, screens.length]);
 
-  // count regions by state across all screens (status overview)
+  // count regions by state across all screens (status overview / filter pills)
   const totals = useMemo(() => {
     const counts = { shipped: 0, mock: 0, missing: 0 };
     for (const s of screens) {
@@ -152,10 +188,14 @@ export function BoardEditor({
 
   const totalRegions = totals.shipped + totals.mock + totals.missing;
 
+  const toggleFilter = (s: RegionState) =>
+    setFilterState((cur) => (cur === s ? null : s));
+
   return (
     <>
       <AppHeader
-        crumb={board.name}
+        crumb={boardName}
+        onCrumbChange={editable ? renameBoard : undefined}
         actions={
           <>
             <Tooltip title="Present (P)">
@@ -172,16 +212,20 @@ export function BoardEditor({
                 </Button>
               </span>
             </Tooltip>
-            <Tooltip title={copied ? "Copied!" : "Copy share link"}>
-              <Button
-                size="small"
-                startIcon={<ContentCopyIcon />}
-                onClick={copyShare}
-                variant="outlined"
-              >
-                {copied ? "Copied" : "Share"}
-              </Button>
-            </Tooltip>
+            {editable ? (
+              <Tooltip title={copied ? "Copied!" : "Copy share link"}>
+                <Button
+                  size="small"
+                  startIcon={<ContentCopyIcon />}
+                  onClick={copyShare}
+                  variant="outlined"
+                  color="inherit"
+                  sx={{ borderColor: "divider" }}
+                >
+                  {copied ? "Copied" : "Share"}
+                </Button>
+              </Tooltip>
+            ) : null}
             {activeShareLink ? (
               <Tooltip title="Open share view">
                 <IconButton
@@ -245,70 +289,93 @@ export function BoardEditor({
           </Stack>
         ) : (
           <Stack spacing={1.5}>
+            {/* Single editor chrome row: tabs (each editable + closable) ·
+                add screen · state filter pills. The screen name is
+                canonical on the tab — no separate label input. Edit
+                affordances are suppressed for viewer-role members. */}
             <Stack
               direction="row"
               spacing={1.5}
               alignItems="center"
               sx={{ flexWrap: "wrap", rowGap: 1 }}
             >
-              {screens.length > 1 ? (
-                <Tabs
-                  value={activeId}
-                  onChange={(_, v) => setActiveId(v as string)}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  sx={{
-                    minHeight: 36,
-                    "& .MuiTab-root": {
-                      minHeight: 36,
-                      py: 0.5,
-                      textTransform: "none",
-                      fontWeight: 600,
-                    },
-                  }}
-                >
-                  {screens.map((s, i) => (
-                    <Tab
-                      key={s.id}
-                      value={s.id}
-                      label={s.label || `Screen ${i + 1}`}
-                    />
-                  ))}
-                </Tabs>
-              ) : null}
-
-              {active && editable ? (
-                <ScreenLabelInput
-                  key={active.id}
-                  screen={active}
-                  onUpdated={handleScreenUpdated}
-                />
-              ) : null}
-
-              <Box sx={{ flex: 1 }} />
-
-              {totalRegions > 0
-                ? REGION_STATES.map((s) => (
-                    <Stack
-                      key={s}
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      sx={{
-                        px: 1.5,
-                        py: 0.5,
-                        border: 1,
-                        borderColor: "divider",
-                        borderRadius: 1,
-                      }}
-                    >
-                      <StateChip state={s} size="sm" />
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {totals[s]}
-                      </Typography>
-                    </Stack>
-                  ))
-                : null}
+              <Tabs
+                value={activeId}
+                onChange={(_, v) => {
+                  if (renamingId) return; // don't switch tabs while renaming
+                  setActiveId(v as string);
+                }}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{
+                  minHeight: 40,
+                  "& .MuiTab-root": {
+                    minHeight: 40,
+                    py: 0.5,
+                    pr: 1,
+                    textTransform: "none",
+                    fontWeight: 600,
+                  },
+                }}
+              >
+                {screens.map((s, i) => (
+                  <Tab
+                    key={s.id}
+                    value={s.id}
+                    onDoubleClick={
+                      editable ? () => setRenamingId(s.id) : undefined
+                    }
+                    label={
+                      editable && renamingId === s.id ? (
+                        <TabRenameField
+                          initial={s.label ?? ""}
+                          placeholder={`Screen ${i + 1}`}
+                          onCommit={(next) => {
+                            setRenamingId(null);
+                            void renameScreen(s.id, next);
+                          }}
+                          onCancel={() => setRenamingId(null)}
+                        />
+                      ) : (
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={0.5}
+                        >
+                          <Box component="span">
+                            {s.label || `Screen ${i + 1}`}
+                          </Box>
+                          {editable && s.id === activeId ? (
+                            <Tooltip title="Delete this screen">
+                              <ButtonBase
+                                component="span"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void deleteScreenById(s.id);
+                                }}
+                                aria-label="Delete this screen"
+                                sx={{
+                                  ml: 0.5,
+                                  p: 0.25,
+                                  borderRadius: 0.5,
+                                  display: "inline-flex",
+                                  color: "text.secondary",
+                                  "&:hover": {
+                                    bgcolor: "action.hover",
+                                    color: "error.main",
+                                  },
+                                }}
+                              >
+                                <CloseIcon sx={{ fontSize: 14 }} />
+                              </ButtonBase>
+                            </Tooltip>
+                          ) : null}
+                        </Stack>
+                      )
+                    }
+                  />
+                ))}
+              </Tabs>
 
               {editable ? (
                 <ScreenUploader
@@ -317,18 +384,48 @@ export function BoardEditor({
                   compact
                 />
               ) : null}
-              {active && editable ? (
-                <Tooltip title="Delete this screen and its regions">
-                  <IconButton
-                    size="small"
-                    onClick={deleteCurrentScreen}
-                    aria-label="Delete this screen"
-                    sx={{ color: "text.secondary" }}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              ) : null}
+
+              <Box sx={{ flex: 1 }} />
+
+              {totalRegions > 0
+                ? REGION_STATES.map((s) => {
+                    const isActive = filterState === s;
+                    const dimmed = filterState !== null && !isActive;
+                    return (
+                      <Tooltip
+                        key={s}
+                        title={
+                          isActive
+                            ? "Click to clear filter"
+                            : `Show only ${s} regions`
+                        }
+                      >
+                        <ButtonBase
+                          onClick={() => toggleFilter(s)}
+                          aria-pressed={isActive}
+                          sx={{
+                            px: 1.5,
+                            py: 0.5,
+                            border: 1,
+                            borderColor: isActive ? "primary.main" : "divider",
+                            borderRadius: 1,
+                            opacity: dimmed ? 0.4 : 1,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 1,
+                            transition: "all 120ms ease",
+                            "&:hover": { borderColor: "text.primary" },
+                          }}
+                        >
+                          <StateChip state={s} size="sm" />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {totals[s]}
+                          </Typography>
+                        </ButtonBase>
+                      </Tooltip>
+                    );
+                  })
+                : null}
             </Stack>
 
             {active ? (
@@ -337,6 +434,7 @@ export function BoardEditor({
                 screen={active}
                 onScreenUpdated={handleScreenUpdated}
                 readOnly={!editable}
+                filterState={filterState}
               />
             ) : null}
           </Stack>
@@ -344,7 +442,7 @@ export function BoardEditor({
       </Container>
       {presenting ? (
         <BoardPresenter
-          boardName={board.name}
+          boardName={boardName}
           screens={screens}
           initialIndex={Math.max(
             0,
@@ -357,37 +455,61 @@ export function BoardEditor({
   );
 }
 
-function ScreenLabelInput({
-  screen,
-  onUpdated,
+/**
+ * Inline rename field used inside an MUI Tab's label slot.
+ *
+ * MUI Tab is a button — pointer events on a child input bubble up and
+ * confuse focus, so we stop propagation on mousedown/click here.
+ */
+function TabRenameField({
+  initial,
+  placeholder,
+  onCommit,
+  onCancel,
 }: {
-  screen: ScreenWithRegions;
-  onUpdated: (next: ScreenWithRegions) => void;
+  initial: string;
+  placeholder: string;
+  onCommit: (next: string) => void;
+  onCancel: () => void;
 }) {
-  const [draft, setDraft] = useState(screen.label ?? "");
+  const [draft, setDraft] = useState(initial);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const persist = async () => {
-    const trimmed = draft.trim();
-    if ((screen.label ?? "") === trimmed) return;
-    const res = await fetch(`/api/screens/${screen.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label: trimmed || null }),
-    });
-    if (!res.ok) return;
-    onUpdated({ ...screen, label: trimmed || null });
-  };
+  useEffect(() => {
+    inputRef.current?.select();
+  }, []);
 
   return (
-    <TextField
-      size="small"
-      label="Screen label"
+    <InputBase
+      inputRef={inputRef}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={persist}
-      placeholder="e.g. Dashboard / Overview"
-      slotProps={{ inputLabel: { shrink: true } }}
-      sx={{ minWidth: 220, maxWidth: 320 }}
+      onBlur={() => onCommit(draft)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          (e.target as HTMLInputElement).blur();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          onCancel();
+        }
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      placeholder={placeholder}
+      autoFocus
+      sx={{
+        color: "text.primary",
+        fontWeight: 600,
+        fontSize: "0.875rem",
+        minWidth: 120,
+        "& input": {
+          p: 0.25,
+          px: 0.5,
+          borderRadius: 0.5,
+          bgcolor: "action.hover",
+        },
+      }}
     />
   );
 }
