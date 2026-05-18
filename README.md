@@ -1,9 +1,12 @@
 # StateBoard
 
+[![Release](https://img.shields.io/github/v/release/saschb2b/stateboard?display_name=tag&sort=semver&label=release&color=ea580c)](https://github.com/saschb2b/stateboard/releases/latest)
 [![CI](https://github.com/saschb2b/stateboard/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/saschb2b/stateboard/actions/workflows/ci.yml)
 [![Docker](https://github.com/saschb2b/stateboard/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/saschb2b/stateboard/actions/workflows/docker.yml)
 [![Pages](https://github.com/saschb2b/stateboard/actions/workflows/pages.yml/badge.svg?branch=main)](https://saschb2b.github.io/stateboard/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
+📦 **Current release:** [`2026.5.0` (team-ready)](https://github.com/saschb2b/stateboard/releases/latest) — see the [changelog](./CHANGELOG.md) for what shipped and what's intentionally not here yet.
 
 🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)** — explore the example board, hover regions, try Present mode. The editor itself needs the self-hosted version (link below).
 

@@ -1,0 +1,57 @@
+---
+title: Changelog
+description: What shipped in each release of StateBoard, and what's intentionally not here yet.
+---
+
+Versions follow [CalVer](https://calver.org/) — `YYYY.M.PATCH`. A new minor cuts whenever a release ships; patches fix issues against a released minor.
+
+The canonical source is [`CHANGELOG.md`](https://github.com/saschb2b/stateboard/blob/main/CHANGELOG.md) on GitHub. Individual releases (with tarballs, Docker tags, and signed tags) live on [the Releases page](https://github.com/saschb2b/stateboard/releases).
+
+---
+
+## 2026.5.0 — Team-ready
+
+The first stable cut. You can stand StateBoard up in a company, hand the URL to your stakeholders, and stop pasting screenshots into Confluence.
+
+### What you get
+
+- **The primitive:** screenshot → drag rectangles → tag each one `SHIPPED` / `MOCK` / `MISSING` → share one link. Three states, no more. Stakeholders read a board in 30 seconds without logging in.
+- **Multi-user via OIDC.** Sign-in is delegated to your IdP — Keycloak is the documented default, but any OIDC discovery URL works (Auth0, Okta, Entra, Authentik, Dex…). No email/password to manage, no invite emails to send.
+- **Workspaces & roles.** A single workspace per deployed instance with `owner` / `editor` / `viewer` roles. Boards belong to the workspace, so when a teammate leaves, their boards stay.
+- **Revocable share links.** Mint multiple public links per board, name them per audience, kill any one without affecting the others.
+- **Append-only audit log.** Every board / region / share-link / membership change writes a row in Postgres. (No UI yet — query the table directly until v3.)
+- **Self-host, airgap-adjacent.** One container, one Postgres, one IdP. Zero outbound calls to any third-party at runtime.
+
+### Editor
+
+- **Region list panel** with keyboard shortcuts — arrow keys to navigate, `Tab` between regions, number keys to set state.
+- **Labels anchor to their box** so they don't drift when the screenshot resizes.
+- **Filter the canvas by state** by clicking a state pill in the header.
+- **Inline-edit** board and screen names — no dialog round-trip.
+- **Present mode** for fullscreen, distraction-free walkthroughs.
+
+### Marketing surface
+
+- **Landing page** at `/` with a working mockup of a board.
+- **Docs site** at `/docs` (Fumadocs + MDX) with full-text search.
+- **Read-only static demo** auto-published to GitHub Pages on every push — the same example board the empty-state link points to.
+
+### Deployment
+
+- **Docker image** published to GHCR: `ghcr.io/saschb2b/stateboard:2026.5.0` (also `:latest`, `:2026.5`, and `:sha-…`).
+- **Helm chart** under `deploy/helm/stateboard` — single-replica by default, multi-replica safe with a `ReadWriteMany` PVC. Fails closed if `auth.secret` is empty.
+- **Runtime image** is now Node 26 on Debian Bookworm slim.
+
+### Migrating from v0
+
+Legacy v0 URLs keep working — `/b/:id` and `/v/:slug` redirect permanently to `/boards/:id` and `/share/:slug`, so any links shared before this release stay live.
+
+### Known limitations (intentional)
+
+The roadmap is staged. The following are explicitly **not** in this release; ask before opening an issue:
+
+- Headless capture from a URL → v1.x
+- Scheduled re-capture, diff / time-travel → v2
+- Jira / Linear / Slack integrations → v1.x – v2
+- Region comments, real-time collaboration → out of scope
+- Audit-log UI, SAML/SSO beyond OIDC → v3

@@ -14,6 +14,7 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { AppHeader } from "@/components/app-header";
 import { LandingMockup } from "@/components/landing-mockup";
 import { StateChip } from "@/components/state-chip";
+import { version } from "../../../package.json";
 
 const PROBLEMS = [
   {
@@ -479,9 +480,33 @@ export default function LandingPage() {
             sx={{ color: "text.secondary" }}
           >
             <Typography variant="caption">
-              StateBoard v0.1 · MIT · Show, don&apos;t tell.
+              StateBoard · MIT · Show, don&apos;t tell.
             </Typography>
             <Stack direction="row" spacing={2}>
+              <Link
+                href={`https://github.com/saschb2b/stateboard/releases/tag/v${version}`}
+                target="_blank"
+                rel="noopener"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ "&:hover": { color: "primary.main" } }}
+                >
+                  v{version}
+                </Typography>
+              </Link>
+              <Link
+                href="/docs/changelog"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{ "&:hover": { color: "primary.main" } }}
+                >
+                  Changelog
+                </Typography>
+              </Link>
               <Link
                 href="/docs"
                 style={{ color: "inherit", textDecoration: "none" }}
