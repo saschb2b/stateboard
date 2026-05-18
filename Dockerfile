@@ -27,12 +27,10 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     STATEBOARD_DATA_DIR=/data
 
-# better-sqlite3 needs libstdc++; node:slim already includes it.
 # Copy only what the standalone build needs.
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
-COPY --from=build /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
 RUN mkdir -p /data && chown -R node:node /data /app
 USER node
