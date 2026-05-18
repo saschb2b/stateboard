@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "build:pages": "node scripts/pages-prebuild.mjs && STATEBOARD_PAGES=1 next build",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

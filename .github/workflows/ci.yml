@@ -50,7 +50,7 @@ jobs:
         run: pnpm build
 
   helm:
-    name: helm lint · server-side dry run
+    name: helm lint · kubeconform
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -61,10 +61,14 @@ jobs:
         with:
           version: v3.16.4
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: v1.31.0
+      - name: Setup kubeconform
+        # Validates rendered manifests against versioned Kubernetes OpenAPI
+        # schemas without needing a live cluster — replaces an earlier
+        # `kubectl apply --dry-run=client`, which in kubectl 1.27+ tries to
+        # reach the API server for schema validation and fails in CI.
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /usr/local/bin kubeconform
 
       - name: helm dependency build
         run: helm dependency build deploy/helm/stateboard
@@ -77,14 +81,14 @@ jobs:
             --set auth.keycloak.clientSecret=ci-test \
             --set postgresql.auth.password=ci-test
 
-      - name: helm template | kubectl --dry-run=client
+      - name: helm template | kubeconform
         run: |
           helm template stateboard deploy/helm/stateboard \
             --set auth.secret=ci-test-secret-do-not-use \
             --set auth.keycloak.issuer=https://keycloak.example/realms/test \
             --set auth.keycloak.clientSecret=ci-test \
             --set postgresql.auth.password=ci-test \
-            | kubectl apply --dry-run=client -f -
+            | kubeconform -strict -summary -ignore-missing-schemas -kubernetes-version 1.31.0
 
       # Multi-replica must render without error in v1 (Postgres handles
       # concurrency). This used to be a "must fail" check in v0.
