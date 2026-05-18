@@ -1,0 +1,76 @@
+---
+title: Roadmap
+description: How StateBoard's release stages are scoped, and where each feature lives on the timeline.
+---
+
+The roadmap is staged. Each stage protects the thesis — **screens, regions, states, and the integrations that keep them honest** — and adds the smallest thing that earns the next.
+
+The list below is the narrative version. The machine-readable version is in [GitHub milestones](https://github.com/saschb2b/stateboard/milestones); each issue is assigned to one. The [project board](https://github.com/users/saschb2b/projects/1) has a Roadmap view if you'd rather see it on a timeline.
+
+## v0 — the wedge · shipped
+
+The smallest thing that proves the primitive works.
+
+- Manual screenshot upload
+- Region tagging on the image (click-and-drag)
+- Three states: `shipped` / `mock` / `missing`
+- Read-only public share link
+- Single user, no auth
+
+## v1 — team-ready · shipped (2026.5.0)
+
+The cut you can deploy in a company.
+
+- Multi-user via OIDC (Keycloak is documented; any IdP works)
+- Workspace with `owner` / `editor` / `viewer` roles
+- Revocable share-link tokens — multiple per board, mint per audience
+- Append-only audit log (rows in Postgres; UI lands in v3)
+- Postgres-backed; multi-replica safe with a `ReadWriteMany` PVC
+- One container + one Postgres. Zero outbound calls except to your IdP.
+
+See the [changelog](./changelog) for the full release notes.
+
+## v1.x — still scope-OK · in progress
+
+Small, additive features that don't change the primitive. Track them on [milestone v1.x](https://github.com/saschb2b/stateboard/milestone/1).
+
+- **Headless screenshot capture from URL** — paste a URL, get a screenshot. Foundation for v2's scheduled capture.
+- **Jira issue linking on regions** — one-way: tag a region with `ACME-123`, render the deep link on the share view.
+- **Custom states** — workspace owners can add states *in addition to* the three defaults. The defaults stay; their colors stay.
+
+## v2 — make it living · planned
+
+The features that turn StateBoard from a snapshot into a status tool. Track them on [milestone v2](https://github.com/saschb2b/stateboard/milestone/2).
+
+- **Scheduled re-capture** — per-screen cron triggers; last good capture stays visible on failure.
+- **Time-travel & diff view** — browse prior captures of a screen and overlay them to see what changed.
+- **Two-way Jira sync** — ticket transitions update region state and vice versa, via a per-workspace status mapping.
+- **Slack notifications** — state flips, share-link opens, failed captures.
+- **Notion / Confluence embed** — oEmbed + a chrome-less render mode that fits typical embed heights.
+- **S3-compatible storage adapter** — drop the RWX-PVC requirement for multi-replica deploys.
+
+## v3 — defensible · planned
+
+The features that make StateBoard hard to displace once a team has standardised on it. Track them on [milestone v3](https://github.com/saschb2b/stateboard/milestone/3).
+
+- **Auto region-detection from DOM** — propose regions during headless capture from semantic blocks and ARIA landmarks.
+- **Journey-level views** — sequence screens left-to-right ("sign-up → onboarding → first action").
+- **Portfolio rollup** — workspace-level dashboard aggregating state counts across boards.
+- **SAML SSO** — for orgs that still mandate it. Better Auth has the helper; we ship a tested example.
+- **Audit-log UI** — `/settings/audit` for owners, with filters and CSV export.
+- **Template gallery** — starter boards a workspace owner can clone in one click. Templates live in code, never seeded into the user's database.
+
+## What we won't build
+
+Some things look like obvious wins but pull StateBoard toward becoming a roadmap tool, a Figma clone, or a SaaS. The full list lives in `CLAUDE.md`'s [What not to build](https://github.com/saschb2b/stateboard/blob/main/CLAUDE.md#what-not-to-build) section. The short version:
+
+- Real-time collaboration (yjs, presence) — async review is the use case
+- Comment threads on regions — we are not Figma
+- Email-based invites — OIDC handles identity
+- Per-provider OAuth helpers — Better Auth's generic OIDC accepts any discovery URL
+
+## Want to influence it?
+
+- File an issue on [the repo](https://github.com/saschb2b/stateboard/issues). Reference a stage if you have a strong opinion.
+- Watch the [project board](https://github.com/users/saschb2b/projects/1) for live status.
+- The CalVer release cadence is one minor per stage; patches happen as needed.

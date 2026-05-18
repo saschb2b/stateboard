@@ -18,19 +18,15 @@ Three things follow from this and you must protect them:
 2. **The artifact is the share link**. The editor exists to produce a thing an exec can read in 30 seconds without a login. Every change must be evaluated against "does this make the share link better, or does it just add knobs for the editor?"
 3. **Self-hosted, airgap-ready, MIT**. No phone-home, no analytics, no license server, no `fetch` to a third-party domain at runtime. If you're tempted to add one, stop and ask. The teams who need this most (defense, health, finance, gov) can't use a SaaS — that's the whole distribution thesis.
 
-## Scope guardrails (v1)
+## Scope guardrails
 
-The current stage is **v1 — team-ready**. The build plan in the pitch deck is staged. **Do not implement v2+ features in v1** unless explicitly asked. The full staging:
+The roadmap is staged. The narrative version lives in [`src/content/docs/roadmap.mdx`](./src/content/docs/roadmap.mdx) (rendered at `/docs/roadmap`); the machine-readable version is in [GitHub milestones](https://github.com/saschb2b/stateboard/milestones), and every open issue is assigned to one.
 
-- **v0** ✅ : manual upload, region tagging, three states, share link, single user, no auth.
-- **v1** ✅ (you are here): multi-user via OIDC (Keycloak), workspace + member roles, revocable share-link tokens, append-only audit log, Postgres-backed.
-- **v1.x** (still scope-OK): headless capture from URL, Jira issue linking, custom states.
-- **v2**: scheduled re-capture, time-travel / diff view, two-way Jira sync, Slack notifications, Notion/Confluence embed.
-- **v3**: auto region-detection (DOM), journey-level views, portfolio rollup, SAML/SSO beyond OIDC, audit-log UI, template gallery.
+The current stage is **v1 — team-ready** (released as `2026.5.0`). **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
 
-If the user asks for something that smells like v2+ work (scheduled capture, diff/time-travel, Jira sync, Slack), confirm before building. Cite the stage it belongs to.
+The three v0 states are **load-bearing**. Don't add a fourth state, don't rename them, don't make them configurable, don't soften "missing" to "planned". Their force comes from being three blunt categories that match how stakeholders actually think. The `v1.x` "custom states" ticket allows _additional_ states alongside the three defaults — never replacing them.
 
-The three v0 states are **load-bearing**. Don't add a fourth state, don't rename them, don't make them configurable, don't soften "missing" to "planned". Their force comes from being three blunt categories that match how stakeholders actually think.
+When in doubt about scope, the milestone + roadmap docs are the source of truth; this file just enforces them.
 
 ## UX principle: show, don't tell — applies to our own UI too
 

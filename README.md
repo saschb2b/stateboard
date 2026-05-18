@@ -108,10 +108,13 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 
 ## Roadmap
 
-- **v0 — the wedge**: manual upload, region tagging, three states, share link, single user ✅
-- **v1 — team-ready** (you are here): multi-user, OIDC, audit log, Postgres ✅
-- **v2 — make it living**: scheduled re-capture, time-travel / diff view, two-way Jira sync, Slack notifications, Notion/Confluence embed
-- **v3 — defensible**: auto region-detection from the DOM, journey-level views, portfolio rollup, SSO, audit log UI, public template gallery
+- **v0 — the wedge** ✅: manual upload, region tagging, three states, share link, single user
+- **v1 — team-ready** ✅ (you are here): multi-user, OIDC, audit log, Postgres
+- **v1.x — still scope-OK**: headless capture from URL, Jira issue linking, custom states
+- **v2 — make it living**: scheduled re-capture, time-travel / diff view, two-way Jira sync, Slack, Notion/Confluence embed
+- **v3 — defensible**: DOM region-detection, journey views, portfolio rollup, SAML, audit-log UI, template gallery
+
+Full narrative in [`/docs/roadmap`](https://saschb2b.github.io/stateboard/docs/roadmap). Live status: [milestones](https://github.com/saschb2b/stateboard/milestones) for the per-issue rollup, or the [project board](https://github.com/users/saschb2b/projects/1) for a Kanban / Roadmap view.
 
 The temptation will be to chase roadmap-tool features. We won't. The lane is **screens, regions, states, and the integrations that keep them honest** — and nothing else.
 
