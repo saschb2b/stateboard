@@ -24,8 +24,8 @@ interface AppHeaderProps {
 /**
  * Universal top bar.
  *
- * The orange square + wordmark mirrors the pitch deck identity: the small
- * filled square next to "STATEBOARD" is the brand mark, not decoration.
+ * The diamond mark + wordmark is the brand identity — same gem as the
+ * favicon, sized to sit next to "STATEBOARD" without overpowering it.
  */
 export function AppHeader({ actions, crumb, onCrumbChange }: AppHeaderProps) {
   return (
@@ -40,13 +40,11 @@ export function AppHeader({ actions, crumb, onCrumbChange }: AppHeaderProps) {
         <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
           <Stack direction="row" alignItems="center" spacing={1.25}>
             <Box
+              component="img"
+              src="/icon.svg"
+              alt=""
               aria-hidden
-              sx={{
-                width: 14,
-                height: 14,
-                bgcolor: "primary.main",
-                borderRadius: 0.5,
-              }}
+              sx={{ width: 22, height: 22, display: "block" }}
             />
             <Typography
               variant="subtitle1"

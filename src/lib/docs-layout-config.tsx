@@ -3,25 +3,22 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 /**
  * Shared Fumadocs layout config for /docs.
  *
- * The wordmark mirrors the AppHeader on the rest of the site so the
- * brand stays consistent when a visitor crosses from the marketing
- * page into the docs.
+ * The diamond mark + wordmark mirrors the AppHeader on the rest of the
+ * site so the brand stays consistent when a visitor crosses from the
+ * marketing page into the docs.
  */
 export const docsLayoutConfig: BaseLayoutProps = {
   nav: {
     title: (
       <>
-        <span
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icon.svg"
+          alt=""
           aria-hidden
-          style={{
-            display: "inline-block",
-            width: 12,
-            height: 12,
-            backgroundColor: "var(--color-fd-primary, #F26B2D)",
-            borderRadius: 2,
-            marginRight: 8,
-            verticalAlign: "middle",
-          }}
+          width={18}
+          height={18}
+          style={{ display: "inline-block", marginRight: 8, verticalAlign: "middle" }}
         />
         <span
           style={{ fontWeight: 700, letterSpacing: "0.08em", fontSize: 13 }}
