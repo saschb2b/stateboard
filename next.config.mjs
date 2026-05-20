@@ -21,10 +21,11 @@ const nextConfig = isPagesExport
       trailingSlash: true,
       // Pages has no image optimizer.
       images: { unoptimized: true },
-      // Next handles basePath for <Link>, metadata, and _next/* assets,
-      // but raw <img src="/demo/x.svg"> in client code stays as-is. Expose
-      // the basePath as a NEXT_PUBLIC_* env so demo-data.ts can prepend
-      // it when constructing mediaUrl. Inlined at build time.
+      // Next handles basePath for <Link> and _next/* assets, but raw
+      // <img src="/foo.svg"> stays as-is, and metadata.icons doesn't get
+      // it either. Expose the basePath as a NEXT_PUBLIC_* env so those
+      // call sites (demo-data.ts, app-header.tsx, docs-layout-config.tsx,
+      // app/layout.tsx) can prepend it. Inlined at build time.
       env: {
         NEXT_PUBLIC_BASE_PATH: pagesBasePath,
       },

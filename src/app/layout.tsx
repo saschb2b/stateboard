@@ -7,6 +7,10 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
+// metadata.icons does NOT auto-prepend basePath, so we do it ourselves.
+// Inlined at build time. Empty on the runtime/standalone build.
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export const metadata: Metadata = {
   title: {
     default: "StateBoard — Show, don't tell.",
@@ -14,7 +18,7 @@ export const metadata: Metadata = {
   },
   description:
     "Status reporting for visual products. Mark regions on your screens as shipped, mock, or missing — and share one link execs can read in 30 seconds.",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: `${BASE_PATH}/icon.svg` },
   robots: { index: false, follow: false },
 };
 

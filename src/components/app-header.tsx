@@ -9,6 +9,10 @@ import InputBase from "@mui/material/InputBase";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 
+// Raw <img src> doesn't get basePath applied; prepend it manually so the
+// GitHub Pages build (served under /stateboard/) finds the asset.
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 interface AppHeaderProps {
   /** Optional right-side slot for page-specific actions (Save, Share, etc). */
   actions?: React.ReactNode;
@@ -41,7 +45,7 @@ export function AppHeader({ actions, crumb, onCrumbChange }: AppHeaderProps) {
           <Stack direction="row" alignItems="center" spacing={1.25}>
             <Box
               component="img"
-              src="/icon.svg"
+              src={`${BASE_PATH}/icon.svg`}
               alt=""
               aria-hidden
               sx={{ width: 22, height: 22, display: "block" }}

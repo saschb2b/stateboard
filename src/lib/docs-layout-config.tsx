@@ -1,5 +1,9 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
+// Raw <img src> doesn't get basePath applied; prepend it manually so the
+// GitHub Pages build (served under /stateboard/) finds the asset.
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 /**
  * Shared Fumadocs layout config for /docs.
  *
@@ -13,12 +17,16 @@ export const docsLayoutConfig: BaseLayoutProps = {
       <>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/icon.svg"
+          src={`${BASE_PATH}/icon.svg`}
           alt=""
           aria-hidden
           width={18}
           height={18}
-          style={{ display: "inline-block", marginRight: 8, verticalAlign: "middle" }}
+          style={{
+            display: "inline-block",
+            marginRight: 8,
+            verticalAlign: "middle",
+          }}
         />
         <span
           style={{ fontWeight: 700, letterSpacing: "0.08em", fontSize: 13 }}
