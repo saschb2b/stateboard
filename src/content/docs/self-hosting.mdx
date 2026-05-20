@@ -19,12 +19,48 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000), click **Continue with Keycloak**, sign in as `alice`. The first sign-in becomes the workspace owner.
 
-## Production: Docker
+## Production: Docker Compose (bring your own Keycloak)
 
-The shipped image only contains the Node app — bring your own Postgres and IdP.
+If you already run Keycloak (or any OIDC IdP) and just want StateBoard + a Postgres next to it, the repo ships [`deploy/docker-compose.yaml`](https://github.com/saschb2b/stateboard/blob/main/deploy/docker-compose.yaml). It contains:
+
+- `postgres` — a 16-alpine instance, data in a named volume, not exposed to the host.
+- `migrate` — runs `node scripts/migrate.mjs` once against the DB and exits. Idempotent on every `up`.
+- `stateboard` — the app, listening on port 3000, uploads in a named volume.
+
+There is **no Keycloak service** — you point at the one you already run.
 
 ```bash
-docker run --rm \
+# 1. Pull the env template and fill it in
+cp deploy/docker-compose.env.example deploy/.env
+
+# 2. Edit deploy/.env — at minimum:
+#    - STATEBOARD_BASE_URL          public HTTPS URL of the app
+#    - BETTER_AUTH_SECRET           openssl rand -base64 32
+#    - POSTGRES_PASSWORD            openssl rand -base64 16
+#    - KEYCLOAK_ISSUER              https://<your-kc>/realms/<your-realm>
+#    - KEYCLOAK_CLIENT_ID           e.g. "stateboard"
+#    - KEYCLOAK_CLIENT_SECRET       from the client you create below
+
+# 3. Bring it up
+docker compose -f deploy/docker-compose.yaml --env-file deploy/.env up -d
+```
+
+Then put your reverse proxy of choice (Caddy, nginx, Traefik, a cloud LB) in front of port `3000` so the public URL is HTTPS and matches `STATEBOARD_BASE_URL`.
+
+Upgrades: change `STATEBOARD_IMAGE` to a newer tag, `docker compose ... up -d`. The migrate service runs again automatically; it is a no-op when nothing is pending.
+
+<Callout type="info">
+  The `KEYCLOAK_*` env-var names work with any OIDC provider — Better Auth uses
+  OIDC discovery, so only the issuer URL needs to change. Auth0, Authentik,
+  Zitadel, Okta, etc. all work the same way.
+</Callout>
+
+### Plain `docker run`
+
+If you'd rather wire it up yourself (existing Postgres elsewhere, no compose):
+
+```bash
+docker run -d --name stateboard \
   -p 3000:3000 \
   -v stateboard-uploads:/data \
   -e DATABASE_URL=postgres://user:pass@db:5432/stateboard \
@@ -33,10 +69,10 @@ docker run --rm \
   -e KEYCLOAK_ISSUER=https://keycloak.example.com/realms/acme \
   -e KEYCLOAK_CLIENT_ID=stateboard \
   -e KEYCLOAK_CLIENT_SECRET=... \
-  ghcr.io/saschb2b/stateboard:1.0.0
+  ghcr.io/saschb2b/stateboard:latest
 ```
 
-Schema is managed by `pnpm migrate` (or `node scripts/migrate.mjs`) — run it once after bringing up Postgres, and on every upgrade.
+Run `docker run --rm -e DATABASE_URL=... ghcr.io/saschb2b/stateboard:latest node scripts/migrate.mjs` once before the first start, and again on every upgrade. (The compose file does this for you via the `migrate` service.)
 
 ## Production: Helm
 

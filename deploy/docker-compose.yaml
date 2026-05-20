@@ -1,0 +1,78 @@
+# Production-ish Docker Compose for StateBoard.
+#
+# Brings up Postgres + the StateBoard app and points it at a Keycloak (or
+# any other OIDC provider) you already run somewhere else. Use this if
+# you don't want Kubernetes / Helm but still want a one-command deploy.
+#
+# What this file does NOT include:
+#   - Keycloak.  Bring your own IdP — the repo-root docker-compose.yaml
+#     ships one for local development, but in production your SSO of
+#     record lives outside StateBoard's lifecycle.
+#   - TLS termination.  Put this behind your reverse proxy of choice
+#     (Caddy, nginx, Traefik, a cloud LB) so STATEBOARD_BASE_URL is HTTPS.
+#
+# Usage:
+#   cp deploy/docker-compose.env.example deploy/.env
+#   # edit deploy/.env — at minimum set STATEBOARD_BASE_URL,
+#   # BETTER_AUTH_SECRET, KEYCLOAK_ISSUER, KEYCLOAK_CLIENT_ID,
+#   # KEYCLOAK_CLIENT_SECRET, and POSTGRES_PASSWORD.
+#   docker compose -f deploy/docker-compose.yaml --env-file deploy/.env up -d
+#
+# Upgrading: pull a newer image tag, re-run `up -d`. The `migrate`
+# service runs again and is idempotent.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-stateboard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-stateboard}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-stateboard} -d ${POSTGRES_DB:-stateboard}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    image: ${STATEBOARD_IMAGE:-ghcr.io/saschb2b/stateboard:latest}
+    restart: "no"
+    command: ["node", "scripts/migrate.mjs"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-stateboard}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stateboard}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  stateboard:
+    image: ${STATEBOARD_IMAGE:-ghcr.io/saschb2b/stateboard:latest}
+    restart: unless-stopped
+    ports:
+      - "${STATEBOARD_PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-stateboard}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stateboard}
+      STATEBOARD_BASE_URL: ${STATEBOARD_BASE_URL:?set STATEBOARD_BASE_URL in deploy/.env}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in deploy/.env}
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:?set KEYCLOAK_ISSUER in deploy/.env}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:?set KEYCLOAK_CLIENT_ID in deploy/.env}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set KEYCLOAK_CLIENT_SECRET in deploy/.env}
+      STATEBOARD_ALLOWED_EMAIL_DOMAINS: ${STATEBOARD_ALLOWED_EMAIL_DOMAINS:-}
+      STATEBOARD_DEFAULT_ROLE: ${STATEBOARD_DEFAULT_ROLE:-editor}
+    volumes:
+      - uploads:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pg-data:
+  uploads:

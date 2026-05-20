@@ -48,6 +48,21 @@ pnpm dev
 
 Open <http://localhost:3000>, click **Continue with Keycloak**, sign in as `alice`. The first sign-in becomes the workspace owner.
 
+## Production: Docker Compose (bring your own Keycloak)
+
+If you already run Keycloak (or any other OIDC provider) and just want StateBoard + a Postgres next to it, [`deploy/docker-compose.yaml`](./deploy/docker-compose.yaml) is the path. Postgres + StateBoard + a one-shot migrate job, no bundled IdP.
+
+```bash
+cp deploy/docker-compose.env.example deploy/.env
+# edit deploy/.env: set STATEBOARD_BASE_URL, BETTER_AUTH_SECRET,
+# POSTGRES_PASSWORD, and the three KEYCLOAK_* vars
+docker compose -f deploy/docker-compose.yaml --env-file deploy/.env up -d
+```
+
+In your existing Keycloak realm, create a confidential client and register `<STATEBOARD_BASE_URL>/api/auth/callback/keycloak` as a Valid redirect URI — see [Self-hosting → Keycloak setup](https://saschb2b.github.io/stateboard/docs/self-hosting#keycloak-setup) for the full checklist. Same env-var names work with any OIDC IdP; only the issuer URL changes.
+
+Terminate TLS at your reverse proxy (Caddy, nginx, Traefik, a cloud LB) so `STATEBOARD_BASE_URL` is HTTPS.
+
 ## Production: Helm
 
 ```bash
