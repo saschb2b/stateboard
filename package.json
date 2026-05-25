@@ -37,16 +37,16 @@
     "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "^25.8.0",
     "@types/pg": "^8.11.10",
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.2.6",
     "eslint-config-prettier": "^10.1.8",
-    "postcss": "^8.5.14",
+    "postcss": "^8.5.15",
     "prettier": "^3.8.1",
     "tailwindcss": "^4.2.4",
     "typescript": "6.0.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.4"
   },
   "packageManager": "pnpm@10.20.0"
 }
