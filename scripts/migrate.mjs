@@ -19,7 +19,7 @@
  * service in deploy/docker-compose.yaml — both just invoke this script.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import pg from "pg";
@@ -27,6 +27,17 @@ import { redactDbUrl } from "./redact-db-url.mjs";
 
 const repoRoot = path.resolve(fileURLToPath(import.meta.url), "..", "..");
 const migrationsDir = path.join(repoRoot, "migrations");
+
+// Local-dev convenience: fall back to the repo-root .env so that
+// `cp .env.example .env && pnpm migrate` works out of the box, the same way
+// `next dev` already loads it. An explicit env var always wins (we only load
+// when no DB URL is set), and in prod — Helm Job or the compose `migrate`
+// service — the env is injected directly and there's no .env in the container,
+// so this is a no-op there.
+if (!process.env.DATABASE_URL && !process.env.STATEBOARD_DB_URL) {
+  const envPath = path.join(repoRoot, ".env");
+  if (existsSync(envPath)) process.loadEnvFile(envPath);
+}
 
 const databaseUrl = process.env.DATABASE_URL ?? process.env.STATEBOARD_DB_URL;
 if (!databaseUrl) {
