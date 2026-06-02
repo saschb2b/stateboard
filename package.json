@@ -24,7 +24,7 @@
     "@mui/material": "^7.3.8",
     "better-auth": "^1.6.11",
     "fumadocs-core": "^16.8.11",
-    "fumadocs-mdx": "^14.3.2",
+    "fumadocs-mdx": "^15.0.10",
     "fumadocs-ui": "^16.8.11",
     "nanoid": "^5.1.11",
     "next": "16.2.6",
