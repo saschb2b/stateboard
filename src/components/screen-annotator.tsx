@@ -609,6 +609,9 @@ export function ScreenAnnotator({
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Drag the box to move it, or pull a corner to resize.
+            </Typography>
             <StateSelector
               value={selected.state}
               onChange={(state) => updateSelected({ state })}
