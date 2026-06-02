@@ -35,3 +35,8 @@ data/
 Thumbs.db
 .vscode/
 .idea/
+
+# agent / claude code tooling (local harness artifacts, not project source)
+.claude/
+.agents/
+skills-lock.json

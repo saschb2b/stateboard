@@ -6,3 +6,8 @@ pnpm-lock.yaml
 
 # Helm templates use Go template syntax that prettier can't parse.
 deploy/helm/**/templates/**
+
+# Agent / Claude Code tooling — local harness artifacts, not project source.
+.claude
+.agents
+skills-lock.json
