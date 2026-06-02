@@ -1,0 +1,18 @@
+# Force LF line endings in the working tree for every text file, regardless of
+# each contributor's git `core.autocrlf` setting. The repo stores LF; without
+# this, a Windows checkout (autocrlf=true) materializes CRLF, which makes
+# `prettier --check` (a required format gate, run in CI) report every file as
+# unformatted, and ships shell scripts like scripts/pg-init-multidb.sh with
+# CRLF — which breaks them with `bad interpreter` when mounted into a container.
+* text=auto eol=lf
+
+# Binary assets: never run EOL normalization or attempt a text diff on these.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.woff  binary
+*.woff2 binary
