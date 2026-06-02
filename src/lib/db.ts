@@ -225,6 +225,7 @@ export type AuditAction =
   | "screen.create"
   | "screen.update"
   | "screen.delete"
+  | "screen.reorder"
   | "region.create"
   | "region.update"
   | "region.delete"
@@ -495,6 +496,38 @@ export async function deleteScreen(
   ]);
   if (result.rowCount! > 0) await touchBoard(existing.boardId, actorId);
   return result.rowCount! > 0;
+}
+
+/**
+ * Set screen order for a board from a fully-specified id list. `orderedIds`
+ * must be a permutation of exactly this board's screens (no missing, extra,
+ * duplicate, or foreign ids), or null is returned and nothing is written.
+ * Positions become the array indices in one atomic UPDATE.
+ */
+export async function reorderScreens(
+  boardId: string,
+  orderedIds: string[],
+  actorId: string,
+): Promise<Screen[] | null> {
+  const current = await listScreens(boardId);
+  const currentIds = new Set(current.map((s) => s.id));
+  const unique = new Set(orderedIds);
+  if (
+    orderedIds.length !== current.length ||
+    unique.size !== orderedIds.length ||
+    !orderedIds.every((id) => currentIds.has(id))
+  ) {
+    return null;
+  }
+  await query(
+    `UPDATE screens AS s
+        SET position = data.pos
+       FROM (SELECT * FROM unnest($2::text[], $3::int[]) AS t(id, pos)) AS data
+      WHERE s.id = data.id AND s.board_id = $1`,
+    [boardId, orderedIds, orderedIds.map((_, i) => i)],
+  );
+  await touchBoard(boardId, actorId);
+  return listScreens(boardId);
 }
 
 // ----- regions --------------------------------------------------------------

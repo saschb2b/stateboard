@@ -60,6 +60,8 @@ export function BoardEditor({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<RegionState | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const editable = canEdit(viewer.role);
 
@@ -130,6 +132,42 @@ export function BoardEditor({
       return;
     }
     handleScreenUpdated({ ...screen, label: trimmed || null });
+  };
+
+  // Persist a new screen order; roll back the optimistic move on failure.
+  const persistScreenOrder = async (
+    next: ScreenWithRegions[],
+    prev: ScreenWithRegions[],
+  ) => {
+    const res = await fetch(`/api/boards/${board.id}/screens`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ order: next.map((s) => s.id) }),
+    });
+    if (!res.ok) {
+      setScreens(prev);
+      await reportFailure(res, "Couldn't reorder the screens.");
+    }
+  };
+
+  // Drop the dragged tab in front of the target tab, then persist.
+  const reorderTo = (targetId: string) => {
+    const draggedId = dragId;
+    setDragId(null);
+    setDragOverId(null);
+    if (!draggedId || draggedId === targetId) return;
+    const prev = screens;
+    const dragged = prev.find((s) => s.id === draggedId);
+    const without = prev.filter((s) => s.id !== draggedId);
+    const targetIdx = without.findIndex((s) => s.id === targetId);
+    if (!dragged || targetIdx === -1) return;
+    const next = [
+      ...without.slice(0, targetIdx),
+      dragged,
+      ...without.slice(targetIdx),
+    ];
+    setScreens(next);
+    void persistScreenOrder(next, prev);
   };
 
   const renameBoard = async (next: string) => {
@@ -343,9 +381,40 @@ export function BoardEditor({
                   <Tab
                     key={s.id}
                     value={s.id}
+                    draggable={editable && renamingId !== s.id}
+                    onDragStart={(e) => {
+                      setDragId(s.id);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      if (!dragId || dragId === s.id) return;
+                      e.preventDefault();
+                      setDragOverId(s.id);
+                    }}
+                    onDragLeave={() =>
+                      setDragOverId((cur) => (cur === s.id ? null : cur))
+                    }
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      reorderTo(s.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDragOverId(null);
+                    }}
                     onDoubleClick={
                       editable ? () => setRenamingId(s.id) : undefined
                     }
+                    sx={{
+                      opacity: dragId === s.id ? 0.4 : 1,
+                      boxShadow:
+                        dragOverId === s.id
+                          ? "inset 3px 0 0 var(--mui-palette-primary-main)"
+                          : "none",
+                      cursor:
+                        editable && renamingId !== s.id ? "grab" : undefined,
+                      transition: "opacity 120ms ease",
+                    }}
                     label={
                       editable && renamingId === s.id ? (
                         <TabRenameField
