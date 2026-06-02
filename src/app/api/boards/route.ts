@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createBoard, createShareLink, listBoards, writeAudit } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { newId, newShareToken } from "@/lib/ids";
+import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
 import { badRequest, created, ok } from "@/lib/http";
 
 export async function GET() {
@@ -23,11 +24,19 @@ export async function POST(req: NextRequest) {
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name) return badRequest("name is required");
+  const nameErr = checkTextLength(name, "name", TEXT_LIMITS.name);
+  if (nameErr) return badRequest(nameErr);
 
   const description =
     typeof body.description === "string" && body.description.trim()
       ? body.description.trim()
       : null;
+  const descriptionErr = checkTextLength(
+    description,
+    "description",
+    TEXT_LIMITS.description,
+  );
+  if (descriptionErr) return badRequest(descriptionErr);
 
   const board = await createBoard({
     id: newId(),

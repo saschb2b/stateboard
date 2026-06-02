@@ -8,6 +8,7 @@ import {
   writeAudit,
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
+import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
 import { badRequest, noContent, notFound, ok } from "@/lib/http";
 
 interface Ctx {
@@ -53,13 +54,22 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (typeof body.name === "string") {
     const trimmed = body.name.trim();
     if (!trimmed) return badRequest("name cannot be empty");
+    const nameErr = checkTextLength(trimmed, "name", TEXT_LIMITS.name);
+    if (nameErr) return badRequest(nameErr);
     patch.name = trimmed;
   }
   if ("description" in body) {
     if (body.description === null) {
       patch.description = null;
     } else if (typeof body.description === "string") {
-      patch.description = body.description.trim() || null;
+      const description = body.description.trim() || null;
+      const descriptionErr = checkTextLength(
+        description,
+        "description",
+        TEXT_LIMITS.description,
+      );
+      if (descriptionErr) return badRequest(descriptionErr);
+      patch.description = description;
     }
   }
 

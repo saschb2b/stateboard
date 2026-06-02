@@ -88,6 +88,38 @@ export interface WorkspaceMember {
 export const isFiniteIn01 = (n: unknown): n is number =>
   typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
 
+/**
+ * Per-field character caps for the free-text columns. They're plain `TEXT` in
+ * Postgres (unbounded), so we enforce a generous ceiling at the API boundary:
+ * enough for any real title / description / note, but small enough that a
+ * hostile client can't store megabytes that every board fetch — and the public
+ * share page — would then have to ship on every read.
+ */
+export const TEXT_LIMITS = {
+  name: 200,
+  description: 2000,
+  label: 200,
+  notes: 10_000,
+} as const;
+
+/**
+ * Returns a human-readable error if `value` (already trimmed by the caller)
+ * exceeds `max` characters, else `null`. A `null` value always passes — an
+ * absent or cleared field has no length to check. Counts UTF-16 code units,
+ * which is the unit JS `.length` and Postgres `char_length` agree on closely
+ * enough for a coarse abuse ceiling.
+ */
+export function checkTextLength(
+  value: string | null,
+  field: string,
+  max: number,
+): string | null {
+  if (value !== null && value.length > max) {
+    return `${field} must be at most ${max} characters`;
+  }
+  return null;
+}
+
 export type RegionBoxResult =
   | { ok: true; box: { x: number; y: number; w: number; h: number } }
   | { ok: false; error: string };

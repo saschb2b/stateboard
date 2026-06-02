@@ -1,6 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { isFiniteIn01, validateRegionBox } from "./types.ts";
+import {
+  TEXT_LIMITS,
+  checkTextLength,
+  isFiniteIn01,
+  validateRegionBox,
+} from "./types.ts";
 
 describe("isFiniteIn01", () => {
   it("accepts finite numbers within [0, 1]", () => {
@@ -70,5 +75,31 @@ describe("validateRegionBox", () => {
       true,
     );
     assert.equal(validateRegionBox({ x: 0.6, y: 0, w: 0.5, h: 0.2 }).ok, false);
+  });
+});
+
+describe("checkTextLength", () => {
+  it("passes a null value (an absent or cleared field)", () => {
+    assert.equal(checkTextLength(null, "notes", TEXT_LIMITS.notes), null);
+  });
+
+  it("passes a value at exactly the limit", () => {
+    const atLimit = "a".repeat(TEXT_LIMITS.name);
+    assert.equal(checkTextLength(atLimit, "name", TEXT_LIMITS.name), null);
+  });
+
+  it("rejects a value one character past the limit, naming the field + cap", () => {
+    const tooLong = "a".repeat(TEXT_LIMITS.name + 1);
+    const err = checkTextLength(tooLong, "name", TEXT_LIMITS.name);
+    assert.equal(err, `name must be at most ${TEXT_LIMITS.name} characters`);
+  });
+
+  it("passes the empty string (no length to cap)", () => {
+    assert.equal(checkTextLength("", "label", TEXT_LIMITS.label), null);
+  });
+
+  it("rejects megabyte-scale abuse input", () => {
+    const huge = "x".repeat(5_000_000);
+    assert.notEqual(checkTextLength(huge, "notes", TEXT_LIMITS.notes), null);
   });
 });

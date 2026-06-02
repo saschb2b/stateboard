@@ -11,8 +11,10 @@ import {
 import { requireApiMember } from "@/lib/auth-helpers";
 import {
   REGION_STATES,
+  TEXT_LIMITS,
   type Region,
   type RegionState,
+  checkTextLength,
   validateRegionBox,
 } from "@/lib/types";
 import { badRequest, noContent, notFound, ok } from "@/lib/http";
@@ -78,13 +80,19 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if ("label" in body) {
     if (body.label === null) patch.label = null;
     else if (typeof body.label === "string") {
-      patch.label = body.label.trim() || null;
+      const label = body.label.trim() || null;
+      const labelErr = checkTextLength(label, "label", TEXT_LIMITS.label);
+      if (labelErr) return badRequest(labelErr);
+      patch.label = label;
     }
   }
   if ("notes" in body) {
     if (body.notes === null) patch.notes = null;
     else if (typeof body.notes === "string") {
-      patch.notes = body.notes.trim() || null;
+      const notes = body.notes.trim() || null;
+      const notesErr = checkTextLength(notes, "notes", TEXT_LIMITS.notes);
+      if (notesErr) return badRequest(notesErr);
+      patch.notes = notes;
     }
   }
 

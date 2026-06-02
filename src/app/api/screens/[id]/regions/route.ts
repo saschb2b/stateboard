@@ -11,7 +11,9 @@ import { requireApiMember } from "@/lib/auth-helpers";
 import { newId } from "@/lib/ids";
 import {
   REGION_STATES,
+  TEXT_LIMITS,
   type RegionState,
+  checkTextLength,
   validateRegionBox,
 } from "@/lib/types";
 import { badRequest, created, notFound, ok } from "@/lib/http";
@@ -77,6 +79,11 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     typeof body.notes === "string" && body.notes.trim()
       ? body.notes.trim()
       : null;
+
+  const labelErr = checkTextLength(label, "label", TEXT_LIMITS.label);
+  if (labelErr) return badRequest(labelErr);
+  const notesErr = checkTextLength(notes, "notes", TEXT_LIMITS.notes);
+  if (notesErr) return badRequest(notesErr);
 
   const region = await createRegion(
     {

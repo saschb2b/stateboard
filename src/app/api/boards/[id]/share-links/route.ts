@@ -8,6 +8,7 @@ import {
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { newShareToken } from "@/lib/ids";
+import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
 import { badRequest, created, notFound, ok } from "@/lib/http";
 
 interface Ctx {
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         ? body.label.trim()
         : null;
   }
+  const labelErr = checkTextLength(label, "label", TEXT_LIMITS.label);
+  if (labelErr) return badRequest(labelErr);
 
   const link = await createShareLink({
     token: newShareToken(),

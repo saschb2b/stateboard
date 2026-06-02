@@ -11,6 +11,7 @@ import {
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { UPLOADS_DIR } from "@/lib/paths";
+import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
 import { badRequest, noContent, notFound, ok } from "@/lib/http";
 
 interface Ctx {
@@ -42,7 +43,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if ("label" in body) {
     if (body.label === null) patch.label = null;
     else if (typeof body.label === "string") {
-      patch.label = body.label.trim() || null;
+      const label = body.label.trim() || null;
+      const labelErr = checkTextLength(label, "label", TEXT_LIMITS.label);
+      if (labelErr) return badRequest(labelErr);
+      patch.label = label;
     }
   }
 
