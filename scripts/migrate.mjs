@@ -33,6 +33,26 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
+/**
+ * Render a connection string for logging with the password masked. The URL
+ * is malformed (that's why we're here), so this works on the raw string, not
+ * the URL parser: it keeps the scheme, username, host, port, and database —
+ * the parts useful for debugging — and replaces the password (between the
+ * userinfo ":" and the "@") with ***.
+ */
+function redactDbUrl(raw) {
+  if (typeof raw !== "string" || raw === "") return "(empty)";
+  const schemeEnd = raw.indexOf("://");
+  const at = raw.lastIndexOf("@");
+  if (schemeEnd === -1 || at <= schemeEnd) return raw; // no "user:pass@" to hide
+  const userinfo = raw.slice(schemeEnd + 3, at);
+  const colon = userinfo.indexOf(":");
+  if (colon === -1) return raw; // userinfo carries no password
+  const head = raw.slice(0, schemeEnd + 3);
+  const user = userinfo.slice(0, colon);
+  return `${head}${user}:***${raw.slice(at)}`;
+}
+
 let client;
 try {
   client = new pg.Client({ connectionString: databaseUrl });
@@ -44,6 +64,7 @@ try {
   if (err && err.code === "ERR_INVALID_URL") {
     console.error(
       "DATABASE_URL is not a valid postgres connection string.\n" +
+        `  value (password masked): ${redactDbUrl(databaseUrl)}\n` +
         "If the password contains URL-reserved characters (notably `/`, " +
         "which `openssl rand -base64` frequently includes), percent-encode " +
         "them in the URL — or use a URL-safe password, e.g. `openssl rand -hex 32`.",
