@@ -238,8 +238,8 @@ export default function LandingPage() {
               sx={{
                 mt: 3,
                 p: 3,
-                borderLeft: 4,
-                borderColor: "primary.main",
+                border: 1,
+                borderColor: "divider",
                 bgcolor: "background.paper",
                 borderRadius: 1,
               }}
