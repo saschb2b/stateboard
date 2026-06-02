@@ -22,7 +22,7 @@ Three things follow from this and you must protect them:
 
 The roadmap is staged. The narrative version lives in [`src/content/docs/roadmap.mdx`](./src/content/docs/roadmap.mdx) (rendered at `/docs/roadmap`); the machine-readable version is in [GitHub milestones](https://github.com/saschb2b/stateboard/milestones), and every open issue is assigned to one.
 
-The current stage is **v1 — team-ready** (released as `2026.5.0`). **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
+The current stage is **v1 — team-ready** (released as `2026.5.1`). **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
 
 The three v0 states are **load-bearing**. Don't add a fourth state, don't rename them, don't make them configurable, don't soften "missing" to "planned". Their force comes from being three blunt categories that match how stakeholders actually think. The `v1.x` "custom states" ticket allows _additional_ states alongside the three defaults — never replacing them.
 

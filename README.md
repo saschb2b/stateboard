@@ -6,7 +6,7 @@
 [![Pages](https://github.com/saschb2b/stateboard/actions/workflows/pages.yml/badge.svg?branch=main)](https://saschb2b.github.io/stateboard/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-📦 **Current release:** [`2026.5.0` (team-ready)](https://github.com/saschb2b/stateboard/releases/latest) — see the [changelog](./CHANGELOG.md) for what shipped and what's intentionally not here yet.
+📦 **Current release:** [`2026.5.1` (team-ready)](https://github.com/saschb2b/stateboard/releases/latest) — see the [changelog](./CHANGELOG.md) for what shipped and what's intentionally not here yet.
 
 🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)** — explore the example board, hover regions, try Present mode. The editor itself needs the self-hosted version (link below).
 

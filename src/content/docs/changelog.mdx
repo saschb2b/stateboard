@@ -9,6 +9,35 @@ The canonical source is [`CHANGELOG.md`](https://github.com/saschb2b/stateboard/
 
 ---
 
+## 2026.5.1
+
+A fix release for `2026.5.0`. **Headline: sign-in actually works now.** Two mismatches introduced by the Better Auth dependency bump broke OIDC sign-in on a fresh `2026.5.0` install — every attempt ended in a 500 or a Keycloak `invalid_redirect_uri`. Anyone running `2026.5.0` should upgrade.
+
+### Fixed — sign-in (broken in 2026.5.0)
+
+- **Better Auth columns match the library again.** They were created snake_case while Better Auth queries camelCase (`expiresAt`, `emailVerified`, `userId`, …), so sign-in 500'd with `column "expiresAt" of relation "verification" does not exist`. New migration `0005` renames them — data, indexes, and foreign keys preserved.
+- **OIDC callback path corrected** to `/api/auth/oauth2/callback/keycloak` (Better Auth's genericOAuth path). The bundled realm and every setup doc had registered `/api/auth/callback/keycloak`, which Keycloak rejected.
+- **`pnpm migrate` now loads `.env`**, so `cp .env.example .env && pnpm migrate` creates the schema instead of failing with "DATABASE_URL required".
+
+### Fixed — deployment
+
+- Base64 DB passwords (e.g. from `openssl rand -base64`) no longer break `DATABASE_URL` parsing; the parse-error log masks the password rather than leaking or hiding it entirely.
+
+### Hardened
+
+- Free-text fields (name / description / label / notes) and JSON request bodies are length-capped on every write. The uploads route sends `X-Content-Type-Options: nosniff` and turns a truncated image into a clean 400 instead of a 500. The region box invariant (`x+w`, `y+h` ≤ 1) is enforced on PATCH as well as POST.
+
+### Editor & accessibility
+
+- Failed saves now surface an error instead of silently doing nothing.
+- The editor's "open share view" icon button has an accessible name.
+
+### Under the hood
+
+- A zero-dependency `node:test` suite now covers the coordinate/validation logic, the example board's invariants, the role-rank authorization check, and the `DATABASE_URL` redaction. CI runs on Node 26 to match the runtime image.
+
+---
+
 ## 2026.5.0 — Team-ready
 
 The first stable cut. You can stand StateBoard up in a company, hand the URL to your stakeholders, and stop pasting screenshots into Confluence.
