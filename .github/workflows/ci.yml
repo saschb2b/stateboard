@@ -28,9 +28,11 @@ jobs:
           run_install: false
 
       - name: Setup Node
+        # Match the runtime image (Dockerfile: node:26-bookworm-slim) so CI
+        # tests what ships, not an older line.
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 26
           cache: pnpm
 
       # The runtime is pure-JS (pg + better-auth) — no native build step.
