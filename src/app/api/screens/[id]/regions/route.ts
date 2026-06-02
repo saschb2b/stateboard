@@ -9,15 +9,16 @@ import {
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { newId } from "@/lib/ids";
-import { REGION_STATES, type RegionState } from "@/lib/types";
+import {
+  REGION_STATES,
+  type RegionState,
+  validateRegionBox,
+} from "@/lib/types";
 import { badRequest, created, notFound, ok } from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
 }
-
-const isFiniteIn01 = (n: unknown): n is number =>
-  typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
 
 async function loadOwnedScreen(id: string, workspaceId: string) {
   const screen = await getScreen(id);
@@ -58,20 +59,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   } | null;
   if (!body) return badRequest("invalid JSON body");
 
-  if (
-    !isFiniteIn01(body.x) ||
-    !isFiniteIn01(body.y) ||
-    !isFiniteIn01(body.w) ||
-    !isFiniteIn01(body.h)
-  ) {
-    return badRequest("x, y, w, h must each be numbers in [0, 1]");
-  }
-  if (body.x + body.w > 1.0001 || body.y + body.h > 1.0001) {
-    return badRequest("region extends beyond screen bounds");
-  }
-  if (body.w <= 0 || body.h <= 0) {
-    return badRequest("region must have non-zero size");
-  }
+  const box = validateRegionBox(body);
+  if (!box.ok) return badRequest(box.error);
+
   if (
     typeof body.state !== "string" ||
     !REGION_STATES.includes(body.state as RegionState)
@@ -92,10 +82,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     {
       id: newId(),
       screenId,
-      x: body.x,
-      y: body.y,
-      w: body.w,
-      h: body.h,
+      x: box.box.x,
+      y: box.box.y,
+      w: box.box.w,
+      h: box.box.h,
       state: body.state as RegionState,
       label,
       notes,

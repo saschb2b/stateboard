@@ -9,26 +9,29 @@ import {
   writeAudit,
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
-import { REGION_STATES, type RegionState } from "@/lib/types";
+import {
+  REGION_STATES,
+  type Region,
+  type RegionState,
+  validateRegionBox,
+} from "@/lib/types";
 import { badRequest, noContent, notFound, ok } from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-const isFiniteIn01 = (n: unknown): n is number =>
-  typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
-
-async function ensureRegionInWorkspace(
+async function loadRegionInWorkspace(
   id: string,
   workspaceId: string,
-): Promise<boolean> {
+): Promise<Region | null> {
   const region = await getRegion(id);
-  if (!region) return false;
+  if (!region) return null;
   const screen = await getScreen(region.screenId);
-  if (!screen) return false;
+  if (!screen) return null;
   const board = await getBoard(screen.boardId);
-  return !!board && board.workspaceId === workspaceId;
+  if (!board || board.workspaceId !== workspaceId) return null;
+  return region;
 }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
@@ -36,9 +39,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (member instanceof NextResponse) return member;
 
   const { id } = await params;
-  if (!(await ensureRegionInWorkspace(id, member.workspaceId))) {
-    return notFound("region not found");
-  }
+  const existing = await loadRegionInWorkspace(id, member.workspaceId);
+  if (!existing) return notFound("region not found");
 
   const body = (await req.json().catch(() => null)) as Record<
     string,
@@ -48,13 +50,21 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
   const patch: Parameters<typeof updateRegion>[1] = {};
 
-  for (const k of ["x", "y", "w", "h"] as const) {
-    if (k in body) {
-      if (!isFiniteIn01(body[k])) {
-        return badRequest(`${k} must be a number in [0, 1]`);
-      }
-      patch[k] = body[k];
-    }
+  // Validate the *resulting* geometry, not each field in isolation: a PATCH
+  // that only moves x or shrinks w could otherwise push the box off-screen or
+  // to zero area — invariants POST enforces but this path used to skip.
+  if ("x" in body || "y" in body || "w" in body || "h" in body) {
+    const box = validateRegionBox({
+      x: "x" in body ? body.x : existing.x,
+      y: "y" in body ? body.y : existing.y,
+      w: "w" in body ? body.w : existing.w,
+      h: "h" in body ? body.h : existing.h,
+    });
+    if (!box.ok) return badRequest(box.error);
+    if ("x" in body) patch.x = box.box.x;
+    if ("y" in body) patch.y = box.box.y;
+    if ("w" in body) patch.w = box.box.w;
+    if ("h" in body) patch.h = box.box.h;
   }
   if ("state" in body) {
     if (
@@ -98,7 +108,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   if (member instanceof NextResponse) return member;
 
   const { id } = await params;
-  if (!(await ensureRegionInWorkspace(id, member.workspaceId))) {
+  if (!(await loadRegionInWorkspace(id, member.workspaceId))) {
     return notFound("region not found");
   }
   if (!(await deleteRegion(id, member.user.id))) {
