@@ -234,6 +234,7 @@ export function BoardEditor({
                   href={`/share/${activeShareLink.token}`}
                   target="_blank"
                   rel="noopener"
+                  aria-label="Open share view in a new tab"
                 >
                   <OpenInNewIcon fontSize="small" />
                 </IconButton>
