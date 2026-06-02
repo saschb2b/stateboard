@@ -12,7 +12,14 @@ import {
 import { requireApiMember } from "@/lib/auth-helpers";
 import { UPLOADS_DIR } from "@/lib/paths";
 import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
-import { badRequest, noContent, notFound, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import {
+  badRequest,
+  noContent,
+  notFound,
+  ok,
+  payloadTooLarge,
+} from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -34,10 +41,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const owned = await loadOwnedScreen(id, member.workspaceId);
   if (!owned) return notFound("screen not found");
 
-  const body = (await req.json().catch(() => null)) as {
-    label?: unknown;
-  } | null;
-  if (!body) return badRequest("invalid JSON body");
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
+  }
+  const body = parsed.value as { label?: unknown };
 
   const patch: { label?: string | null } = {};
   if ("label" in body) {

@@ -16,7 +16,8 @@ import {
   checkTextLength,
   validateRegionBox,
 } from "@/lib/types";
-import { badRequest, created, notFound, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import { badRequest, created, notFound, ok, payloadTooLarge } from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -50,7 +51,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     return notFound("screen not found");
   }
 
-  const body = (await req.json().catch(() => null)) as {
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
+  }
+  const body = parsed.value as {
     x?: unknown;
     y?: unknown;
     w?: unknown;
@@ -58,8 +65,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     state?: unknown;
     label?: unknown;
     notes?: unknown;
-  } | null;
-  if (!body) return badRequest("invalid JSON body");
+  };
 
   const box = validateRegionBox(body);
   if (!box.ok) return badRequest(box.error);

@@ -9,7 +9,8 @@ import {
 import { requireApiMember } from "@/lib/auth-helpers";
 import { newShareToken } from "@/lib/ids";
 import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
-import { badRequest, created, notFound, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import { badRequest, created, notFound, ok, payloadTooLarge } from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -36,7 +37,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     return notFound("board not found");
   }
 
-  const body = (await req.json().catch(() => ({}))) as { label?: unknown };
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok && parsed.tooLarge) return payloadTooLarge();
+  const body = (parsed.ok ? parsed.value : {}) as { label?: unknown };
   let label: string | null = null;
   if ("label" in body) {
     if (typeof body.label !== "string" && body.label !== null) {

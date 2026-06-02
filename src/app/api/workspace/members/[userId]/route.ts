@@ -9,7 +9,14 @@ import {
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { isWorkspaceRole } from "@/lib/types";
-import { badRequest, noContent, notFound, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import {
+  badRequest,
+  noContent,
+  notFound,
+  ok,
+  payloadTooLarge,
+} from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ userId: string }>;
@@ -23,10 +30,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const target = await getMembership(member.workspaceId, userId);
   if (!target) return notFound("member not found");
 
-  const body = (await req.json().catch(() => null)) as {
-    role?: unknown;
-  } | null;
-  if (!body || !isWorkspaceRole(body.role)) {
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok && parsed.tooLarge) return payloadTooLarge();
+  const body = (parsed.ok ? parsed.value : {}) as { role?: unknown };
+  if (!isWorkspaceRole(body.role)) {
     return badRequest("role must be one of owner, editor, viewer");
   }
 

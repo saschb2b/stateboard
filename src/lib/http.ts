@@ -14,5 +14,8 @@ export const notFound = (message = "Not found") =>
 export const badRequest = (message: string) =>
   NextResponse.json({ error: message }, { status: 400 });
 
+export const payloadTooLarge = (message = "Request body too large") =>
+  NextResponse.json({ error: message }, { status: 413 });
+
 export const serverError = (message = "Internal server error") =>
   NextResponse.json({ error: message }, { status: 500 });

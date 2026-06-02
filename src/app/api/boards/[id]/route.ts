@@ -9,7 +9,14 @@ import {
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
-import { badRequest, noContent, notFound, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import {
+  badRequest,
+  noContent,
+  notFound,
+  ok,
+  payloadTooLarge,
+} from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -44,11 +51,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (!(await ensureBoardInWorkspace(id, member.workspaceId))) {
     return notFound("board not found");
   }
-  const body = (await req.json().catch(() => null)) as {
-    name?: unknown;
-    description?: unknown;
-  } | null;
-  if (!body) return badRequest("invalid JSON body");
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
+  }
+  const body = parsed.value as { name?: unknown; description?: unknown };
 
   const patch: { name?: string; description?: string | null } = {};
   if (typeof body.name === "string") {

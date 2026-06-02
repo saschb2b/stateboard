@@ -17,7 +17,14 @@ import {
   checkTextLength,
   validateRegionBox,
 } from "@/lib/types";
-import { badRequest, noContent, notFound, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import {
+  badRequest,
+  noContent,
+  notFound,
+  ok,
+  payloadTooLarge,
+} from "@/lib/http";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -44,11 +51,13 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const existing = await loadRegionInWorkspace(id, member.workspaceId);
   if (!existing) return notFound("region not found");
 
-  const body = (await req.json().catch(() => null)) as Record<
-    string,
-    unknown
-  > | null;
-  if (!body) return badRequest("invalid JSON body");
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
+  }
+  const body = parsed.value;
 
   const patch: Parameters<typeof updateRegion>[1] = {};
 

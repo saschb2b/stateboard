@@ -4,7 +4,8 @@ import { createBoard, createShareLink, listBoards, writeAudit } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { newId, newShareToken } from "@/lib/ids";
 import { TEXT_LIMITS, checkTextLength } from "@/lib/types";
-import { badRequest, created, ok } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import { badRequest, created, ok, payloadTooLarge } from "@/lib/http";
 
 export async function GET() {
   const member = await requireApiMember("viewer");
@@ -16,11 +17,13 @@ export async function POST(req: NextRequest) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
-  const body = (await req.json().catch(() => null)) as {
-    name?: unknown;
-    description?: unknown;
-  } | null;
-  if (!body) return badRequest("invalid JSON body");
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
+  }
+  const body = parsed.value as { name?: unknown; description?: unknown };
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   if (!name) return badRequest("name is required");
