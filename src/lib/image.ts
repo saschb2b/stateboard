@@ -5,6 +5,12 @@
  * small and easy to reason about. Only used during screenshot upload to
  * record intrinsic dimensions, so we can render absolute-positioned regions
  * with the correct aspect ratio.
+ *
+ * Returns `null` for anything it can't read — including a truncated or
+ * malformed buffer whose magic bytes match but whose dimension fields run
+ * past the end. It must never throw: the upload handler relies on the
+ * `ImageDims | null` contract to turn a bad upload into a clean 400 rather
+ * than an unhandled 500.
  */
 
 export interface ImageDims {
@@ -23,6 +29,7 @@ export function readImageDims(buf: Buffer): ImageDims | null {
     buf[2] === 0x4e &&
     buf[3] === 0x47
   ) {
+    if (buf.length < 24) return null; // IHDR width@16/height@20 must be present
     return {
       width: buf.readUInt32BE(16),
       height: buf.readUInt32BE(20),
@@ -55,12 +62,15 @@ export function readImageDims(buf: Buffer): ImageDims | null {
         marker !== 0xc8 &&
         marker !== 0xcc;
       if (isSOF) {
+        // precision@+2, height@+3..+4, width@+5..+6 — bail if truncated
+        if (offset + 7 > buf.length) return null;
         return {
           height: buf.readUInt16BE(offset + 3),
           width: buf.readUInt16BE(offset + 5),
           mimeType: "image/jpeg",
         };
       }
+      if (offset + 2 > buf.length) return null; // segment length field
       const segLen = buf.readUInt16BE(offset);
       offset += segLen;
     }
@@ -80,6 +90,7 @@ export function readImageDims(buf: Buffer): ImageDims | null {
   ) {
     const fourCC = buf.toString("ascii", 12, 16);
     if (fourCC === "VP8 ") {
+      if (buf.length < 30) return null; // width@26, height@28
       return {
         width: buf.readUInt16LE(26) & 0x3fff,
         height: buf.readUInt16LE(28) & 0x3fff,
@@ -104,6 +115,7 @@ export function readImageDims(buf: Buffer): ImageDims | null {
       return { width, height, mimeType: "image/webp" };
     }
     if (fourCC === "VP8X") {
+      if (buf.length < 31) return null; // canvas w@24..26, h@27..29 (24-bit LE)
       const w = 1 + ((buf.readUInt32LE(24) & 0x00ffffff) >>> 0); // 24-bit LE
       const h = 1 + ((buf.readUInt32LE(27) & 0x00ffffff) >>> 0);
       return { width: w, height: h, mimeType: "image/webp" };
