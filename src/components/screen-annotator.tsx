@@ -20,7 +20,7 @@ import {
   type RegionState,
   type ScreenWithRegions,
 } from "@/lib/types";
-import { RegionOverlay } from "./region-overlay";
+import { RegionOverlay, type ResizeCorner } from "./region-overlay";
 import { StateChip } from "./state-chip";
 
 interface ScreenAnnotatorProps {
@@ -58,6 +58,57 @@ interface DraftRect {
 /** Minimum draw size (relative units) to count as a region. */
 const MIN_REGION_SIZE = 0.005;
 
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, v));
+
+type DragMode = "move" | `resize-${ResizeCorner}`;
+
+interface DragState {
+  id: string;
+  mode: DragMode;
+  /** Pointer position (relative units) where the drag began. */
+  start: { x: number; y: number };
+  /** The region's box at drag start, used as the delta base. */
+  orig: { x: number; y: number; w: number; h: number };
+}
+
+/**
+ * Apply a pointer delta (relative units) to a region box for the active
+ * drag. Move slides the whole box; a resize drags one corner while the
+ * opposite edges stay pinned. Everything is clamped to [0,1] with a minimum
+ * size, so the box can never invert or leave the screenshot.
+ */
+function applyDrag(
+  drag: DragState,
+  dx: number,
+  dy: number,
+): { x: number; y: number; w: number; h: number } {
+  const { x, y, w, h } = drag.orig;
+  if (drag.mode === "move") {
+    return { x: clamp(x + dx, 0, 1 - w), y: clamp(y + dy, 0, 1 - h), w, h };
+  }
+  const corner = drag.mode.slice("resize-".length);
+  const right = x + w;
+  const bottom = y + h;
+  let nx = x;
+  let ny = y;
+  let nw = w;
+  let nh = h;
+  if (corner.includes("w")) {
+    nx = clamp(x + dx, 0, right - MIN_REGION_SIZE);
+    nw = right - nx;
+  } else {
+    nw = clamp(w + dx, MIN_REGION_SIZE, 1 - x);
+  }
+  if (corner.includes("n")) {
+    ny = clamp(y + dy, 0, bottom - MIN_REGION_SIZE);
+    nh = bottom - ny;
+  } else {
+    nh = clamp(h + dy, MIN_REGION_SIZE, 1 - y);
+  }
+  return { x: nx, y: ny, w: nw, h: nh };
+}
+
 export function ScreenAnnotator({
   screen,
   onScreenUpdated,
@@ -70,6 +121,7 @@ export function ScreenAnnotator({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftRect | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [drag, setDrag] = useState<DragState | null>(null);
   const [draftDefaults, setDraftDefaults] = useState<{
     state: RegionState;
     label: string;
@@ -118,28 +170,117 @@ export function ScreenAnnotator({
     [readOnly, toRel],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!drawing || !draft) return;
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (drag) {
       const rel = toRel(e.clientX, e.clientY);
       if (!rel) return;
-      setDraft({
-        x: Math.min(draft.x, rel.x),
-        y: Math.min(draft.y, rel.y),
-        w: Math.abs(rel.x - draft.x),
-        h: Math.abs(rel.y - draft.y),
-      });
-    },
-    [drawing, draft, toRel],
-  );
+      const box = applyDrag(drag, rel.x - drag.start.x, rel.y - drag.start.y);
+      setRegions((prev) =>
+        prev.map((r) => (r.id === drag.id ? { ...r, ...box } : r)),
+      );
+      return;
+    }
+    if (!drawing || !draft) return;
+    const rel = toRel(e.clientX, e.clientY);
+    if (!rel) return;
+    setDraft({
+      x: Math.min(draft.x, rel.x),
+      y: Math.min(draft.y, rel.y),
+      w: Math.abs(rel.x - draft.x),
+      h: Math.abs(rel.y - draft.y),
+    });
+  };
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
+    if (drag) {
+      const region = regions.find((r) => r.id === drag.id);
+      const { orig, id } = drag;
+      setDrag(null);
+      if (
+        region &&
+        (region.x !== orig.x ||
+          region.y !== orig.y ||
+          region.w !== orig.w ||
+          region.h !== orig.h)
+      ) {
+        void persistGeometry(
+          id,
+          { x: region.x, y: region.y, w: region.w, h: region.h },
+          orig,
+        );
+      }
+      return;
+    }
     if (!drawing) return;
     setDrawing(false);
     if (!draft || draft.w < MIN_REGION_SIZE || draft.h < MIN_REGION_SIZE) {
       setDraft(null);
     }
-  }, [drawing, draft]);
+  };
+
+  // Grab a region's body to move it: select it and record the drag origin;
+  // the surface's mousemove/up handlers carry it from there.
+  const beginRegionDrag = (id: string, e: React.MouseEvent) => {
+    if (readOnly) return;
+    e.stopPropagation();
+    const region = regions.find((r) => r.id === id);
+    const rel = toRel(e.clientX, e.clientY);
+    if (!region || !rel) return;
+    setDraft(null);
+    setSelectedId(id);
+    setDrag({
+      id,
+      mode: "move",
+      start: rel,
+      orig: { x: region.x, y: region.y, w: region.w, h: region.h },
+    });
+  };
+
+  const beginResize = (
+    id: string,
+    corner: ResizeCorner,
+    e: React.MouseEvent,
+  ) => {
+    if (readOnly) return;
+    e.stopPropagation();
+    const region = regions.find((r) => r.id === id);
+    const rel = toRel(e.clientX, e.clientY);
+    if (!region || !rel) return;
+    setSelectedId(id);
+    setDrag({
+      id,
+      mode: `resize-${corner}`,
+      start: rel,
+      orig: { x: region.x, y: region.y, w: region.w, h: region.h },
+    });
+  };
+
+  // Persist a moved/resized box. The optimistic geometry is already in local
+  // state from the drag; on failure we roll back to the pre-drag box.
+  const persistGeometry = async (
+    id: string,
+    box: { x: number; y: number; w: number; h: number },
+    orig: { x: number; y: number; w: number; h: number },
+  ) => {
+    const res = await fetch(`/api/regions/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(box),
+    });
+    if (!res.ok) {
+      const reverted = regions.map((r) =>
+        r.id === id ? { ...r, ...orig } : r,
+      );
+      setRegions(reverted);
+      onScreenUpdated({ ...screen, regions: reverted });
+      onError?.(await failureMessage(res, "Couldn't update the region."));
+      return;
+    }
+    const updated: Region = await res.json();
+    const next = regions.map((r) => (r.id === updated.id ? updated : r));
+    setRegions(next);
+    onScreenUpdated({ ...screen, regions: next });
+  };
 
   // --- API actions -------------------------------------------------------
 
@@ -305,6 +446,8 @@ export function ScreenAnnotator({
               setDraft(null);
               setSelectedId(id);
             }}
+            onRegionMouseDown={readOnly ? undefined : beginRegionDrag}
+            onResizeStart={readOnly ? undefined : beginResize}
             filterState={filterState}
           />
 
