@@ -20,7 +20,8 @@ import type {
  * We do not auto-run migrations from here. The migration runner is a
  * separate, explicit step:
  *   - dev: `pnpm migrate`
- *   - prod: a Helm pre-install/upgrade Job, or the Dockerfile's entrypoint
+ *   - prod: a Helm pre-install/upgrade Job, or the one-shot `migrate`
+ *     service in deploy/docker-compose.yaml
  * Doing it in-process would make hot reload and concurrent boots racy.
  */
 let _pool: Pool | null = null;

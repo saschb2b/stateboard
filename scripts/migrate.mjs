@@ -13,8 +13,10 @@
  * Usage:
  *   DATABASE_URL=postgres://... pnpm migrate
  *
- * Loaded automatically on app startup (lib/db.ts) and also runs as the
- * migrate Job in the Helm chart pre-install/upgrade hook.
+ * Always an explicit step — never on app startup. The server (lib/db.ts)
+ * deliberately does NOT auto-migrate; `node server.js` only serves. In prod
+ * this runs as the Helm pre-install/upgrade Job, or the one-shot `migrate`
+ * service in deploy/docker-compose.yaml — both just invoke this script.
  */
 
 import { readFileSync, readdirSync } from "node:fs";
