@@ -57,7 +57,7 @@ const overviewRegions: DemoRegionDef[] = [
     state: "mock",
     label: "Active users metric",
     notes:
-      "UI is built but we're still wiring up the analytics ingest — number is hardcoded.",
+      "UI is built but we're still wiring up the analytics ingest. Number is hardcoded.",
   },
   {
     x: 932 / 1280,
@@ -93,7 +93,7 @@ const overviewRegions: DemoRegionDef[] = [
     h: 60 / 720,
     state: "missing",
     label: "AI summary line",
-    notes: "Placeholder text — auto-generated summaries not wired up.",
+    notes: "Placeholder text. Auto-generated summaries not wired up.",
   },
 ];
 
@@ -132,7 +132,7 @@ const reportsRegions: DemoRegionDef[] = [
     h: 56 / 720,
     state: "missing",
     label: "Cohort retention report",
-    notes: "Empty placeholder — report type not implemented.",
+    notes: "Empty placeholder. Report type not implemented.",
   },
   {
     x: 252 / 1280,
@@ -150,7 +150,7 @@ const reportsRegions: DemoRegionDef[] = [
     h: 180 / 720,
     state: "mock",
     label: "PDF export",
-    notes: "Renders a static placeholder PDF — real templating in v2.",
+    notes: "Renders a static placeholder PDF. Real templating in v2.",
   },
 ];
 
@@ -177,9 +177,9 @@ export const DEMO_TOKEN = "demo";
 const DEMO_BOARD: Board = {
   id: "demo",
   workspaceId: "demo",
-  name: "Acme Dashboard / Q2 — example",
+  name: "Acme Dashboard / Q2 (example)",
   description:
-    "A worked example of how a product team uses StateBoard. Two screens, three states, real notes — explore the regions to get a feel for it.",
+    "A worked example of how a product team uses StateBoard. Two screens, three states, real notes. Explore the regions to get a feel for it.",
   createdBy: null,
   createdAt: 0,
   updatedAt: 0,
