@@ -59,7 +59,7 @@ cp deploy/docker-compose.env.example deploy/.env
 docker compose -f deploy/docker-compose.yaml --env-file deploy/.env up -d
 ```
 
-In your existing Keycloak realm, create a confidential client and register `<STATEBOARD_BASE_URL>/api/auth/callback/keycloak` as a Valid redirect URI — see [Self-hosting → Keycloak setup](https://saschb2b.github.io/stateboard/docs/self-hosting#keycloak-setup) for the full checklist. Same env-var names work with any OIDC IdP; only the issuer URL changes.
+In your existing Keycloak realm, create a confidential client and register `<STATEBOARD_BASE_URL>/api/auth/oauth2/callback/keycloak` as a Valid redirect URI — see [Self-hosting → Keycloak setup](https://saschb2b.github.io/stateboard/docs/self-hosting#keycloak-setup) for the full checklist. Same env-var names work with any OIDC IdP; only the issuer URL changes.
 
 Terminate TLS at your reverse proxy (Caddy, nginx, Traefik, a cloud LB) so `STATEBOARD_BASE_URL` is HTTPS.
 

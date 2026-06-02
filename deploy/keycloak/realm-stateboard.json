@@ -45,7 +45,9 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://localhost:3000/api/auth/callback/keycloak"],
+      "redirectUris": [
+        "http://localhost:3000/api/auth/oauth2/callback/keycloak"
+      ],
       "webOrigins": ["http://localhost:3000"],
       "secret": "stateboard-dev-secret"
     }

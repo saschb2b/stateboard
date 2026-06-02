@@ -115,7 +115,7 @@ Or read the URL from a Secret via `externalDatabaseUrlExistingSecret.{name,key}`
 ## Keycloak setup
 
 1. In your realm, create a confidential client with id `stateboard` (or anything you set in `KEYCLOAK_CLIENT_ID`).
-2. Set the **Valid redirect URI** to `https://stateboard.example.com/api/auth/callback/keycloak`.
+2. Set the **Valid redirect URI** to `https://stateboard.example.com/api/auth/oauth2/callback/keycloak`.
 3. Set **Web origins** to `https://stateboard.example.com`.
 4. Copy the client secret into `KEYCLOAK_CLIENT_SECRET`.
 5. Set `KEYCLOAK_ISSUER` to the realm URL: `https://keycloak.example.com/realms/<realm>`.

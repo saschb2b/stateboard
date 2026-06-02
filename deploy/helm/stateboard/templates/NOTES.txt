@@ -35,7 +35,7 @@ How to reach it:
 
 Auth setup checklist:
   1. In Keycloak, create a confidential client with the redirect URI
-     {{ .Values.auth.baseUrl }}/api/auth/callback/keycloak
+     {{ .Values.auth.baseUrl }}/api/auth/oauth2/callback/keycloak
   2. Copy the client secret into auth.keycloak.clientSecret (or your
      existingSecret as KEYCLOAK_CLIENT_SECRET).
   3. Set auth.secret to a 32-byte random string: openssl rand -base64 32

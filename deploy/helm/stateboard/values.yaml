@@ -103,7 +103,7 @@ probes:
 # a pre-created Secret via auth.existingSecret.
 auth:
   # Public URL the app reaches itself at. Must match Keycloak's
-  # "Valid redirect URIs" (StateBoard registers /api/auth/callback/keycloak).
+  # "Valid redirect URIs" (StateBoard registers /api/auth/oauth2/callback/keycloak).
   baseUrl: "https://stateboard.example.com"
   # Random string used to sign session cookies. Generate with:
   #   openssl rand -base64 32
