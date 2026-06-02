@@ -165,7 +165,9 @@ export function BoardShare({ board, screens }: BoardShareProps) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={active.mediaUrl}
-                    alt={active.label ?? "screen"}
+                    alt={
+                      active.label ?? `Screen ${screens.indexOf(active) + 1}`
+                    }
                     style={{
                       position: "absolute",
                       inset: 0,

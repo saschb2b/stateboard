@@ -19,7 +19,7 @@ export default function NotFound() {
           </Typography>
           <Link href="/" style={{ textDecoration: "none" }}>
             <Button variant="contained" color="primary">
-              Back to boards
+              Back to StateBoard
             </Button>
           </Link>
         </Box>
