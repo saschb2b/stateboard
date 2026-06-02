@@ -73,7 +73,7 @@ helm install stateboard ./deploy/helm/stateboard \
   --set auth.secret="$(openssl rand -base64 32)" \
   --set auth.keycloak.issuer=https://keycloak.example.com/realms/acme \
   --set auth.keycloak.clientSecret=... \
-  --set postgresql.auth.password="$(openssl rand -base64 16)"
+  --set postgresql.auth.password="$(openssl rand -hex 32)"
 ```
 
 The chart bundles a Bitnami Postgres sub-chart by default. Disable with `--set postgresql.enabled=false` and provide `--set externalDatabaseUrl=...` (or read it from a Secret via `externalDatabaseUrlExistingSecret`). See [`deploy/helm/stateboard/values.yaml`](./deploy/helm/stateboard/values.yaml) for the full reference.

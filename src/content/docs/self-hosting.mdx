@@ -36,7 +36,7 @@ cp deploy/docker-compose.env.example deploy/.env
 # 2. Edit deploy/.env — at minimum:
 #    - STATEBOARD_BASE_URL          public HTTPS URL of the app
 #    - BETTER_AUTH_SECRET           openssl rand -base64 32
-#    - POSTGRES_PASSWORD            openssl rand -base64 16
+#    - POSTGRES_PASSWORD            openssl rand -hex 32  (URL-safe; not -base64)
 #    - KEYCLOAK_ISSUER              https://<your-kc>/realms/<your-realm>
 #    - KEYCLOAK_CLIENT_ID           e.g. "stateboard"
 #    - KEYCLOAK_CLIENT_SECRET       from the client you create below
@@ -84,10 +84,18 @@ helm install stateboard ./deploy/helm/stateboard \
   --set auth.secret="$(openssl rand -base64 32)" \
   --set auth.keycloak.issuer=https://keycloak.example.com/realms/acme \
   --set auth.keycloak.clientSecret=$KC_SECRET \
-  --set postgresql.auth.password="$(openssl rand -base64 16)"
+  --set postgresql.auth.password="$(openssl rand -hex 32)"
 ```
 
 The chart bundles a Bitnami Postgres sub-chart by default. A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up.
+
+<Callout type="warn">
+  Use a **URL-safe** password for the bundled Postgres (`openssl rand -hex 32`).
+  The chart interpolates it into `DATABASE_URL` (a `postgres://` URL), so a
+  `base64` password — whose `/` is reserved in a URL — produces a cryptic
+  `Invalid URL` at startup. A non-URL-safe password must be percent-encoded. If
+  you bring your own `externalDatabaseUrl`, encode the password there too.
+</Callout>
 
 To use an external Postgres:
 

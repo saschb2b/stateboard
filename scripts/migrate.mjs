@@ -33,7 +33,25 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-const client = new pg.Client({ connectionString: databaseUrl });
+let client;
+try {
+  client = new pg.Client({ connectionString: databaseUrl });
+} catch (err) {
+  // pg redacts the connection string in this error, so the raw message
+  // ("Invalid URL", base: postgres://base) is impossible to act on. The
+  // usual cause is a DB password with URL-reserved characters — notably the
+  // "/" that `openssl rand -base64` often produces — embedded unencoded.
+  if (err && err.code === "ERR_INVALID_URL") {
+    console.error(
+      "DATABASE_URL is not a valid postgres connection string.\n" +
+        "If the password contains URL-reserved characters (notably `/`, " +
+        "which `openssl rand -base64` frequently includes), percent-encode " +
+        "them in the URL — or use a URL-safe password, e.g. `openssl rand -hex 32`.",
+    );
+    process.exit(1);
+  }
+  throw err;
+}
 await client.connect();
 
 try {

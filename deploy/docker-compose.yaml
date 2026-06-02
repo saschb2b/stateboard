@@ -46,6 +46,9 @@ services:
     restart: "no"
     command: ["node", "scripts/migrate.mjs"]
     environment:
+      # POSTGRES_PASSWORD is interpolated raw into this URL, so it must be
+      # URL-safe (e.g. `openssl rand -hex 32`) or percent-encoded — see the
+      # note in deploy/docker-compose.env.example.
       DATABASE_URL: postgres://${POSTGRES_USER:-stateboard}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-stateboard}
     depends_on:
       postgres:
