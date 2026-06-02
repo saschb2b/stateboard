@@ -7,6 +7,8 @@ import type { RegionState } from "./types";
 export interface StateMeta {
   label: string;
   description: string;
+  /** Two-to-three word legend, shown beside the count on the share view. */
+  summary: string;
   /** solid color used for chips and outlines */
   color: string;
   /** translucent fill used for region overlays */
@@ -19,6 +21,7 @@ export const STATE_META: Record<RegionState, StateMeta> = {
   shipped: {
     label: "SHIPPED",
     description: "Live, real data, fully wired up",
+    summary: "Live & real",
     color: "#1F8A53",
     fill: "rgba(31, 138, 83, 0.18)",
     contrast: "#FFFFFF",
@@ -26,6 +29,7 @@ export const STATE_META: Record<RegionState, StateMeta> = {
   mock: {
     label: "MOCK",
     description: "UI is in place but data is hardcoded or fake",
+    summary: "UI built, data fake",
     color: "#D4A11A",
     fill: "rgba(212, 161, 26, 0.20)",
     contrast: "#1A1A1A",
@@ -33,6 +37,7 @@ export const STATE_META: Record<RegionState, StateMeta> = {
   missing: {
     label: "MISSING",
     description: "Not built yet",
+    summary: "Not built yet",
     color: "#C8412B",
     fill: "rgba(200, 65, 43, 0.20)",
     contrast: "#FFFFFF",
