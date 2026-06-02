@@ -11,6 +11,35 @@ export type RegionState = (typeof REGION_STATES)[number];
 export const WORKSPACE_ROLES = ["owner", "editor", "viewer"] as const;
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
 
+/**
+ * Role hierarchy: owner ⊇ editor ⊇ viewer. A higher rank can do everything a
+ * lower one can, so guards compare ranks rather than test for an exact role.
+ */
+const ROLE_RANK: Record<WorkspaceRole, number> = {
+  viewer: 0,
+  editor: 1,
+  owner: 2,
+};
+
+/**
+ * Does `actual` satisfy the `required` role? The authorization check behind
+ * both requireApiMember / requirePageMember — a regression here is a privilege
+ * boundary, so it lives here (no `server-only`) where it can be unit-tested.
+ */
+export function meetsRole(
+  actual: WorkspaceRole,
+  required: WorkspaceRole,
+): boolean {
+  return ROLE_RANK[actual] >= ROLE_RANK[required];
+}
+
+/** Narrows an unknown to a valid WorkspaceRole (e.g. a role from a request body). */
+export function isWorkspaceRole(v: unknown): v is WorkspaceRole {
+  return (
+    typeof v === "string" && (WORKSPACE_ROLES as readonly string[]).includes(v)
+  );
+}
+
 export interface Board {
   id: string;
   workspaceId: string;

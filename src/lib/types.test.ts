@@ -4,6 +4,8 @@ import {
   TEXT_LIMITS,
   checkTextLength,
   isFiniteIn01,
+  isWorkspaceRole,
+  meetsRole,
   validateRegionBox,
 } from "./types.ts";
 
@@ -101,5 +103,41 @@ describe("checkTextLength", () => {
   it("rejects megabyte-scale abuse input", () => {
     const huge = "x".repeat(5_000_000);
     assert.notEqual(checkTextLength(huge, "notes", TEXT_LIMITS.notes), null);
+  });
+});
+
+describe("meetsRole", () => {
+  // The full owner ⊇ editor ⊇ viewer matrix, pinned so a flipped comparison
+  // or reordered ranks (a privilege-escalation bug) fails loudly.
+  it("a role always satisfies itself", () => {
+    assert.equal(meetsRole("viewer", "viewer"), true);
+    assert.equal(meetsRole("editor", "editor"), true);
+    assert.equal(meetsRole("owner", "owner"), true);
+  });
+
+  it("a higher rank satisfies a lower requirement", () => {
+    assert.equal(meetsRole("editor", "viewer"), true);
+    assert.equal(meetsRole("owner", "viewer"), true);
+    assert.equal(meetsRole("owner", "editor"), true);
+  });
+
+  it("a lower rank does NOT satisfy a higher requirement", () => {
+    assert.equal(meetsRole("viewer", "editor"), false);
+    assert.equal(meetsRole("viewer", "owner"), false);
+    assert.equal(meetsRole("editor", "owner"), false);
+  });
+});
+
+describe("isWorkspaceRole", () => {
+  it("accepts the three canonical roles", () => {
+    for (const role of ["owner", "editor", "viewer"]) {
+      assert.equal(isWorkspaceRole(role), true);
+    }
+  });
+
+  it("rejects unknown strings, casing, and non-strings", () => {
+    for (const v of ["admin", "Owner", "", "viewer ", 1, null, undefined, {}]) {
+      assert.equal(isWorkspaceRole(v), false);
+    }
   });
 });

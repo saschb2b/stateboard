@@ -3,7 +3,7 @@ import { headers as nextHeaders } from "next/headers";
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
 import { getCurrentMember, type CurrentMember } from "./auth";
-import { WORKSPACE_ROLES, type WorkspaceRole } from "./types";
+import { meetsRole, type WorkspaceRole } from "./types";
 
 /**
  * Helpers shared between server components and API routes.
@@ -12,23 +12,10 @@ import { WORKSPACE_ROLES, type WorkspaceRole } from "./types";
  * when there's no session. `requireApiMember` is for route handlers:
  * returns a 401/403 NextResponse when access fails so the caller can
  * `if (member instanceof NextResponse) return member;`.
+ *
+ * The role-rank comparison (meetsRole) and isWorkspaceRole live in ./types —
+ * they're pure and unit-tested there, free of this module's `server-only`.
  */
-
-const ROLE_RANK: Record<WorkspaceRole, number> = {
-  viewer: 0,
-  editor: 1,
-  owner: 2,
-};
-
-function meetsRole(actual: WorkspaceRole, required: WorkspaceRole): boolean {
-  return ROLE_RANK[actual] >= ROLE_RANK[required];
-}
-
-export function isWorkspaceRole(v: unknown): v is WorkspaceRole {
-  return (
-    typeof v === "string" && (WORKSPACE_ROLES as readonly string[]).includes(v)
-  );
-}
 
 /** Page-level guard: redirect to /sign-in if no session/membership. */
 export async function requirePageMember(

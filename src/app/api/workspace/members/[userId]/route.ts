@@ -7,7 +7,8 @@ import {
   updateMemberRole,
   writeAudit,
 } from "@/lib/db";
-import { requireApiMember, isWorkspaceRole } from "@/lib/auth-helpers";
+import { requireApiMember } from "@/lib/auth-helpers";
+import { isWorkspaceRole } from "@/lib/types";
 import { badRequest, noContent, notFound, ok } from "@/lib/http";
 
 interface Ctx {
