@@ -12,6 +12,7 @@
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\"",
     "build:pages": "node scripts/pages-prebuild.mjs && STATEBOARD_PAGES=1 next build",
     "migrate": "node scripts/migrate.mjs"
   },

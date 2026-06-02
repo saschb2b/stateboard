@@ -124,10 +124,11 @@ Before committing or declaring a task done:
 pnpm typecheck
 pnpm lint
 pnpm format:check
+pnpm test
 pnpm build
 ```
 
-All four must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue** — don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case.
+All five must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue** — don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case. `pnpm test` runs the `node:test` suites (`src/**/*.test.ts`) on Node's built-in runner — no test-framework dependency. Colocate a new unit test next to the module it covers, and prefer covering pure logic (validation, coordinate math, state mapping) over wiring that needs a live DB.
 
 These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts that `auth.secret` is required. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main` — see "Pages demo" below. **Don't merge red CI** — if the workflow fails, fix the underlying issue rather than disabling the check.
 

@@ -103,6 +103,7 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 | `pnpm migrate`      | Apply pending SQL migrations against `DATABASE_URL` |
 | `pnpm lint`         | ESLint                                              |
 | `pnpm typecheck`    | `tsc --noEmit`                                      |
+| `pnpm test`         | Unit tests on Node's built-in runner (`node:test`)  |
 | `pnpm format:check` | Prettier check                                      |
 | `pnpm format`       | Prettier write                                      |
 
