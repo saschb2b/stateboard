@@ -22,7 +22,7 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.8",
-    "better-auth": "^1.6.11",
+    "better-auth": "^1.6.13",
     "fumadocs-core": "^16.8.11",
     "fumadocs-mdx": "^15.0.10",
     "fumadocs-ui": "^16.8.11",

@@ -32,6 +32,13 @@ const nextConfig = isPagesExport
     }
   : {
       output: "standalone",
+      // Better Auth's kysely adapter ships dialect modules for every backend
+      // it supports (bun:sqlite, D1, better-sqlite3, …). We only use Postgres,
+      // but the bundler eagerly resolves all of them and Turbopack (Next 16.2.7+)
+      // hard-fails on the uninstalled sqlite drivers. Keep these external so the
+      // build doesn't traverse into the unused dialects — they're never loaded at
+      // runtime for the Postgres path. (Fixes the better-sqlite3 peer issue, #39.)
+      serverExternalPackages: ["better-auth", "@better-auth/kysely-adapter"],
       // Keep old v0 routes working in case anyone copied a /b/* or /v/*
       // link before the rename to /boards/* and /share/*.
       async redirects() {
