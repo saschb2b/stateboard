@@ -120,8 +120,8 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
                 Boards
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                One board per product or per quarterly review. Most teams keep
-                3–8.
+                One board per product or per quarterly review. Most teams keep 3
+                to 8.
               </Typography>
             </Box>
             {editable ? (
@@ -302,7 +302,7 @@ function EmptyState({ canCreate }: { canCreate: boolean }) {
         sx={{ mb: 3, maxWidth: 460, mx: "auto" }}
       >
         {canCreate
-          ? "Open the example board — two screens, twelve regions across all three states. It's the fastest way to feel what a finished board does."
+          ? "Open the example board: two screens, twelve regions across all three states. It's the fastest way to feel what a finished board does."
           : "An editor in this workspace hasn't created any boards yet. Open the example to see what one looks like."}
       </Typography>
       <Button

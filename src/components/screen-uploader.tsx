@@ -122,7 +122,7 @@ export function ScreenUploader({
           Drop a screenshot here, or click to browse
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          PNG, JPEG, WebP, or GIF — up to 25 MB
+          PNG, JPEG, WebP, or GIF, up to 25 MB
         </Typography>
         {uploading ? (
           <Stack direction="row" spacing={1} alignItems="center">

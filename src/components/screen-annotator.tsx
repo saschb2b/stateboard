@@ -389,7 +389,7 @@ export function ScreenAnnotator({
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 You have viewer access to this workspace. There are no regions
-                on this screen yet — ask an editor to add some.
+                on this screen yet. Ask an editor to add some.
               </Typography>
             </Stack>
           )
