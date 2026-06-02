@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
@@ -604,20 +605,31 @@ function RegionList({
       <Stack spacing={0.5}>
         {regions.map((r, i) => {
           const dimmed = filterState !== null && r.state !== filterState;
+          const name = r.label ?? `Region ${i + 1}`;
           return (
-            <Box
+            <ButtonBase
               key={r.id}
               onClick={() => onSelect(r.id)}
+              aria-label={`${STATE_META[r.state].label}: ${name}`}
               sx={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "flex-start",
+                width: "100%",
+                textAlign: "left",
                 gap: 1,
                 px: 1,
                 py: 0.75,
                 borderRadius: 1,
-                cursor: "pointer",
                 opacity: dimmed ? 0.4 : 1,
                 "&:hover": { bgcolor: "action.hover" },
+                "&.Mui-focusVisible": {
+                  bgcolor: "action.hover",
+                  outline: 2,
+                  outlineStyle: "solid",
+                  outlineColor: "primary.main",
+                  outlineOffset: -2,
+                },
                 transition: "opacity 160ms ease",
               }}
             >
@@ -634,9 +646,9 @@ function RegionList({
                   fontStyle: r.label ? "normal" : "italic",
                 }}
               >
-                {r.label ?? `Region ${i + 1}`}
+                {name}
               </Typography>
-            </Box>
+            </ButtonBase>
           );
         })}
       </Stack>
