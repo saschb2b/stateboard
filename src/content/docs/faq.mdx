@@ -5,13 +5,13 @@ description: The questions that come up most.
 
 ## Why only three states? I want one for "in review."
 
-Three states is the whole product. Four states is a different product (a roadmap tool, an issue tracker, a kanban board) — and those tools already exist and are better at what they do. The reason `shipped` / `mock` / `missing` works is that an exec scanning your share link can fit each region into the correct bucket in under a second. Add nuance and that breaks.
+Three states is the whole product. Four states is a different product (a roadmap tool, an issue tracker, a kanban board), and those tools already exist and are better at what they do. The reason `shipped` / `mock` / `missing` works is that an exec scanning your share link can fit each region into the correct bucket in under a second. Add nuance and that breaks.
 
 The notes field is for nuance ("shipped, but only for new accounts after 2025-01-01"). The state stays blunt.
 
 ## Why is there no auth?
 
-v0 is the wedge — the smallest product that proves the thesis. The teams it's for run on `localhost`, behind a VPN, or on an internal cluster where the network is the auth boundary. v1 brings OIDC and per-board permissions; until then, treat the share URL like a Google Drive "anyone with the link" share.
+v0 is the wedge: the smallest product that proves the thesis. The teams it's for run on `localhost`, behind a VPN, or on an internal cluster where the network is the auth boundary. v1 brings OIDC and per-board permissions; until then, treat the share URL like a Google Drive "anyone with the link" share.
 
 ## Can multiple people edit a board at the same time?
 
@@ -19,15 +19,15 @@ Not safely. v0 has no multi-user model and SQLite is a single writer. If two peo
 
 ## Why SQLite? Why not Postgres from day one?
 
-The pitch promises one Docker container, under 60 seconds to first board. SQLite makes that possible — no second service, no connection string, no init job. v1 adds an optional Postgres sub-chart for teams that want shared state across replicas; v0 doesn't need it.
+The pitch promises one Docker container, under 60 seconds to first board. SQLite makes that possible: no second service, no connection string, no init job. v1 adds an optional Postgres sub-chart for teams that want shared state across replicas; v0 doesn't need it.
 
 ## Will my data survive an upgrade?
 
-Yes — as long as the PVC (Helm) or volume (Docker) survives. The schema uses `CREATE TABLE IF NOT EXISTS` for v0, so adding columns in patches is safe. When v1 ships and brings real schema migrations, we'll document a deliberate migration path before you run the upgrade.
+Yes, as long as the PVC (Helm) or volume (Docker) survives. The schema uses `CREATE TABLE IF NOT EXISTS` for v0, so adding columns in patches is safe. When v1 ships and brings real schema migrations, we'll document a deliberate migration path before you run the upgrade.
 
 ## Can I host the screenshots on S3?
 
-Not in v0. Uploads go to the local filesystem alongside the SQLite database, on the same volume. v1 introduces a pluggable storage layer with S3 as a built-in backend — the data model already separates "filename" from "where the bytes live", so the migration is mechanical.
+Not in v0. Uploads go to the local filesystem alongside the SQLite database, on the same volume. v1 introduces a pluggable storage layer with S3 as a built-in backend; the data model already separates "filename" from "where the bytes live", so the migration is mechanical.
 
 ## Does it phone home?
 
@@ -39,7 +39,7 @@ Roadmap tools answer "when will it ship." StateBoard answers "what state is it i
 
 ## Can I integrate Jira / Linear / Slack?
 
-Not yet. Those land in v1 (Jira issue linking on regions) and v2 (two-way Jira sync, Slack notifications). The product is deliberately small in v0 — adding integrations now would broaden the surface area before the core wedge has a chance to prove itself.
+Not yet. Those land in v1 (Jira issue linking on regions) and v2 (two-way Jira sync, Slack notifications). The product is deliberately small in v0; adding integrations now would broaden the surface area before the core wedge has a chance to prove itself.
 
 ## Why MIT and not something more protective?
 

@@ -23,17 +23,17 @@ Open [http://localhost:3000](http://localhost:3000), click **Continue with Keycl
 
 If you already run Keycloak (or any OIDC IdP) and just want StateBoard + a Postgres next to it, the repo ships [`deploy/docker-compose.yaml`](https://github.com/saschb2b/stateboard/blob/main/deploy/docker-compose.yaml). It contains:
 
-- `postgres` — a 16-alpine instance, data in a named volume, not exposed to the host.
-- `migrate` — runs `node scripts/migrate.mjs` once against the DB and exits. Idempotent on every `up`.
-- `stateboard` — the app, listening on port 3000, uploads in a named volume.
+- `postgres`: a 16-alpine instance, data in a named volume, not exposed to the host.
+- `migrate`: runs `node scripts/migrate.mjs` once against the DB and exits. Idempotent on every `up`.
+- `stateboard`: the app, listening on port 3000, uploads in a named volume.
 
-There is **no Keycloak service** — you point at the one you already run.
+There is **no Keycloak service**. You point at the one you already run.
 
 ```bash
 # 1. Pull the env template and fill it in
 cp deploy/docker-compose.env.example deploy/.env
 
-# 2. Edit deploy/.env — at minimum:
+# 2. Edit deploy/.env, at minimum:
 #    - STATEBOARD_BASE_URL          public HTTPS URL of the app
 #    - BETTER_AUTH_SECRET           openssl rand -base64 32
 #    - POSTGRES_PASSWORD            openssl rand -hex 32  (URL-safe; not -base64)
@@ -50,7 +50,7 @@ Then put your reverse proxy of choice (Caddy, nginx, Traefik, a cloud LB) in fro
 Upgrades: change `STATEBOARD_IMAGE` to a newer tag, `docker compose ... up -d`. The migrate service runs again automatically; it is a no-op when nothing is pending.
 
 <Callout type="info">
-  The `KEYCLOAK_*` env-var names work with any OIDC provider — Better Auth uses
+  The `KEYCLOAK_*` env-var names work with any OIDC provider. Better Auth uses
   OIDC discovery, so only the issuer URL needs to change. Auth0, Authentik,
   Zitadel, Okta, etc. all work the same way.
 </Callout>
@@ -92,9 +92,9 @@ The chart bundles a Bitnami Postgres sub-chart by default. A pre-install / pre-u
 <Callout type="warn">
   Use a **URL-safe** password for the bundled Postgres (`openssl rand -hex 32`).
   The chart interpolates it into `DATABASE_URL` (a `postgres://` URL), so a
-  `base64` password — whose `/` is reserved in a URL — produces a cryptic
-  `Invalid URL` at startup. A non-URL-safe password must be percent-encoded. If
-  you bring your own `externalDatabaseUrl`, encode the password there too.
+  `base64` password, whose `/` is reserved in a URL, produces a cryptic `Invalid
+  URL` at startup. A non-URL-safe password must be percent-encoded. If you bring
+  your own `externalDatabaseUrl`, encode the password there too.
 </Callout>
 
 To use an external Postgres:
@@ -108,7 +108,7 @@ Or read the URL from a Secret via `externalDatabaseUrlExistingSecret.{name,key}`
 
 <Callout type="warn">
   Multi-replica deployments need `persistence.accessMode: ReadWriteMany` for the
-  uploads volume — Postgres handles concurrent connections fine on its own, but
+  uploads volume. Postgres handles concurrent connections fine on its own, but
   two pods writing screenshots to the same RWO PVC will not.
 </Callout>
 
@@ -120,7 +120,7 @@ Or read the URL from a Secret via `externalDatabaseUrlExistingSecret.{name,key}`
 4. Copy the client secret into `KEYCLOAK_CLIENT_SECRET`.
 5. Set `KEYCLOAK_ISSUER` to the realm URL: `https://keycloak.example.com/realms/<realm>`.
 
-That's it — StateBoard discovers all OIDC endpoints from the issuer's `.well-known/openid-configuration`.
+That's it. StateBoard discovers all OIDC endpoints from the issuer's `.well-known/openid-configuration`.
 
 ### Email-domain allowlist
 
@@ -134,7 +134,7 @@ Sign-ins from other domains see a "your email domain isn't allowed" error during
 
 ### First user becomes owner
 
-The first user to complete sign-in becomes the workspace `owner`. Subsequent users land as `editor` by default — change this with `STATEBOARD_DEFAULT_ROLE=viewer` if you want new sign-ins to be read-only until promoted.
+The first user to complete sign-in becomes the workspace `owner`. Subsequent users land as `editor` by default. Change this with `STATEBOARD_DEFAULT_ROLE=viewer` if you want new sign-ins to be read-only until promoted.
 
 The owner can change roles or remove members at `/settings/members`.
 
@@ -148,10 +148,10 @@ If your IdP is inside the same network as StateBoard (which it almost certainly 
 
 Two things to back up:
 
-1. **Postgres** — every board, screen, region, member, and audit row.
-2. **Uploads PVC** (`/data`) — the screenshot files themselves. Filenames are recorded in the DB, so the two backups must restore in lockstep.
+1. **Postgres**: every board, screen, region, member, and audit row.
+2. **Uploads PVC** (`/data`): the screenshot files themselves. Filenames are recorded in the DB, so the two backups must restore in lockstep.
 
-A typical screenshot is 0.5–2 MB. A team running quarterly reviews on 10 products with ~10 screens each will use well under 1 GiB per year.
+A typical screenshot is 0.5 to 2 MB. A team running quarterly reviews on 10 products with ~10 screens each will use well under 1 GiB per year.
 
 ## Upgrading
 
