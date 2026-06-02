@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { UPLOADS_DIR } from "@/lib/paths";
+import { isAllowedUploadFilename } from "@/lib/uploads";
 import { notFound } from "@/lib/http";
 
 interface Ctx {
@@ -25,7 +26,7 @@ const MIME_FOR_EXT: Record<string, string> = {
  */
 export async function GET(_req: NextRequest, { params }: Ctx) {
   const { filename } = await params;
-  if (!/^[A-Za-z0-9_-]{6,32}\.(png|jpe?g|webp|gif)$/.test(filename)) {
+  if (!isAllowedUploadFilename(filename)) {
     return notFound();
   }
 
@@ -49,6 +50,10 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
     status: 200,
     headers: {
       "content-type": mime,
+      // The bytes are user-uploaded; even though we validated the magic bytes
+      // on upload, tell the browser never to MIME-sniff this response into,
+      // say, HTML that could execute in our origin.
+      "x-content-type-options": "nosniff",
       "cache-control": "public, max-age=31536000, immutable",
     },
   });
