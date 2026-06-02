@@ -25,6 +25,8 @@ import { StateChip } from "./state-chip";
 interface ScreenAnnotatorProps {
   screen: ScreenWithRegions;
   onScreenUpdated: (screen: ScreenWithRegions) => void;
+  /** Report a failed save so the parent can surface it (e.g. a snackbar). */
+  onError?: (message: string) => void;
   /**
    * Viewer-role members can navigate into a board's editor URL but must
    * not be able to mutate anything. When true, drawing is disabled, the
@@ -34,6 +36,15 @@ interface ScreenAnnotatorProps {
   readOnly?: boolean;
   /** When set, dim regions whose state does not match (filter pills). */
   filterState?: RegionState | null;
+}
+
+/** Pull the API's `{ error }` message off a failed response, else a fallback. */
+async function failureMessage(
+  res: Response,
+  fallback: string,
+): Promise<string> {
+  const body = (await res.json().catch(() => ({}))) as { error?: string };
+  return body.error ?? fallback;
 }
 
 interface DraftRect {
@@ -49,6 +60,7 @@ const MIN_REGION_SIZE = 0.005;
 export function ScreenAnnotator({
   screen,
   onScreenUpdated,
+  onError,
   readOnly = false,
   filterState = null,
 }: ScreenAnnotatorProps) {
@@ -142,7 +154,10 @@ export function ScreenAnnotator({
         notes: draftDefaults.notes || null,
       }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      onError?.(await failureMessage(res, "Couldn't save the region."));
+      return;
+    }
     const created: Region = await res.json();
     const next = [...regions, created];
     setRegions(next);
@@ -168,6 +183,7 @@ export function ScreenAnnotator({
       if (!res.ok) {
         // revert on failure
         setRegions(regions);
+        onError?.(await failureMessage(res, "Couldn't update the region."));
         return;
       }
       const updated: Region = await res.json();
@@ -175,7 +191,7 @@ export function ScreenAnnotator({
       setRegions(next);
       onScreenUpdated({ ...screen, regions: next });
     },
-    [selected, regions, screen, onScreenUpdated],
+    [selected, regions, screen, onScreenUpdated, onError],
   );
 
   const deleteSelected = useCallback(async () => {
@@ -183,12 +199,15 @@ export function ScreenAnnotator({
     const res = await fetch(`/api/regions/${selected.id}`, {
       method: "DELETE",
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      onError?.(await failureMessage(res, "Couldn't delete the region."));
+      return;
+    }
     const next = regions.filter((r) => r.id !== selected.id);
     setRegions(next);
     setSelectedId(null);
     onScreenUpdated({ ...screen, regions: next });
-  }, [selected, regions, screen, onScreenUpdated]);
+  }, [selected, regions, screen, onScreenUpdated, onError]);
 
   // --- keyboard ----------------------------------------------------------
 

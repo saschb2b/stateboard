@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
 import InputBase from "@mui/material/InputBase";
+import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
@@ -57,8 +59,16 @@ export function BoardEditor({
   const [presenting, setPresenting] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<RegionState | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const editable = canEdit(viewer.role);
+
+  // Surface a failed mutation instead of silently swallowing it. Reads the
+  // API's `{ error }` body when present, falling back to a plain-language line.
+  const reportFailure = async (res: Response, fallback: string) => {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    setActionError(body.error ?? fallback);
+  };
 
   const active = useMemo(
     () => screens.find((s) => s.id === activeId) ?? null,
@@ -98,7 +108,10 @@ export function BoardEditor({
       return;
     }
     const res = await fetch(`/api/screens/${id}`, { method: "DELETE" });
-    if (!res.ok) return;
+    if (!res.ok) {
+      await reportFailure(res, "Couldn't delete the screen.");
+      return;
+    }
     handleScreenDeleted(id);
   };
 
@@ -112,7 +125,10 @@ export function BoardEditor({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ label: trimmed || null }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      await reportFailure(res, "Couldn't rename the screen.");
+      return;
+    }
     handleScreenUpdated({ ...screen, label: trimmed || null });
   };
 
@@ -125,6 +141,7 @@ export function BoardEditor({
     });
     if (!res.ok) {
       setBoardName(board.name); // revert on failure
+      await reportFailure(res, "Couldn't rename the board.");
     }
   };
 
@@ -135,7 +152,10 @@ export function BoardEditor({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({}),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      await reportFailure(res, "Couldn't create a share link.");
+      return null;
+    }
     const link: ShareLink = await res.json();
     setShareLinks((prev) => [link, ...prev]);
     return link;
@@ -434,6 +454,7 @@ export function BoardEditor({
                 key={active.id}
                 screen={active}
                 onScreenUpdated={handleScreenUpdated}
+                onError={setActionError}
                 readOnly={!editable}
                 filterState={filterState}
               />
@@ -452,6 +473,21 @@ export function BoardEditor({
           onClose={() => setPresenting(false)}
         />
       ) : null}
+      <Snackbar
+        open={actionError !== null}
+        autoHideDuration={6000}
+        onClose={() => setActionError(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="error"
+          variant="filled"
+          onClose={() => setActionError(null)}
+          sx={{ width: "100%" }}
+        >
+          {actionError}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
