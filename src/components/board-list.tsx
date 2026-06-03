@@ -25,16 +25,17 @@ import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { AppHeader } from "./app-header";
 import { UserMenu } from "./user-menu";
 import { StateChip } from "./state-chip";
+import { STATE_META } from "@/lib/state-meta";
 import { REGION_STATES } from "@/lib/types";
-import type { Board, Screen } from "@/lib/types";
+import type { Board, ScreenWithRegions } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
 export interface BoardListItem {
   board: Board;
   /** Most-recent active share-link token, or null if none. */
   shareToken: string | null;
-  /** Screens for the card's preview carousel, in display order. */
-  screens: Screen[];
+  /** Screens (with regions) for the card's preview carousel, in display order. */
+  screens: ScreenWithRegions[];
   /** Region counts by state across the whole board, for the status summary. */
   totals: { shipped: number; mock: number; missing: number };
   /** Pre-formatted relative time the board was last touched, e.g. "3d ago". */
@@ -530,7 +531,7 @@ function BoardCard({
  * It lives inside the card link, so its controls preventDefault/stopPropagation
  * to change slides without navigating — a tap on a slide still opens the board.
  */
-function BoardScreenCarousel({ screens }: { screens: Screen[] }) {
+function BoardScreenCarousel({ screens }: { screens: ScreenWithRegions[] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
@@ -597,24 +598,53 @@ function BoardScreenCarousel({ screens }: { screens: Screen[] }) {
               flex: "0 0 100%",
               height: "100%",
               scrollSnapAlign: "center",
+              containerType: "size",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={s.mediaUrl}
-              alt={s.label ?? `Screen ${i + 1}`}
-              loading="lazy"
-              draggable={false}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                display: "block",
+            {/* Inner box carries the screen's exact aspect ratio, contained
+                inside the fixed thumbnail via container-query units, so the
+                painted regions line up with the image at any card width. */}
+            <Box
+              sx={{
+                position: "relative",
+                aspectRatio: `${s.width} / ${s.height}`,
+                width: `min(100cqw, calc(100cqh * ${s.width} / ${s.height}))`,
               }}
-            />
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={s.mediaUrl}
+                alt={s.label ?? `Screen ${i + 1}`}
+                loading="lazy"
+                draggable={false}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "fill",
+                  display: "block",
+                }}
+              />
+              {s.regions.map((r) => (
+                <Box
+                  key={r.id}
+                  aria-hidden
+                  sx={{
+                    position: "absolute",
+                    left: `${r.x * 100}%`,
+                    top: `${r.y * 100}%`,
+                    width: `${r.w * 100}%`,
+                    height: `${r.h * 100}%`,
+                    border: `1.5px solid ${STATE_META[r.state].color}`,
+                    bgcolor: STATE_META[r.state].fill,
+                    borderRadius: "2px",
+                    pointerEvents: "none",
+                  }}
+                />
+              ))}
+            </Box>
           </Box>
         ))}
       </Box>

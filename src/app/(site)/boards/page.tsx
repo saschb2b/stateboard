@@ -1,7 +1,6 @@
 import { getBoardWithScreens, listBoards, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardList, type BoardListItem } from "@/components/board-list";
-import type { Screen } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -41,13 +40,11 @@ export default async function BoardsPage() {
         getBoardWithScreens(b.id),
       ]);
       const active = links.find((l) => l.revokedAt === null);
+      // Keep regions on the screens: the card paints them as a mini-board and
+      // rolls them up into the status counts.
+      const screens = full?.screens ?? [];
       const totals = { shipped: 0, mock: 0, missing: 0 };
-      const screens: Screen[] = (full?.screens ?? []).map(
-        ({ regions, ...rest }) => {
-          for (const r of regions) totals[r.state]++;
-          return rest;
-        },
-      );
+      for (const s of screens) for (const r of s.regions) totals[r.state]++;
       return {
         board: b,
         shareToken: active?.token ?? null,
