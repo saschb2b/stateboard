@@ -17,6 +17,10 @@ No, and that's the point. Share links (`/share/{slug}`) are public and read-only
 
 Yes. v1 is multi-user on Postgres, so several editors can work across the workspace. There's no real-time collaboration (no live cursors, no merge): edits save independently, and in the rare case two people change the same field at once, last-write-wins. Real-time collab is intentionally out of scope — the use case is asynchronous review.
 
+## Can I reuse a board as a starting point?
+
+Yes — click **Duplicate** on any board's card in the overview. It deep-copies every screen and region into a new "… (copy)" board, with its own image files and share link, and opens it so you can change only what differs. Handy when each release or quarter is mostly the same board with a couple of screens swapped.
+
 ## Why Postgres?
 
 v1 is the team-ready cut — multiple replicas, shared state — so it's Postgres-backed. (The v0 wedge used SQLite for a single-container demo.) Bring your own Postgres, or let the Helm chart run a bundled one. Uploaded screenshots live on a filesystem volume beside it; an S3-compatible adapter is planned for v2.
