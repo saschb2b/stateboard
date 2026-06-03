@@ -18,16 +18,16 @@ A feature-and-polish release on top of `2026.5.1`. The board overview becomes an
 - **Mini-board card previews.** Each board on `/boards` shows a swipeable carousel of its screens with the state-colored regions painted on, so a board reads at a glance instead of as a name. Dots, hover arrows, a `1 / N` counter, and native touch swipe.
 - **Status and freshness on every card.** A `shipped` / `mock` / `missing` count plus a relative "last touched" time.
 - **One-click back to the overview.** The top-left wordmark returns to your boards from inside the editor instead of bouncing out to the marketing page.
-- **Duplicate a board.** Deep-copies every screen (with its own copy of the image bytes), every region, and a fresh share link into a `… (copy)` board — for when a new board is mostly an old one with a screen or two swapped.
+- **Duplicate a board.** Deep-copies every screen (with its own copy of the image bytes), every region, and a fresh share link into a `… (copy)` board, for when a new board is mostly an old one with a screen or two swapped.
 
 ### Editor
 
-- **Move and resize regions.** Drag a region to reposition it or pull a corner to resize it — no more delete-and-redraw. Arrow keys nudge the selected region; hold Shift to resize from the keyboard.
+- **Move and resize regions.** Drag a region to reposition it or pull a corner to resize it. No more delete-and-redraw. Arrow keys nudge the selected region; hold Shift to resize from the keyboard.
 - **Reorder screens** by dragging their tabs; the order carries through to the share view and Present mode.
-- **Reuse a screenshot across boards.** The Add-screen dialog now splits into Upload and Reuse tabs. Reuse is a searchable, multi-select gallery of screenshots from your other boards, grouped by board — pick one or several to drop into this board without re-uploading. The image bytes are copied, so the new screen is independent and starts unannotated.
-- **Replace a screen's image, keep its regions.** "Replace image" swaps the screenshot under an existing screen — upload a newer shot or reuse one from the workspace — while every rectangle you've drawn stays put. No more delete-and-redraw when a screen just got a fresh capture; the normalized coordinates re-render against the new picture.
-- **Board settings.** A gear in the editor opens per-board settings (`/boards/[id]/settings`) with a section sidebar. **General** renames the board, edits its description, and — in a GitHub-style Danger Zone — deletes the board behind a type-the-name confirmation (which removes its screens, regions, share links, and image files). **Sharing** mints public links named per audience, copies them, and revokes any one without affecting the others — one click away via "Manage links" in the editor's Share menu.
-- **Keyboard-accessible region list** — list items are focusable buttons, so the `1` / `2` / `3` state shortcuts are reachable without a mouse.
+- **Reuse a screenshot across boards.** The Add-screen dialog now splits into Upload and Reuse tabs. Reuse is a searchable, multi-select gallery of screenshots from your other boards, grouped by board. Pick one or several to drop into this board without re-uploading. The image bytes are copied, so the new screen is independent and starts unannotated.
+- **Replace a screen's image, keep its regions.** "Replace image" swaps the screenshot under an existing screen (upload a newer shot or reuse one from the workspace) while every rectangle you've drawn stays put. No more delete-and-redraw when a screen just got a fresh capture; the normalized coordinates re-render against the new picture.
+- **Board settings.** A gear in the editor opens per-board settings (`/boards/[id]/settings`) with a section sidebar. **General** renames the board, edits its description, and deletes the board from a GitHub-style Danger Zone behind a type-the-name confirmation (which removes its screens, regions, share links, and image files). **Sharing** mints public links named per audience, copies them, and revokes any one without affecting the others. Reach it in one click via "Manage links" in the editor's Share menu.
+- **Keyboard-accessible region list.** List items are focusable buttons, so the `1` / `2` / `3` state shortcuts are reachable without a mouse.
 
 ### Share view
 
@@ -35,13 +35,13 @@ A feature-and-polish release on top of `2026.5.1`. The board overview becomes an
 
 ### Self-hosting
 
-- **Internal / self-signed CA support.** Trust your IdP's certificate via `NODE_EXTRA_CA_CERTS` — a first-class Helm `caCert` value (inline PEM or an existing Secret/ConfigMap) mounts the bundle and wires the env, with a documented Docker / Compose path. The secure fix: verification stays on.
+- **Internal / self-signed CA support.** Trust your IdP's certificate via `NODE_EXTRA_CA_CERTS`. A first-class Helm `caCert` value (inline PEM or an existing Secret/ConfigMap) mounts the bundle and wires the env, with a documented Docker / Compose path. The secure fix: verification stays on.
 
 ### Polish & docs
 
 - **Loading skeletons** on the boards list, editor, and share view, so navigations fill in place instead of flashing blank.
 - **Plainer punctuation** across the app and docs (em dashes removed), consistent screen alt text, an honest 404 button label, and a cleaner landing pull-quote.
-- **Docs corrected to match shipped v1** — the FAQ and getting-started had drifted back to the v0 wedge (SQLite, "no auth"); fixed a broken docs anchor, and documented the new editor and clone features.
+- **Docs corrected to match shipped v1.** The FAQ and getting-started had drifted back to the v0 wedge (SQLite, "no auth"); fixed a broken docs anchor, and documented the new editor and clone features.
 
 ### Under the hood
 
