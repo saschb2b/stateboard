@@ -109,6 +109,32 @@ function applyDrag(
   return { x: nx, y: ny, w: nw, h: nh };
 }
 
+/**
+ * Keyboard nudge for the selected region: an arrow moves the box one step;
+ * shift+arrow grows/shrinks it from the bottom-right. Same [0,1] + min-size
+ * clamping as the drag path so it can never invert or leave the screenshot.
+ */
+function nudgeBox(
+  box: { x: number; y: number; w: number; h: number },
+  key: string,
+  resize: boolean,
+  step: number,
+): { x: number; y: number; w: number; h: number } {
+  let { x, y, w, h } = box;
+  if (resize) {
+    if (key === "ArrowRight") w = clamp(w + step, MIN_REGION_SIZE, 1 - x);
+    else if (key === "ArrowLeft") w = clamp(w - step, MIN_REGION_SIZE, 1 - x);
+    else if (key === "ArrowDown") h = clamp(h + step, MIN_REGION_SIZE, 1 - y);
+    else if (key === "ArrowUp") h = clamp(h - step, MIN_REGION_SIZE, 1 - y);
+  } else {
+    if (key === "ArrowRight") x = clamp(x + step, 0, 1 - w);
+    else if (key === "ArrowLeft") x = clamp(x - step, 0, 1 - w);
+    else if (key === "ArrowDown") y = clamp(y + step, 0, 1 - h);
+    else if (key === "ArrowUp") y = clamp(y - step, 0, 1 - h);
+  }
+  return { x, y, w, h };
+}
+
 export function ScreenAnnotator({
   screen,
   onScreenUpdated,
@@ -122,6 +148,18 @@ export function ScreenAnnotator({
   const [draft, setDraft] = useState<DraftRect | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
+  // Always-fresh handle to regions for callbacks that outlive the render that
+  // created them (the debounced geometry persist and keyboard nudging). Kept
+  // current via an effect — callbacks only fire after commit, never mid-render.
+  const regionsRef = useRef(regions);
+  useEffect(() => {
+    regionsRef.current = regions;
+  }, [regions]);
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudgePending = useRef<{
+    id: string;
+    orig: { x: number; y: number; w: number; h: number };
+  } | null>(null);
   const [draftDefaults, setDraftDefaults] = useState<{
     state: RegionState;
     label: string;
@@ -256,31 +294,63 @@ export function ScreenAnnotator({
   };
 
   // Persist a moved/resized box. The optimistic geometry is already in local
-  // state from the drag; on failure we roll back to the pre-drag box.
-  const persistGeometry = async (
-    id: string,
-    box: { x: number; y: number; w: number; h: number },
-    orig: { x: number; y: number; w: number; h: number },
-  ) => {
-    const res = await fetch(`/api/regions/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(box),
-    });
-    if (!res.ok) {
-      const reverted = regions.map((r) =>
-        r.id === id ? { ...r, ...orig } : r,
+  // state from the drag/nudge; on failure we roll back to the pre-change box.
+  // Reads regions through the ref so a debounced call sees the latest state.
+  const persistGeometry = useCallback(
+    async (
+      id: string,
+      box: { x: number; y: number; w: number; h: number },
+      orig: { x: number; y: number; w: number; h: number },
+    ) => {
+      const res = await fetch(`/api/regions/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(box),
+      });
+      if (!res.ok) {
+        const reverted = regionsRef.current.map((r) =>
+          r.id === id ? { ...r, ...orig } : r,
+        );
+        setRegions(reverted);
+        onScreenUpdated({ ...screen, regions: reverted });
+        onError?.(await failureMessage(res, "Couldn't update the region."));
+        return;
+      }
+      const updated: Region = await res.json();
+      const next = regionsRef.current.map((r) =>
+        r.id === updated.id ? updated : r,
       );
-      setRegions(reverted);
-      onScreenUpdated({ ...screen, regions: reverted });
-      onError?.(await failureMessage(res, "Couldn't update the region."));
-      return;
+      setRegions(next);
+      onScreenUpdated({ ...screen, regions: next });
+    },
+    [screen, onScreenUpdated, onError],
+  );
+
+  // Persist a pending keyboard nudge. Fired on a short idle, and also when the
+  // selection changes or the screen unmounts, so a nudge is never lost.
+  const flushNudge = useCallback(() => {
+    if (nudgeTimer.current) {
+      clearTimeout(nudgeTimer.current);
+      nudgeTimer.current = null;
     }
-    const updated: Region = await res.json();
-    const next = regions.map((r) => (r.id === updated.id ? updated : r));
-    setRegions(next);
-    onScreenUpdated({ ...screen, regions: next });
-  };
+    const pending = nudgePending.current;
+    nudgePending.current = null;
+    if (!pending) return;
+    const cur = regionsRef.current.find((r) => r.id === pending.id);
+    if (
+      cur &&
+      (cur.x !== pending.orig.x ||
+        cur.y !== pending.orig.y ||
+        cur.w !== pending.orig.w ||
+        cur.h !== pending.orig.h)
+    ) {
+      void persistGeometry(
+        pending.id,
+        { x: cur.x, y: cur.y, w: cur.w, h: cur.h },
+        pending.orig,
+      );
+    }
+  }, [persistGeometry]);
 
   // --- API actions -------------------------------------------------------
 
@@ -389,11 +459,41 @@ export function ScreenAnnotator({
       } else if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         void deleteSelected();
+      } else if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown"
+      ) {
+        const region = regionsRef.current.find((r) => r.id === selectedId);
+        if (!region) return;
+        e.preventDefault();
+        // If a different region was mid-nudge, save it before starting this one.
+        if (nudgePending.current && nudgePending.current.id !== selectedId) {
+          flushNudge();
+        }
+        // Remember the pre-nudge box once per run so a failed save rolls back.
+        if (!nudgePending.current) {
+          nudgePending.current = {
+            id: selectedId,
+            orig: { x: region.x, y: region.y, w: region.w, h: region.h },
+          };
+        }
+        const box = nudgeBox(region, e.key, e.shiftKey, 0.005);
+        setRegions((prev) =>
+          prev.map((r) => (r.id === selectedId ? { ...r, ...box } : r)),
+        );
+        if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
+        nudgeTimer.current = setTimeout(flushNudge, 350);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedId, readOnly, updateSelected, deleteSelected]);
+  }, [selectedId, readOnly, updateSelected, deleteSelected, flushNudge]);
+
+  // Save a still-pending nudge if the screen unmounts before the idle timer
+  // fires (e.g. switching tabs right after nudging), so the move isn't lost.
+  useEffect(() => () => flushNudge(), [flushNudge]);
 
   const aspect = `${screen.width} / ${screen.height}`;
   const hintVisible = !readOnly && Boolean(selectedId);
@@ -482,7 +582,8 @@ export function ScreenAnnotator({
             minHeight: "1.4em",
           }}
         >
-          1 shipped · 2 mock · 3 missing · ⌫ delete · esc deselect
+          1 shipped · 2 mock · 3 missing · arrows move · ⇧ resize · ⌫ delete ·
+          esc deselect
         </Typography>
       </Box>
 
