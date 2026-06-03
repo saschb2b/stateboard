@@ -4,6 +4,41 @@ All notable changes to StateBoard are documented here.
 
 Versions follow [CalVer](https://calver.org/): `YYYY.M.PATCH`. A new minor cuts whenever a release ships; patches fix issues against a released minor.
 
+## 2026.6.0
+
+A feature-and-polish release on top of `2026.5.1`. The board overview becomes an at-a-glance dashboard, regions are directly editable, boards can be duplicated, and self-hosting behind an internal or self-signed CA is now a first-class path. No breaking changes, no new migrations.
+
+### Overview
+
+- **Mini-board card previews.** Each board on `/boards` shows a swipeable carousel of its screens with the state-colored regions painted on, so a board reads at a glance instead of as a name. Dots, hover arrows, a `1 / N` counter, and native touch swipe.
+- **Status and freshness on every card.** A `shipped` / `mock` / `missing` count plus a relative "last touched" time.
+- **One-click back to the overview.** The top-left wordmark returns to your boards from inside the editor instead of bouncing out to the marketing page.
+- **Duplicate a board.** Deep-copies every screen (with its own copy of the image bytes), every region, and a fresh share link into a `… (copy)` board — for when a new board is mostly an old one with a screen or two swapped.
+
+### Editor
+
+- **Move and resize regions.** Drag a region to reposition it or pull a corner to resize it — no more delete-and-redraw. Arrow keys nudge the selected region; hold Shift to resize from the keyboard.
+- **Reorder screens** by dragging their tabs; the order carries through to the share view and Present mode.
+- **Keyboard-accessible region list** — list items are focusable buttons, so the `1` / `2` / `3` state shortcuts are reachable without a mouse.
+
+### Share view
+
+- **The three states explain themselves.** The totals row now spells out each state ("Live & real", "UI built, data fake", "Not built yet"), so an exec reads the artifact cold.
+
+### Self-hosting
+
+- **Internal / self-signed CA support.** Trust your IdP's certificate via `NODE_EXTRA_CA_CERTS` — a first-class Helm `caCert` value (inline PEM or an existing Secret/ConfigMap) mounts the bundle and wires the env, with a documented Docker / Compose path. The secure fix: verification stays on.
+
+### Polish & docs
+
+- **Loading skeletons** on the boards list, editor, and share view, so navigations fill in place instead of flashing blank.
+- **Plainer punctuation** across the app and docs (em dashes removed), consistent screen alt text, an honest 404 button label, and a cleaner landing pull-quote.
+- **Docs corrected to match shipped v1** — the FAQ and getting-started had drifted back to the v0 wedge (SQLite, "no auth"); fixed a broken docs anchor, and documented the new editor and clone features.
+
+### Under the hood
+
+- Region move/resize/nudge geometry extracted to a pure, unit-tested module; the `node:test` suite grows to 77 cases.
+
 ## 2026.5.1
 
 A fix release for `2026.5.0`. **Headline: sign-in actually works now.** Two mismatches introduced by the Better Auth dependency bump broke OIDC sign-in on a fresh `2026.5.0` install. Every attempt ended in a 500 or a Keycloak `invalid_redirect_uri`. Anyone running `2026.5.0` should upgrade.
