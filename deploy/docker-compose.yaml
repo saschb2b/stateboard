@@ -68,8 +68,14 @@ services:
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?set KEYCLOAK_CLIENT_SECRET in deploy/.env}
       STATEBOARD_ALLOWED_EMAIL_DOMAINS: ${STATEBOARD_ALLOWED_EMAIL_DOMAINS:-}
       STATEBOARD_DEFAULT_ROLE: ${STATEBOARD_DEFAULT_ROLE:-editor}
+      # If Keycloak presents an internal/private-CA or self-signed cert, trust
+      # its CA so sign-in's token exchange validates: uncomment this AND the
+      # matching read-only mount under `volumes` below. Docs: Self-hosting →
+      # "TLS: self-signed or internal CA certificates".
+      # NODE_EXTRA_CA_CERTS: /etc/ssl/internal-ca.pem
     volumes:
       - uploads:/data
+      # - /path/to/internal-ca.pem:/etc/ssl/internal-ca.pem:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
