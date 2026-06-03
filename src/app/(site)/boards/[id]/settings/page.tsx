@@ -7,13 +7,18 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ section?: string }>;
 }
 
-export default async function BoardSettingsPage({ params }: PageProps) {
+export default async function BoardSettingsPage({
+  params,
+  searchParams,
+}: PageProps) {
   // Settings are all mutations, so editors and owners only; viewers get
   // bounced to /boards by requirePageMember.
   const member = await requirePageMember("editor");
   const { id } = await params;
+  const { section } = await searchParams;
   const result = await getBoardWithScreens(id);
   if (!result || result.board.workspaceId !== member.workspaceId) notFound();
   const shareLinks = await listShareLinks(id);
@@ -28,6 +33,7 @@ export default async function BoardSettingsPage({ params }: PageProps) {
       viewer={member}
       initialShareLinks={shareLinks}
       stats={stats}
+      initialSection={section === "sharing" ? "sharing" : "general"}
     />
   );
 }

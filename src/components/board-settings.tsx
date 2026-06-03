@@ -59,6 +59,7 @@ interface BoardSettingsProps {
   viewer: CurrentMember;
   initialShareLinks: ShareLink[];
   stats: BoardStats;
+  initialSection?: Section;
 }
 
 /**
@@ -71,8 +72,9 @@ export function BoardSettings({
   viewer,
   initialShareLinks,
   stats,
+  initialSection = "general",
 }: BoardSettingsProps) {
-  const [section, setSection] = useState<Section>("general");
+  const [section, setSection] = useState<Section>(initialSection);
 
   return (
     <>

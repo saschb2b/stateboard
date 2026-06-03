@@ -5,8 +5,11 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
+import ButtonGroup from "@mui/material/ButtonGroup";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import InputBase from "@mui/material/InputBase";
 import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
@@ -21,6 +24,7 @@ import SlideshowIcon from "@mui/icons-material/Slideshow";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import Link from "next/link";
 import { AppHeader } from "./app-header";
 import { AddScreenDialog } from "./add-screen-dialog";
@@ -71,6 +75,7 @@ export function BoardEditor({
   const [addTab, setAddTab] = useState<"upload" | "reuse">("upload");
   const [addMode, setAddMode] = useState<"add" | "replace">("add");
   const [replaceScreenId, setReplaceScreenId] = useState<string | null>(null);
+  const [shareAnchorEl, setShareAnchorEl] = useState<HTMLElement | null>(null);
 
   const editable = canEdit(viewer.role);
 
@@ -302,18 +307,54 @@ export function BoardEditor({
               </span>
             </Tooltip>
             {editable ? (
-              <Tooltip title={copied ? "Copied!" : "Copy share link"}>
-                <Button
-                  size="small"
-                  startIcon={<ContentCopyIcon />}
-                  onClick={copyShare}
+              <>
+                <ButtonGroup
                   variant="outlined"
+                  size="small"
                   color="inherit"
-                  sx={{ borderColor: "divider" }}
+                  sx={{
+                    "& .MuiButtonGroup-grouped": { borderColor: "divider" },
+                  }}
                 >
-                  {copied ? "Copied" : "Share"}
-                </Button>
-              </Tooltip>
+                  <Button
+                    startIcon={<ContentCopyIcon />}
+                    onClick={copyShare}
+                    title="Copy share link"
+                  >
+                    {copied ? "Copied" : "Share"}
+                  </Button>
+                  <Button
+                    onClick={(e) => setShareAnchorEl(e.currentTarget)}
+                    aria-label="More sharing options"
+                    sx={{ px: 0.5, minWidth: "auto" }}
+                  >
+                    <ArrowDropDownIcon fontSize="small" />
+                  </Button>
+                </ButtonGroup>
+                <Menu
+                  anchorEl={shareAnchorEl}
+                  open={Boolean(shareAnchorEl)}
+                  onClose={() => setShareAnchorEl(null)}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                  transformOrigin={{ vertical: "top", horizontal: "right" }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setShareAnchorEl(null);
+                      void copyShare();
+                    }}
+                  >
+                    Copy share link
+                  </MenuItem>
+                  <MenuItem
+                    component={Link}
+                    href={`/boards/${board.id}/settings?section=sharing`}
+                    onClick={() => setShareAnchorEl(null)}
+                  >
+                    Manage links…
+                  </MenuItem>
+                </Menu>
+              </>
             ) : null}
             {activeShareLink ? (
               <Tooltip title="Open share view">
