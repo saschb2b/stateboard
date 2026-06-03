@@ -20,7 +20,15 @@ import {
   type RegionState,
   type ScreenWithRegions,
 } from "@/lib/types";
-import { RegionOverlay, type ResizeCorner } from "./region-overlay";
+import { RegionOverlay } from "./region-overlay";
+import {
+  MIN_REGION_SIZE,
+  moveBox,
+  resizeBox,
+  nudgeBox,
+  type Box as RegionBox,
+  type ResizeCorner,
+} from "@/lib/region-geometry";
 import { StateChip } from "./state-chip";
 
 interface ScreenAnnotatorProps {
@@ -55,12 +63,6 @@ interface DraftRect {
   h: number;
 }
 
-/** Minimum draw size (relative units) to count as a region. */
-const MIN_REGION_SIZE = 0.005;
-
-const clamp = (v: number, lo: number, hi: number) =>
-  Math.min(hi, Math.max(lo, v));
-
 type DragMode = "move" | `resize-${ResizeCorner}`;
 
 interface DragState {
@@ -69,70 +71,18 @@ interface DragState {
   /** Pointer position (relative units) where the drag began. */
   start: { x: number; y: number };
   /** The region's box at drag start, used as the delta base. */
-  orig: { x: number; y: number; w: number; h: number };
+  orig: RegionBox;
 }
 
-/**
- * Apply a pointer delta (relative units) to a region box for the active
- * drag. Move slides the whole box; a resize drags one corner while the
- * opposite edges stay pinned. Everything is clamped to [0,1] with a minimum
- * size, so the box can never invert or leave the screenshot.
- */
-function applyDrag(
-  drag: DragState,
-  dx: number,
-  dy: number,
-): { x: number; y: number; w: number; h: number } {
-  const { x, y, w, h } = drag.orig;
-  if (drag.mode === "move") {
-    return { x: clamp(x + dx, 0, 1 - w), y: clamp(y + dy, 0, 1 - h), w, h };
-  }
-  const corner = drag.mode.slice("resize-".length);
-  const right = x + w;
-  const bottom = y + h;
-  let nx = x;
-  let ny = y;
-  let nw = w;
-  let nh = h;
-  if (corner.includes("w")) {
-    nx = clamp(x + dx, 0, right - MIN_REGION_SIZE);
-    nw = right - nx;
-  } else {
-    nw = clamp(w + dx, MIN_REGION_SIZE, 1 - x);
-  }
-  if (corner.includes("n")) {
-    ny = clamp(y + dy, 0, bottom - MIN_REGION_SIZE);
-    nh = bottom - ny;
-  } else {
-    nh = clamp(h + dy, MIN_REGION_SIZE, 1 - y);
-  }
-  return { x: nx, y: ny, w: nw, h: nh };
-}
-
-/**
- * Keyboard nudge for the selected region: an arrow moves the box one step;
- * shift+arrow grows/shrinks it from the bottom-right. Same [0,1] + min-size
- * clamping as the drag path so it can never invert or leave the screenshot.
- */
-function nudgeBox(
-  box: { x: number; y: number; w: number; h: number },
-  key: string,
-  resize: boolean,
-  step: number,
-): { x: number; y: number; w: number; h: number } {
-  let { x, y, w, h } = box;
-  if (resize) {
-    if (key === "ArrowRight") w = clamp(w + step, MIN_REGION_SIZE, 1 - x);
-    else if (key === "ArrowLeft") w = clamp(w - step, MIN_REGION_SIZE, 1 - x);
-    else if (key === "ArrowDown") h = clamp(h + step, MIN_REGION_SIZE, 1 - y);
-    else if (key === "ArrowUp") h = clamp(h - step, MIN_REGION_SIZE, 1 - y);
-  } else {
-    if (key === "ArrowRight") x = clamp(x + step, 0, 1 - w);
-    else if (key === "ArrowLeft") x = clamp(x - step, 0, 1 - w);
-    else if (key === "ArrowDown") y = clamp(y + step, 0, 1 - h);
-    else if (key === "ArrowUp") y = clamp(y - step, 0, 1 - h);
-  }
-  return { x, y, w, h };
+/** Dispatch a drag delta to the shared move / corner-resize geometry. */
+function applyDrag(drag: DragState, dx: number, dy: number): RegionBox {
+  if (drag.mode === "move") return moveBox(drag.orig, dx, dy);
+  return resizeBox(
+    drag.orig,
+    drag.mode.slice("resize-".length) as ResizeCorner,
+    dx,
+    dy,
+  );
 }
 
 export function ScreenAnnotator({

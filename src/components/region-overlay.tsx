@@ -6,8 +6,7 @@ import Typography from "@mui/material/Typography";
 import { STATE_META } from "@/lib/state-meta";
 import type { Region, RegionState } from "@/lib/types";
 import { StateChip } from "./state-chip";
-
-export type ResizeCorner = "nw" | "ne" | "sw" | "se";
+import type { ResizeCorner } from "@/lib/region-geometry";
 
 const RESIZE_CORNERS: ResizeCorner[] = ["nw", "ne", "sw", "se"];
 
