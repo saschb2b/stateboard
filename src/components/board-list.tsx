@@ -651,6 +651,26 @@ function BoardScreenCarousel({ screens }: { screens: ScreenWithRegions[] }) {
 
       {screens.length > 1 ? (
         <>
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              top: 6,
+              right: 6,
+              px: 0.75,
+              py: 0.25,
+              borderRadius: 1,
+              bgcolor: "rgba(0,0,0,0.55)",
+              color: "#fff",
+              fontSize: 11,
+              fontWeight: 600,
+              fontVariantNumeric: "tabular-nums",
+              lineHeight: 1.4,
+              pointerEvents: "none",
+            }}
+          >
+            {active + 1} / {screens.length}
+          </Box>
           <CarouselArrow
             edge="left"
             disabled={active === 0}
