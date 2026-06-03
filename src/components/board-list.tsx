@@ -24,6 +24,8 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { AppHeader } from "./app-header";
 import { UserMenu } from "./user-menu";
+import { StateChip } from "./state-chip";
+import { REGION_STATES } from "@/lib/types";
 import type { Board, Screen } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
@@ -33,6 +35,10 @@ export interface BoardListItem {
   shareToken: string | null;
   /** Screens for the card's preview carousel, in display order. */
   screens: Screen[];
+  /** Region counts by state across the whole board, for the status summary. */
+  totals: { shipped: number; mock: number; missing: number };
+  /** Pre-formatted relative time the board was last touched, e.g. "3d ago". */
+  updatedLabel: string;
 }
 
 interface BoardListProps {
@@ -74,7 +80,13 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
       }
       const created: Board = await res.json();
       setItems((prev) => [
-        { board: created, shareToken: null, screens: [] },
+        {
+          board: created,
+          shareToken: null,
+          screens: [],
+          totals: { shipped: 0, mock: 0, missing: 0 },
+          updatedLabel: "just now",
+        },
         ...prev,
       ]);
       setOpen(false);
@@ -379,7 +391,8 @@ function BoardCard({
   editable: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const { board, shareToken, screens } = item;
+  const { board, shareToken, screens, totals, updatedLabel } = item;
+  const totalRegions = totals.shipped + totals.mock + totals.missing;
 
   const copyShare = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -457,23 +470,55 @@ function BoardCard({
             {board.description}
           </Typography>
         ) : null}
-        {shareToken ? (
+        {totalRegions > 0 ? (
+          <Stack direction="row" spacing={1.25} sx={{ mb: 1.5 }}>
+            {REGION_STATES.map((s) => (
+              <Stack key={s} direction="row" spacing={0.5} alignItems="center">
+                <StateChip state={s} size="sm" />
+                <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                  {totals[s]}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+        ) : null}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="baseline"
+          justifyContent="space-between"
+        >
+          {shareToken ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                fontFamily: "monospace",
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              /share/{shareToken.slice(0, 8)}…
+            </Typography>
+          ) : (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontStyle: "italic" }}
+            >
+              No active share link
+            </Typography>
+          )}
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ fontFamily: "monospace" }}
+            sx={{ flexShrink: 0 }}
           >
-            /share/{shareToken.slice(0, 8)}…
+            {updatedLabel}
           </Typography>
-        ) : (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontStyle: "italic" }}
-          >
-            No active share link
-          </Typography>
-        )}
+        </Stack>
       </Box>
     </Paper>
   );
@@ -599,17 +644,28 @@ function BoardScreenCarousel({ screens }: { screens: Screen[] }) {
           >
             {screens.map((s, i) => (
               <Box
+                component="button"
                 key={s.id}
                 onClick={(e) => go(e, i)}
+                aria-label={`Show screen ${i + 1}`}
+                aria-current={i === active ? "true" : undefined}
                 sx={{
-                  width: 6,
-                  height: 6,
+                  width: 8,
+                  height: 8,
+                  p: 0,
+                  border: 0,
                   borderRadius: "50%",
                   cursor: "pointer",
                   bgcolor:
                     i === active ? "primary.main" : "rgba(255,255,255,0.55)",
                   boxShadow: "0 0 2px rgba(0,0,0,0.6)",
                   transition: "background-color 120ms ease",
+                  "&:focus-visible": {
+                    outline: 2,
+                    outlineStyle: "solid",
+                    outlineColor: "primary.main",
+                    outlineOffset: 2,
+                  },
                 }}
               />
             ))}
