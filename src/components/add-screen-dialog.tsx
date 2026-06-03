@@ -21,28 +21,39 @@ import type { ScreenWithRegions, WorkspaceScreen } from "@/lib/types";
 
 type Tab = "upload" | "reuse";
 
+type Mode = "add" | "replace";
+
 interface AddScreenDialogProps {
   open: boolean;
   onClose: () => void;
   boardId: string;
   initialTab?: Tab;
-  /** Called with the newly-added screen(s): one for upload, one-or-more reuse. */
-  onAdded: (screens: ScreenWithRegions[]) => void;
+  /**
+   * "add" creates new screen(s); "replace" swaps the image of `replaceScreenId`
+   * while keeping its regions. Defaults to "add".
+   */
+  mode?: Mode;
+  replaceScreenId?: string;
+  /** The affected screen(s): new ones for add, the single updated one for replace. */
+  onResult: (screens: ScreenWithRegions[]) => void;
 }
 
 /**
- * Add-a-screen dialog with two ways in: upload a new file, or reuse a
- * screenshot already in another board (the "media library" pattern). Reuse
- * copies the image bytes server-side, so the new screen is independent and
- * starts with no regions — you annotate it fresh.
+ * The "media library" dialog: upload a new file or pick one already in the
+ * workspace, grouped by board and searchable. In "add" mode picking copies the
+ * bytes into a new, unannotated screen; in "replace" mode it swaps the chosen
+ * screen's image and keeps its regions.
  */
 export function AddScreenDialog({
   open,
   onClose,
   boardId,
   initialTab = "upload",
-  onAdded,
+  mode = "add",
+  replaceScreenId,
+  onResult,
 }: AddScreenDialogProps) {
+  const isReplace = mode === "replace";
   const [tab, setTab] = useState<Tab>(initialTab);
   const [available, setAvailable] = useState<WorkspaceScreen[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -75,6 +86,8 @@ export function AddScreenDialog({
 
   const toggle = (id: string) =>
     setSelected((prev) => {
+      // Replace targets a single source; add accumulates many.
+      if (isReplace) return prev.has(id) ? new Set() : new Set([id]);
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -82,33 +95,45 @@ export function AddScreenDialog({
     });
 
   const addSelected = async () => {
-    if (selected.size === 0) return;
+    const ids = [...selected];
+    if (ids.length === 0) return;
     setAdding(true);
     setError(null);
     try {
-      const res = await fetch(`/api/boards/${boardId}/screens/reuse`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sourceScreenIds: [...selected] }),
-      });
+      const res = isReplace
+        ? await fetch(`/api/screens/${replaceScreenId}/image/reuse`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sourceScreenId: ids[0] }),
+          })
+        : await fetch(`/api/boards/${boardId}/screens/reuse`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ sourceScreenIds: ids }),
+          });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't add the screenshots.");
+        setError(body.error ?? "Couldn't apply your selection.");
         setAdding(false);
         return;
       }
-      const screens: ScreenWithRegions[] = await res.json();
-      onAdded(screens);
+      const data = await res.json();
+      // Replace returns one screen; add returns an array.
+      onResult(
+        isReplace ? [data as ScreenWithRegions] : (data as ScreenWithRegions[]),
+      );
       onClose();
     } catch {
-      setError("Couldn't add the screenshots.");
+      setError("Couldn't apply your selection.");
       setAdding(false);
     }
   };
 
   // The gallery, minus this board's own screens, filtered by the search box,
   // grouped by source board (insertion order = newest board first).
-  const others = (available ?? []).filter((s) => s.boardId !== boardId);
+  const others = (available ?? []).filter((s) =>
+    isReplace ? s.id !== replaceScreenId : s.boardId !== boardId,
+  );
   const q = query.trim().toLowerCase();
   const filtered = q
     ? others.filter((s) =>
@@ -132,7 +157,9 @@ export function AddScreenDialog({
       maxWidth="md"
       fullWidth
     >
-      <DialogTitle sx={{ pb: 1 }}>Add a screen</DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
+        {isReplace ? "Replace screenshot" : "Add a screen"}
+      </DialogTitle>
       <DialogContent sx={{ minHeight: 380 }}>
         <ToggleButtonGroup
           value={tab}
@@ -153,8 +180,9 @@ export function AddScreenDialog({
           <Box>
             <ScreenUploader
               boardId={boardId}
+              replaceScreenId={isReplace ? replaceScreenId : undefined}
               onUploaded={(s) => {
-                onAdded([s]);
+                onResult([s]);
                 onClose();
               }}
             />
@@ -163,8 +191,9 @@ export function AddScreenDialog({
               color="text.secondary"
               sx={{ display: "block", mt: 1.5 }}
             >
-              Already uploaded this shot to another board? Switch to{" "}
-              <b>Reuse existing</b> instead of uploading it again.
+              {isReplace
+                ? "The rectangles you've drawn stay put. Only the picture changes."
+                : "Already uploaded this shot to another board? Switch to Reuse existing instead of uploading it again."}
             </Typography>
           </Box>
         ) : loading ? (
@@ -274,7 +303,11 @@ export function AddScreenDialog({
       {tab === "reuse" && others.length > 0 ? (
         <DialogActions sx={{ px: 3, pb: 2, justifyContent: "space-between" }}>
           <Typography variant="caption" color="text.secondary">
-            {selected.size} selected
+            {isReplace
+              ? selected.size > 0
+                ? "1 selected"
+                : "Pick one"
+              : `${selected.size} selected`}
           </Typography>
           <Stack direction="row" spacing={1}>
             <Button onClick={onClose} disabled={adding}>
@@ -286,11 +319,15 @@ export function AddScreenDialog({
               disabled={selected.size === 0 || adding}
               onClick={addSelected}
             >
-              {adding
-                ? "Adding…"
-                : selected.size > 0
-                  ? `Add ${selected.size} screen${selected.size === 1 ? "" : "s"}`
-                  : "Add screens"}
+              {isReplace
+                ? adding
+                  ? "Replacing…"
+                  : "Replace screenshot"
+                : adding
+                  ? "Adding…"
+                  : selected.size > 0
+                    ? `Add ${selected.size} screen${selected.size === 1 ? "" : "s"}`
+                    : "Add screens"}
             </Button>
           </Stack>
         </DialogActions>

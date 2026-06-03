@@ -505,6 +505,27 @@ export async function updateScreen(
   return { ...existing, label };
 }
 
+/**
+ * Swap a screen's underlying image, keeping its id, label, position, and
+ * regions. The normalized region coordinates stay valid against any new
+ * image, so "replace the screenshot, keep the rectangles" needs only an
+ * UPDATE. Re-reads the row so the returned `mediaUrl` points at the new file.
+ */
+export async function updateScreenImage(
+  id: string,
+  image: { filename: string; mimeType: string; width: number; height: number },
+  actorId: string,
+): Promise<Screen | null> {
+  const existing = await getScreen(id);
+  if (!existing) return null;
+  await query(
+    `UPDATE screens SET filename = $1, mime_type = $2, width = $3, height = $4 WHERE id = $5`,
+    [image.filename, image.mimeType, image.width, image.height, id],
+  );
+  await touchBoard(existing.boardId, actorId);
+  return getScreen(id);
+}
+
 export async function deleteScreen(
   id: string,
   actorId: string,

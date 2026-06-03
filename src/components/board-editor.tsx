@@ -19,6 +19,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CloseIcon from "@mui/icons-material/Close";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import { AppHeader } from "./app-header";
 import { AddScreenDialog } from "./add-screen-dialog";
 import { BoardPresenter } from "./board-presenter";
@@ -66,11 +67,22 @@ export function BoardEditor({
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [addTab, setAddTab] = useState<"upload" | "reuse">("upload");
+  const [addMode, setAddMode] = useState<"add" | "replace">("add");
+  const [replaceScreenId, setReplaceScreenId] = useState<string | null>(null);
 
   const editable = canEdit(viewer.role);
 
   const openAddScreen = (tab: "upload" | "reuse" = "upload") => {
+    setAddMode("add");
+    setReplaceScreenId(null);
     setAddTab(tab);
+    setAddOpen(true);
+  };
+
+  const openReplaceScreen = (screenId: string) => {
+    setAddMode("replace");
+    setReplaceScreenId(screenId);
+    setAddTab("upload");
     setAddOpen(true);
   };
 
@@ -523,6 +535,20 @@ export function BoardEditor({
                 </Button>
               ) : null}
 
+              {editable && active ? (
+                <Tooltip title="Swap this screen's image, keeping its regions">
+                  <Button
+                    startIcon={<SwapHorizOutlinedIcon />}
+                    variant="text"
+                    size="small"
+                    color="inherit"
+                    onClick={() => openReplaceScreen(active.id)}
+                  >
+                    Replace image
+                  </Button>
+                </Tooltip>
+              ) : null}
+
               <Box sx={{ flex: 1 }} />
 
               {totalRegions > 0
@@ -611,7 +637,16 @@ export function BoardEditor({
           onClose={() => setAddOpen(false)}
           boardId={board.id}
           initialTab={addTab}
-          onAdded={handleScreensAdded}
+          mode={addMode}
+          replaceScreenId={replaceScreenId ?? undefined}
+          onResult={(result) => {
+            if (addMode === "replace") {
+              const s = result[0];
+              if (s) handleScreenUpdated(s);
+            } else {
+              handleScreensAdded(result);
+            }
+          }}
         />
       ) : null}
     </>
