@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getBoard, listShareLinks } from "@/lib/db";
+import { getBoardWithScreens, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardSettings } from "@/components/board-settings";
 
@@ -14,14 +14,20 @@ export default async function BoardSettingsPage({ params }: PageProps) {
   // bounced to /boards by requirePageMember.
   const member = await requirePageMember("editor");
   const { id } = await params;
-  const board = await getBoard(id);
-  if (!board || board.workspaceId !== member.workspaceId) notFound();
+  const result = await getBoardWithScreens(id);
+  if (!result || result.board.workspaceId !== member.workspaceId) notFound();
   const shareLinks = await listShareLinks(id);
+  const stats = {
+    screens: result.screens.length,
+    regions: result.screens.reduce((n, s) => n + s.regions.length, 0),
+    shareLinks: shareLinks.filter((l) => l.revokedAt === null).length,
+  };
   return (
     <BoardSettings
-      board={board}
+      board={result.board}
       viewer={member}
       initialShareLinks={shareLinks}
+      stats={stats}
     />
   );
 }

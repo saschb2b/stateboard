@@ -32,10 +32,33 @@ const SECTIONS: { id: Section; label: string }[] = [
   { id: "sharing", label: "Sharing" },
 ];
 
+export interface BoardStats {
+  screens: number;
+  regions: number;
+  shareLinks: number;
+}
+
+/** "2 screens, 6 regions, and 1 share link" — omits any zero, "" if all zero. */
+function describeContents(stats: BoardStats): string {
+  const parts: string[] = [];
+  if (stats.screens)
+    parts.push(`${stats.screens} screen${stats.screens === 1 ? "" : "s"}`);
+  if (stats.regions)
+    parts.push(`${stats.regions} region${stats.regions === 1 ? "" : "s"}`);
+  if (stats.shareLinks)
+    parts.push(
+      `${stats.shareLinks} share link${stats.shareLinks === 1 ? "" : "s"}`,
+    );
+  if (parts.length <= 1) return parts.join("");
+  const last = parts[parts.length - 1] ?? "";
+  return `${parts.slice(0, -1).join(", ")}, and ${last}`;
+}
+
 interface BoardSettingsProps {
   board: Board;
   viewer: CurrentMember;
   initialShareLinks: ShareLink[];
+  stats: BoardStats;
 }
 
 /**
@@ -47,6 +70,7 @@ export function BoardSettings({
   board,
   viewer,
   initialShareLinks,
+  stats,
 }: BoardSettingsProps) {
   const [section, setSection] = useState<Section>("general");
 
@@ -127,7 +151,7 @@ export function BoardSettings({
 
           <Box sx={{ flex: 1, maxWidth: 720 }}>
             {section === "general" ? (
-              <GeneralSection board={board} />
+              <GeneralSection board={board} stats={stats} />
             ) : (
               <SharingSection
                 board={board}
@@ -141,8 +165,9 @@ export function BoardSettings({
   );
 }
 
-function GeneralSection({ board }: { board: Board }) {
+function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
   const router = useRouter();
+  const contents = describeContents(stats);
   const [name, setName] = useState(board.name);
   const [description, setDescription] = useState(board.description ?? "");
   const [saving, setSaving] = useState(false);
@@ -247,7 +272,7 @@ function GeneralSection({ board }: { board: Board }) {
             <Typography sx={{ fontWeight: 600 }}>Delete this board</Typography>
             <Typography variant="body2" color="text.secondary">
               Once deleted, there is no going back. This permanently removes the
-              board, its screens, regions, and share links.
+              board{contents ? ` and its ${contents}` : ""}.
             </Typography>
           </Box>
           <Button
@@ -262,7 +287,11 @@ function GeneralSection({ board }: { board: Board }) {
       </Box>
 
       {deleteOpen ? (
-        <DeleteBoardDialog board={board} onClose={() => setDeleteOpen(false)} />
+        <DeleteBoardDialog
+          board={board}
+          stats={stats}
+          onClose={() => setDeleteOpen(false)}
+        />
       ) : null}
 
       <Snackbar
@@ -551,9 +580,11 @@ function SharingSection({
  */
 function DeleteBoardDialog({
   board,
+  stats,
   onClose,
 }: {
   board: Board;
+  stats: BoardStats;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -561,6 +592,7 @@ function DeleteBoardDialog({
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const matches = confirm.trim() === board.name;
+  const contents = describeContents(stats);
 
   const onDelete = async () => {
     if (!matches) return;
@@ -592,8 +624,8 @@ function DeleteBoardDialog({
       <DialogTitle>Delete this board?</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          This permanently deletes <b>{board.name}</b>, including its screens,
-          regions, and share links. This cannot be undone.
+          This permanently deletes <b>{board.name}</b>
+          {contents ? ` and its ${contents}` : ""}. This cannot be undone.
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           Type <b>{board.name}</b> to confirm.
