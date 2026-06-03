@@ -97,6 +97,22 @@ in templates/auth-secret.yaml under this name.
 {{- end -}}
 
 {{/*
+Whether an internal / self-signed CA bundle is configured (inline pem, or an
+existing ConfigMap/Secret). When set, the chart mounts it and points
+NODE_EXTRA_CA_CERTS at it so the OIDC call can trust it.
+*/}}
+{{- define "stateboard.caCertConfigured" -}}
+{{- or .Values.caCert.pem .Values.caCert.existingConfigMap .Values.caCert.existingSecret -}}
+{{- end -}}
+
+{{/*
+Absolute path the CA bundle is mounted at inside the container.
+*/}}
+{{- define "stateboard.caCertPath" -}}
+{{- printf "/etc/stateboard/ca/%s" .Values.caCert.key -}}
+{{- end -}}
+
+{{/*
 DATABASE_URL resolution.
 - if postgresql.enabled, build from sub-chart values
 - else if externalDatabaseUrlExistingSecret.name, mount via envFrom

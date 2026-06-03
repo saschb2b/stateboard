@@ -121,6 +121,7 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 | `STATEBOARD_DEFAULT_ROLE`          | `editor`      | Role given to non-first sign-ins                                      |
 | `STATEBOARD_DATA_DIR`              | `./data`      | Root of upload storage                                                |
 | `PORT`                             | `3000`        | HTTP port                                                             |
+| `NODE_EXTRA_CA_CERTS`              | _unset_       | Path to a PEM CA bundle to trust for an internal/self-signed IdP cert |
 
 ## Roadmap
 

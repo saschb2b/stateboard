@@ -138,6 +138,48 @@ The first user to complete sign-in becomes the workspace `owner`. Subsequent use
 
 The owner can change roles or remove members at `/settings/members`.
 
+## TLS: self-signed or internal CA certificates
+
+At runtime StateBoard makes one outbound call: to your OIDC provider, for discovery and the token exchange during sign-in. If that endpoint presents a certificate signed by an internal/private CA, or a self-signed cert, Node rejects it and **sign-in fails right after the Keycloak redirect**. The server logs show a TLS error like `UNABLE_TO_VERIFY_LEAF_SIGNATURE`, `SELF_SIGNED_CERT_IN_CHAIN`, or `unable to get local issuer certificate`.
+
+Fix it by **trusting your CA**, not by turning verification off. The runtime honors Node's standard `NODE_EXTRA_CA_CERTS`: point it at a PEM bundle and that CA is trusted for the call. Nothing else changes.
+
+<Callout type="info">
+  Provide the CA that signed the IdP's certificate. If the cert is truly
+  self-signed (a leaf with no separate CA), use that certificate itself as the
+  bundle.
+</Callout>
+
+### Docker / Compose
+
+Mount the CA read-only and point `NODE_EXTRA_CA_CERTS` at it, alongside your usual env:
+
+```bash
+# add to your `docker run` flags (or the compose service):
+-v /path/to/internal-ca.pem:/etc/ssl/internal-ca.pem:ro
+-e NODE_EXTRA_CA_CERTS=/etc/ssl/internal-ca.pem
+```
+
+### Helm
+
+Hand the chart your CA and it mounts it read-only and sets `NODE_EXTRA_CA_CERTS` for you:
+
+```bash
+# inline PEM file:
+helm upgrade ... --set-file caCert.pem=internal-ca.pem
+
+# or a Secret / ConfigMap you already manage:
+helm upgrade ... --set caCert.existingSecret=corp-ca --set caCert.key=ca.crt
+```
+
+### Last resort (insecure)
+
+```
+NODE_TLS_REJECT_UNAUTHORIZED=0
+```
+
+This turns off certificate verification for the **entire** process: it accepts any certificate, which defeats TLS and leaves the token exchange open to interception. Use it only to confirm the certificate is the cause, never in production. Trust the CA instead.
+
 ## Airgap considerations
 
 The runtime makes **only one** outbound call: to your configured Keycloak issuer (and only during sign-in). No telemetry, no analytics, no license server, no phone-home, no remote font loading. The docs search index is built locally with Orama.

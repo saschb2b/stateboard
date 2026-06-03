@@ -82,6 +82,10 @@ spec:
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+            {{- if include "stateboard.caCertConfigured" . }}
+            - name: NODE_EXTRA_CA_CERTS
+              value: {{ include "stateboard.caCertPath" . | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ include "stateboard.authSecretName" . }}
@@ -115,6 +119,14 @@ spec:
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
             {{- end }}
+            {{- if include "stateboard.caCertConfigured" . }}
+            - name: ca-cert
+              mountPath: /etc/stateboard/ca
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
         {{- with .Values.extraContainers }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -126,6 +138,22 @@ spec:
         {{- else }}
         - name: data
           emptyDir: {}
+        {{- end }}
+        {{- if include "stateboard.caCertConfigured" . }}
+        - name: ca-cert
+          {{- if .Values.caCert.existingSecret }}
+          secret:
+            secretName: {{ .Values.caCert.existingSecret }}
+          {{- else if .Values.caCert.existingConfigMap }}
+          configMap:
+            name: {{ .Values.caCert.existingConfigMap }}
+          {{- else }}
+          configMap:
+            name: {{ include "stateboard.fullname" . }}-ca
+          {{- end }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

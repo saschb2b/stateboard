@@ -165,6 +165,27 @@ extraEnvFrom: []
 extraContainers: []
 initContainers: []
 
+# ---- TLS trust: self-signed / internal CA ----------------------------------
+# If your OIDC provider (Keycloak) presents a certificate signed by an
+# internal/private CA — or a self-signed cert — the app's sign-in calls fail
+# TLS verification. Provide the CA bundle here: it is mounted read-only and
+# trusted via NODE_EXTRA_CA_CERTS, the secure fix (no verification is disabled
+# anywhere). Set exactly one source.
+caCert:
+  # Inline PEM (one or more certificates). Stored in a generated ConfigMap.
+  # Tip: pass a file with `--set-file caCert.pem=internal-ca.pem`.
+  pem: ""
+  # ...or the name of a ConfigMap you manage that holds the bundle.
+  existingConfigMap: ""
+  # ...or the name of a Secret you manage that holds the bundle.
+  existingSecret: ""
+  # Key under the ConfigMap/Secret that holds the PEM bundle.
+  key: "ca.crt"
+
+# Mount arbitrary extra volumes into the app container (advanced escape hatch).
+extraVolumes: []
+extraVolumeMounts: []
+
 serviceAccount:
   create: true
   name: ""
