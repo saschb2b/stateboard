@@ -220,6 +220,7 @@ function mapMember(row: WorkspaceMemberRow): WorkspaceMember {
 
 export type AuditAction =
   | "board.create"
+  | "board.clone"
   | "board.update"
   | "board.delete"
   | "screen.create"

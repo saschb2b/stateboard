@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
 import Container from "@mui/material/Container";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -19,6 +20,7 @@ import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import LibraryAddOutlinedIcon from "@mui/icons-material/LibraryAddOutlined";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
@@ -391,7 +393,9 @@ function BoardCard({
   item: BoardListItem;
   editable: boolean;
 }) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [cloning, setCloning] = useState(false);
   const { board, shareToken, screens, totals, updatedLabel } = item;
   const totalRegions = totals.shipped + totals.mock + totals.missing;
 
@@ -406,6 +410,28 @@ function BoardCard({
       setTimeout(() => setCopied(false), 1500);
     } catch {
       // ignore
+    }
+  };
+
+  // Deep-copy this board, then open the copy so the user can swap a screen or
+  // two. The whole card is a link, so swallow the click that triggered it.
+  const onClone = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (cloning) return;
+    setCloning(true);
+    try {
+      const res = await fetch(`/api/boards/${board.id}/clone`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        setCloning(false);
+        return;
+      }
+      const cloned: Board = await res.json();
+      router.push(`/boards/${cloned.id}`);
+    } catch {
+      setCloning(false);
     }
   };
 
@@ -444,17 +470,35 @@ function BoardCard({
           <Typography variant="h6" sx={{ mb: 0.5, flex: 1 }}>
             {board.name}
           </Typography>
-          {shareToken ? (
-            <Tooltip title={copied ? "Copied!" : "Copy share link"}>
-              <IconButton
-                size="small"
-                onClick={copyShare}
-                aria-label="Copy share link"
-              >
-                <ContentCopyIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          ) : null}
+          <Stack direction="row" spacing={0.25} sx={{ flexShrink: 0 }}>
+            {editable ? (
+              <Tooltip title="Duplicate board">
+                <IconButton
+                  size="small"
+                  onClick={onClone}
+                  disabled={cloning}
+                  aria-label="Duplicate board"
+                >
+                  {cloning ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <LibraryAddOutlinedIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            {shareToken ? (
+              <Tooltip title={copied ? "Copied!" : "Copy share link"}>
+                <IconButton
+                  size="small"
+                  onClick={copyShare}
+                  aria-label="Copy share link"
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+          </Stack>
         </Stack>
         {board.description ? (
           <Typography
