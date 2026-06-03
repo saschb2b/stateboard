@@ -18,7 +18,9 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CloseIcon from "@mui/icons-material/Close";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
+import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import { AppHeader } from "./app-header";
+import { AddScreenDialog } from "./add-screen-dialog";
 import { BoardPresenter } from "./board-presenter";
 import { ScreenAnnotator } from "./screen-annotator";
 import { ScreenUploader } from "./screen-uploader";
@@ -62,8 +64,15 @@ export function BoardEditor({
   const [actionError, setActionError] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addTab, setAddTab] = useState<"upload" | "reuse">("upload");
 
   const editable = canEdit(viewer.role);
+
+  const openAddScreen = (tab: "upload" | "reuse" = "upload") => {
+    setAddTab(tab);
+    setAddOpen(true);
+  };
 
   // Surface a failed mutation instead of silently swallowing it. Reads the
   // API's `{ error }` body when present, falling back to a plain-language line.
@@ -85,6 +94,13 @@ export function BoardEditor({
   const handleUploaded = (screen: ScreenWithRegions) => {
     setScreens((prev) => [...prev, screen]);
     setActiveId(screen.id);
+  };
+
+  const handleScreensAdded = (added: ScreenWithRegions[]) => {
+    const last = added[added.length - 1];
+    if (!last) return;
+    setScreens((prev) => [...prev, ...added]);
+    setActiveId(last.id);
   };
 
   const handleScreenUpdated = (updated: ScreenWithRegions) => {
@@ -307,7 +323,35 @@ export function BoardEditor({
         {screens.length === 0 ? (
           <Stack spacing={1.5} sx={{ mt: 4 }}>
             {editable ? (
-              <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
+              <Stack spacing={1}>
+                <ScreenUploader
+                  boardId={board.id}
+                  onUploaded={handleUploaded}
+                />
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ textAlign: "center" }}
+                >
+                  or{" "}
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => openAddScreen("reuse")}
+                    sx={{
+                      p: 0,
+                      border: 0,
+                      bgcolor: "transparent",
+                      cursor: "pointer",
+                      font: "inherit",
+                      color: "primary.main",
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                  >
+                    reuse a screenshot from another board
+                  </Box>
+                </Typography>
+              </Stack>
             ) : (
               <Box
                 sx={{
@@ -469,11 +513,14 @@ export function BoardEditor({
               </Tabs>
 
               {editable ? (
-                <ScreenUploader
-                  boardId={board.id}
-                  onUploaded={handleUploaded}
-                  compact
-                />
+                <Button
+                  startIcon={<AddPhotoAlternateOutlinedIcon />}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => openAddScreen("upload")}
+                >
+                  Add screen
+                </Button>
               ) : null}
 
               <Box sx={{ flex: 1 }} />
@@ -558,6 +605,15 @@ export function BoardEditor({
           {actionError}
         </Alert>
       </Snackbar>
+      {editable && addOpen ? (
+        <AddScreenDialog
+          open
+          onClose={() => setAddOpen(false)}
+          boardId={board.id}
+          initialTab={addTab}
+          onAdded={handleScreensAdded}
+        />
+      ) : null}
     </>
   );
 }

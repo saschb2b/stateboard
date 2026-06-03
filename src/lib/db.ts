@@ -8,6 +8,7 @@ import type {
   ScreenWithRegions,
   ShareLink,
   WorkspaceMember,
+  WorkspaceScreen,
 } from "./types";
 
 /**
@@ -426,6 +427,24 @@ export async function listScreens(boardId: string): Promise<Screen[]> {
     [boardId],
   );
   return rows.map(mapScreen);
+}
+
+/**
+ * Every screen in the workspace, tagged with its board's name, for the
+ * "reuse a screenshot" picker. Newest boards first, then screen order.
+ */
+export async function listWorkspaceScreens(
+  workspaceId: string,
+): Promise<WorkspaceScreen[]> {
+  const rows = await query<ScreenRow & { board_name: string }>(
+    `SELECT s.*, b.name AS board_name
+       FROM screens s
+       JOIN boards b ON b.id = s.board_id
+      WHERE b.workspace_id = $1
+      ORDER BY b.updated_at DESC, s.position ASC`,
+    [workspaceId],
+  );
+  return rows.map((row) => ({ ...mapScreen(row), boardName: row.board_name }));
 }
 
 export async function getScreen(id: string): Promise<Screen | null> {
