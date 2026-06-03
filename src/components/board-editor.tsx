@@ -252,6 +252,7 @@ export function BoardEditor({
   return (
     <>
       <AppHeader
+        homeHref="/boards"
         crumb={boardName}
         onCrumbChange={editable ? renameBoard : undefined}
         actions={
