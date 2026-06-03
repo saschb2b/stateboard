@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Box from "@mui/material/Box";
@@ -19,15 +19,20 @@ import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { AppHeader } from "./app-header";
 import { UserMenu } from "./user-menu";
-import type { Board } from "@/lib/types";
+import type { Board, Screen } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
 export interface BoardListItem {
   board: Board;
   /** Most-recent active share-link token, or null if none. */
   shareToken: string | null;
+  /** Screens for the card's preview carousel, in display order. */
+  screens: Screen[];
 }
 
 interface BoardListProps {
@@ -68,7 +73,10 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
         return;
       }
       const created: Board = await res.json();
-      setItems((prev) => [{ board: created, shareToken: null }, ...prev]);
+      setItems((prev) => [
+        { board: created, shareToken: null, screens: [] },
+        ...prev,
+      ]);
       setOpen(false);
       setName("");
       setDescription("");
@@ -88,6 +96,7 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
   return (
     <>
       <AppHeader
+        homeHref="/boards"
         actions={
           <>
             <Button
@@ -370,7 +379,7 @@ function BoardCard({
   editable: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const { board, shareToken } = item;
+  const { board, shareToken, screens } = item;
 
   const copyShare = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -399,10 +408,10 @@ function BoardCard({
       component={Link}
       href={href}
       sx={{
-        p: 2.5,
         textDecoration: "none",
         color: "inherit",
         display: "block",
+        overflow: "hidden",
         transition: "transform 120ms ease, border-color 120ms ease",
         "&:hover": {
           borderColor: "primary.main",
@@ -410,59 +419,241 @@ function BoardCard({
         },
       }}
     >
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems="flex-start"
-        justifyContent="space-between"
-      >
-        <Typography variant="h6" sx={{ mb: 0.5, flex: 1 }}>
-          {board.name}
-        </Typography>
-        {shareToken ? (
-          <Tooltip title={copied ? "Copied!" : "Copy share link"}>
-            <IconButton
-              size="small"
-              onClick={copyShare}
-              aria-label="Copy share link"
-            >
-              <ContentCopyIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+      <BoardScreenCarousel screens={screens} />
+      <Box sx={{ p: 2 }}>
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="flex-start"
+          justifyContent="space-between"
+        >
+          <Typography variant="h6" sx={{ mb: 0.5, flex: 1 }}>
+            {board.name}
+          </Typography>
+          {shareToken ? (
+            <Tooltip title={copied ? "Copied!" : "Copy share link"}>
+              <IconButton
+                size="small"
+                onClick={copyShare}
+                aria-label="Copy share link"
+              >
+                <ContentCopyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          ) : null}
+        </Stack>
+        {board.description ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: 1.5,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {board.description}
+          </Typography>
         ) : null}
-      </Stack>
-      {board.description ? (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            mb: 1.5,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
-          {board.description}
-        </Typography>
-      ) : null}
-      {shareToken ? (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontFamily: "monospace" }}
-        >
-          /share/{shareToken.slice(0, 8)}…
-        </Typography>
-      ) : (
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ fontStyle: "italic" }}
-        >
-          No active share link
-        </Typography>
-      )}
+        {shareToken ? (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontFamily: "monospace" }}
+          >
+            /share/{shareToken.slice(0, 8)}…
+          </Typography>
+        ) : (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ fontStyle: "italic" }}
+          >
+            No active share link
+          </Typography>
+        )}
+      </Box>
     </Paper>
+  );
+}
+
+/**
+ * Swipeable peek at a board's screens. Native horizontal scroll-snap gives
+ * touch/trackpad swiping for free; dots and hover arrows drive it on desktop.
+ * It lives inside the card link, so its controls preventDefault/stopPropagation
+ * to change slides without navigating — a tap on a slide still opens the board.
+ */
+function BoardScreenCarousel({ screens }: { screens: Screen[] }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  if (screens.length === 0) {
+    return (
+      <Box
+        sx={{
+          aspectRatio: "16 / 10",
+          bgcolor: "background.default",
+          borderBottom: 1,
+          borderColor: "divider",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 0.5,
+          color: "text.disabled",
+        }}
+      >
+        <ImageOutlinedIcon />
+        <Typography variant="caption">No screens yet</Typography>
+      </Box>
+    );
+  }
+
+  const go = (e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
+  };
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (el) setActive(Math.round(el.scrollLeft / el.clientWidth));
+  };
+
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        borderBottom: 1,
+        borderColor: "divider",
+        "&:hover .carousel-nav": { opacity: 1 },
+      }}
+    >
+      <Box
+        ref={scrollRef}
+        onScroll={onScroll}
+        sx={{
+          display: "flex",
+          aspectRatio: "16 / 10",
+          overflowX: "auto",
+          bgcolor: "background.default",
+          scrollSnapType: "x mandatory",
+          scrollbarWidth: "none",
+          "&::-webkit-scrollbar": { display: "none" },
+        }}
+      >
+        {screens.map((s, i) => (
+          <Box
+            key={s.id}
+            sx={{
+              flex: "0 0 100%",
+              height: "100%",
+              scrollSnapAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={s.mediaUrl}
+              alt={s.label ?? `Screen ${i + 1}`}
+              loading="lazy"
+              draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          </Box>
+        ))}
+      </Box>
+
+      {screens.length > 1 ? (
+        <>
+          <CarouselArrow
+            edge="left"
+            disabled={active === 0}
+            onClick={(e) => go(e, active - 1)}
+          />
+          <CarouselArrow
+            edge="right"
+            disabled={active === screens.length - 1}
+            onClick={(e) => go(e, active + 1)}
+          />
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{
+              position: "absolute",
+              bottom: 6,
+              left: 0,
+              right: 0,
+              justifyContent: "center",
+            }}
+          >
+            {screens.map((s, i) => (
+              <Box
+                key={s.id}
+                onClick={(e) => go(e, i)}
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  bgcolor:
+                    i === active ? "primary.main" : "rgba(255,255,255,0.55)",
+                  boxShadow: "0 0 2px rgba(0,0,0,0.6)",
+                  transition: "background-color 120ms ease",
+                }}
+              />
+            ))}
+          </Stack>
+        </>
+      ) : null}
+    </Box>
+  );
+}
+
+function CarouselArrow({
+  edge,
+  disabled,
+  onClick,
+}: {
+  edge: "left" | "right";
+  disabled: boolean;
+  onClick: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <IconButton
+      className="carousel-nav"
+      size="small"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={edge === "left" ? "Previous screen" : "Next screen"}
+      sx={{
+        position: "absolute",
+        top: "50%",
+        transform: "translateY(-50%)",
+        [edge]: 4,
+        opacity: 0,
+        transition: "opacity 120ms ease",
+        bgcolor: "rgba(0,0,0,0.45)",
+        color: "#fff",
+        "&:hover": { bgcolor: "rgba(0,0,0,0.65)" },
+        "&.Mui-disabled": { color: "rgba(255,255,255,0.3)" },
+      }}
+    >
+      {edge === "left" ? (
+        <ChevronLeftIcon fontSize="small" />
+      ) : (
+        <ChevronRightIcon fontSize="small" />
+      )}
+    </IconButton>
   );
 }

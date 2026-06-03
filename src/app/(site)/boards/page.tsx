@@ -1,4 +1,4 @@
-import { listBoards, listShareLinks } from "@/lib/db";
+import { listBoards, listScreens, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardList, type BoardListItem } from "@/components/board-list";
 
@@ -14,9 +14,12 @@ export default async function BoardsPage() {
   // POST /api/boards mints one on create).
   const items: BoardListItem[] = await Promise.all(
     boards.map(async (b) => {
-      const links = await listShareLinks(b.id);
+      const [links, screens] = await Promise.all([
+        listShareLinks(b.id),
+        listScreens(b.id),
+      ]);
       const active = links.find((l) => l.revokedAt === null);
-      return { board: b, shareToken: active?.token ?? null };
+      return { board: b, shareToken: active?.token ?? null, screens };
     }),
   );
 

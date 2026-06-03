@@ -40,10 +40,16 @@ export default function BoardsLoading() {
             }}
           >
             {Array.from({ length: 6 }).map((_, i) => (
-              <Paper key={i} sx={{ p: 2.5 }}>
-                <Skeleton variant="text" width="65%" height={28} />
-                <Skeleton variant="text" width="95%" />
-                <Skeleton variant="text" width="45%" />
+              <Paper key={i} sx={{ overflow: "hidden" }}>
+                <Skeleton
+                  variant="rectangular"
+                  sx={{ width: "100%", aspectRatio: "16 / 10" }}
+                />
+                <Box sx={{ p: 2 }}>
+                  <Skeleton variant="text" width="65%" height={28} />
+                  <Skeleton variant="text" width="95%" />
+                  <Skeleton variant="text" width="45%" />
+                </Box>
               </Paper>
             ))}
           </Box>
