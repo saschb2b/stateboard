@@ -14,12 +14,19 @@ interface ScreenUploaderProps {
   onUploaded: (screen: ScreenWithRegions) => void;
   /** When true, renders a smaller in-line button rather than the dropzone. */
   compact?: boolean;
+  /**
+   * When set, the upload replaces this screen's image (keeping its regions)
+   * instead of creating a new screen. The response already carries the
+   * preserved regions, so it is passed straight through.
+   */
+  replaceScreenId?: string;
 }
 
 export function ScreenUploader({
   boardId,
   onUploaded,
   compact = false,
+  replaceScreenId,
 }: ScreenUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -32,17 +39,22 @@ export function ScreenUploader({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(`/api/boards/${boardId}/screens`, {
-        method: "POST",
-        body: form,
-      });
+      const res = await fetch(
+        replaceScreenId
+          ? `/api/screens/${replaceScreenId}/image`
+          : `/api/boards/${boardId}/screens`,
+        { method: replaceScreenId ? "PUT" : "POST", body: form },
+      );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setError(body.error ?? `upload failed (${res.status})`);
         return;
       }
-      const screen: Screen = await res.json();
-      onUploaded({ ...screen, regions: [] });
+      const data = await res.json();
+      const screen: ScreenWithRegions = replaceScreenId
+        ? (data as ScreenWithRegions)
+        : { ...(data as Screen), regions: [] };
+      onUploaded(screen);
     } finally {
       setUploading(false);
     }
@@ -122,7 +134,7 @@ export function ScreenUploader({
           Drop a screenshot here, or click to browse
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          PNG, JPEG, WebP, or GIF — up to 25 MB
+          PNG, JPEG, WebP, or GIF, up to 25 MB
         </Typography>
         {uploading ? (
           <Stack direction="row" spacing={1} alignItems="center">

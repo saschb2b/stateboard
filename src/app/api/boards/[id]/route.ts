@@ -17,6 +17,9 @@ import {
   ok,
   payloadTooLarge,
 } from "@/lib/http";
+import path from "node:path";
+import fs from "node:fs/promises";
+import { UPLOADS_DIR } from "@/lib/paths";
 
 interface Ctx {
   params: Promise<{ id: string }>;
@@ -105,8 +108,22 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   if (!(await ensureBoardInWorkspace(id, member.workspaceId))) {
     return notFound("board not found");
   }
+
+  // Collect the image filenames before the cascade deletes the screen rows;
+  // the DB cascades screens + regions, but the files on disk don't.
+  const detail = await getBoardWithScreens(id);
   const removed = await deleteBoard(id);
   if (!removed) return notFound("board not found");
+
+  if (detail) {
+    await Promise.all(
+      detail.screens.map((s) =>
+        fs
+          .rm(path.join(UPLOADS_DIR, s.filename), { force: true })
+          .catch(() => {}),
+      ),
+    );
+  }
 
   await writeAudit({
     workspaceId: member.workspaceId,

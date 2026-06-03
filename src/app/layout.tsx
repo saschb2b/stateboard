@@ -13,11 +13,11 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
   title: {
-    default: "StateBoard — Show, don't tell.",
+    default: "StateBoard · Show, don't tell.",
     template: "%s · StateBoard",
   },
   description:
-    "Status reporting for visual products. Mark regions on your screens as shipped, mock, or missing — and share one link execs can read in 30 seconds.",
+    "Status reporting for visual products. Mark regions on your screens as shipped, mock, or missing, then share one link execs can read in 30 seconds.",
   icons: { icon: `${BASE_PATH}/icon.svg` },
   robots: { index: false, follow: false },
 };

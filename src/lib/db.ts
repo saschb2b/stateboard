@@ -8,6 +8,7 @@ import type {
   ScreenWithRegions,
   ShareLink,
   WorkspaceMember,
+  WorkspaceScreen,
 } from "./types";
 
 /**
@@ -220,11 +221,13 @@ function mapMember(row: WorkspaceMemberRow): WorkspaceMember {
 
 export type AuditAction =
   | "board.create"
+  | "board.clone"
   | "board.update"
   | "board.delete"
   | "screen.create"
   | "screen.update"
   | "screen.delete"
+  | "screen.reorder"
   | "region.create"
   | "region.update"
   | "region.delete"
@@ -426,6 +429,24 @@ export async function listScreens(boardId: string): Promise<Screen[]> {
   return rows.map(mapScreen);
 }
 
+/**
+ * Every screen in the workspace, tagged with its board's name, for the
+ * "reuse a screenshot" picker. Newest boards first, then screen order.
+ */
+export async function listWorkspaceScreens(
+  workspaceId: string,
+): Promise<WorkspaceScreen[]> {
+  const rows = await query<ScreenRow & { board_name: string }>(
+    `SELECT s.*, b.name AS board_name
+       FROM screens s
+       JOIN boards b ON b.id = s.board_id
+      WHERE b.workspace_id = $1
+      ORDER BY b.updated_at DESC, s.position ASC`,
+    [workspaceId],
+  );
+  return rows.map((row) => ({ ...mapScreen(row), boardName: row.board_name }));
+}
+
 export async function getScreen(id: string): Promise<Screen | null> {
   const row = await queryOne<ScreenRow>(`SELECT * FROM screens WHERE id = $1`, [
     id,
@@ -484,6 +505,27 @@ export async function updateScreen(
   return { ...existing, label };
 }
 
+/**
+ * Swap a screen's underlying image, keeping its id, label, position, and
+ * regions. The normalized region coordinates stay valid against any new
+ * image, so "replace the screenshot, keep the rectangles" needs only an
+ * UPDATE. Re-reads the row so the returned `mediaUrl` points at the new file.
+ */
+export async function updateScreenImage(
+  id: string,
+  image: { filename: string; mimeType: string; width: number; height: number },
+  actorId: string,
+): Promise<Screen | null> {
+  const existing = await getScreen(id);
+  if (!existing) return null;
+  await query(
+    `UPDATE screens SET filename = $1, mime_type = $2, width = $3, height = $4 WHERE id = $5`,
+    [image.filename, image.mimeType, image.width, image.height, id],
+  );
+  await touchBoard(existing.boardId, actorId);
+  return getScreen(id);
+}
+
 export async function deleteScreen(
   id: string,
   actorId: string,
@@ -495,6 +537,38 @@ export async function deleteScreen(
   ]);
   if (result.rowCount! > 0) await touchBoard(existing.boardId, actorId);
   return result.rowCount! > 0;
+}
+
+/**
+ * Set screen order for a board from a fully-specified id list. `orderedIds`
+ * must be a permutation of exactly this board's screens (no missing, extra,
+ * duplicate, or foreign ids), or null is returned and nothing is written.
+ * Positions become the array indices in one atomic UPDATE.
+ */
+export async function reorderScreens(
+  boardId: string,
+  orderedIds: string[],
+  actorId: string,
+): Promise<Screen[] | null> {
+  const current = await listScreens(boardId);
+  const currentIds = new Set(current.map((s) => s.id));
+  const unique = new Set(orderedIds);
+  if (
+    orderedIds.length !== current.length ||
+    unique.size !== orderedIds.length ||
+    !orderedIds.every((id) => currentIds.has(id))
+  ) {
+    return null;
+  }
+  await query(
+    `UPDATE screens AS s
+        SET position = data.pos
+       FROM (SELECT * FROM unnest($2::text[], $3::int[]) AS t(id, pos)) AS data
+      WHERE s.id = data.id AND s.board_id = $1`,
+    [boardId, orderedIds, orderedIds.map((_, i) => i)],
+  );
+  await touchBoard(boardId, actorId);
+  return listScreens(boardId);
 }
 
 // ----- regions --------------------------------------------------------------

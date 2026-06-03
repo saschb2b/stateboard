@@ -94,6 +94,11 @@ export interface ScreenWithRegions extends Screen {
   regions: Region[];
 }
 
+/** A screen plus its board's name, for the "reuse a screenshot" gallery. */
+export interface WorkspaceScreen extends Screen {
+  boardName: string;
+}
+
 export interface ShareLink {
   token: string;
   boardId: string;

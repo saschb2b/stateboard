@@ -27,7 +27,7 @@ const PROBLEMS = [
   },
   {
     title: "The medium mismatch",
-    body: "A visual product deserves visual reporting. Leadership will see screens in the demo — they should see the same screens in the status update, with state painted directly onto them.",
+    body: "A visual product deserves visual reporting. Leadership sees screens in the demo. They should see the same screens in the status update, with state painted directly onto them.",
   },
   {
     title: "The maintenance tax",
@@ -39,7 +39,7 @@ const STEPS = [
   {
     n: "01",
     title: "Capture",
-    body: "Upload a screenshot of your app — staging, prod, or a styled mock. v0 is manual; the headless capture pipeline lands in v1.",
+    body: "Upload a screenshot of your app: staging, prod, or a styled mock. v0 is manual; the headless capture pipeline lands in v1.",
   },
   {
     n: "02",
@@ -155,7 +155,7 @@ export default function LandingPage() {
               lineHeight: 1.55,
             }}
           >
-            Status reporting for visual products — built around the screens
+            Status reporting for visual products, built around the screens
             stakeholders actually see, not the tickets engineers actually file.
           </Typography>
           <Stack
@@ -220,7 +220,7 @@ export default function LandingPage() {
                 letterSpacing: "0.12em",
               }}
             >
-              01 — The problem
+              01 · The problem
             </Typography>
             <Typography
               variant="h2"
@@ -238,8 +238,8 @@ export default function LandingPage() {
               sx={{
                 mt: 3,
                 p: 3,
-                borderLeft: 4,
-                borderColor: "primary.main",
+                border: 1,
+                borderColor: "divider",
                 bgcolor: "background.paper",
                 borderRadius: 1,
               }}
@@ -259,7 +259,7 @@ export default function LandingPage() {
                 variant="caption"
                 sx={{ color: "text.secondary", mt: 1, display: "block" }}
               >
-                — Every executive, in every quarterly review, ever
+                Every executive, in every quarterly review, ever
               </Typography>
             </Box>
           </Stack>
@@ -306,7 +306,7 @@ export default function LandingPage() {
                 letterSpacing: "0.12em",
               }}
             >
-              02 — The thesis
+              02 · The thesis
             </Typography>
             <Typography
               variant="h2"
@@ -411,7 +411,7 @@ export default function LandingPage() {
               <Highlight
                 icon={<LockOutlinedIcon />}
                 title="One container"
-                body="docker run stateboard — under 60 seconds. SQLite by default, Postgres optional in v1."
+                body="docker run stateboard, ready in under 60 seconds. SQLite by default, Postgres optional in v1."
               />
               <Highlight
                 icon={<ArticleOutlinedIcon />}

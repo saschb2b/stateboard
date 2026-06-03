@@ -84,6 +84,7 @@ export function MembersAdmin({ viewer, initialMembers }: MembersAdminProps) {
   return (
     <>
       <AppHeader
+        homeHref="/boards"
         crumb="Members"
         actions={<UserMenu user={viewer.user} role={viewer.role} />}
       />

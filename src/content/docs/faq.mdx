@@ -5,33 +5,37 @@ description: The questions that come up most.
 
 ## Why only three states? I want one for "in review."
 
-Three states is the whole product. Four states is a different product (a roadmap tool, an issue tracker, a kanban board) — and those tools already exist and are better at what they do. The reason `shipped` / `mock` / `missing` works is that an exec scanning your share link can fit each region into the correct bucket in under a second. Add nuance and that breaks.
+Three states is the whole product. Four states is a different product (a roadmap tool, an issue tracker, a kanban board), and those tools already exist and are better at what they do. The reason `shipped` / `mock` / `missing` works is that an exec scanning your share link can fit each region into the correct bucket in under a second. Add nuance and that breaks.
 
 The notes field is for nuance ("shipped, but only for new accounts after 2025-01-01"). The state stays blunt.
 
-## Why is there no auth?
+## Do my stakeholders need an account?
 
-v0 is the wedge — the smallest product that proves the thesis. The teams it's for run on `localhost`, behind a VPN, or on an internal cluster where the network is the auth boundary. v1 brings OIDC and per-board permissions; until then, treat the share URL like a Google Drive "anyone with the link" share.
+No, and that's the point. Share links (`/share/{slug}`) are public and read-only by design, so an exec can open one and read the board in 30 seconds without a login. The **editor** is what's gated: creating and editing boards requires signing in through your OIDC provider (Keycloak is the documented default), with `owner` / `editor` / `viewer` roles. Because share links are open, treat a shared board like an "anyone with the link" doc — don't put anything in it you couldn't show the people you send it to.
 
 ## Can multiple people edit a board at the same time?
 
-Not safely. v0 has no multi-user model and SQLite is a single writer. If two people make changes simultaneously, last-write-wins. v1 introduces multi-user editing on Postgres.
+Yes. v1 is multi-user on Postgres, so several editors can work across the workspace. There's no real-time collaboration (no live cursors, no merge): edits save independently, and in the rare case two people change the same field at once, last-write-wins. Real-time collab is intentionally out of scope — the use case is asynchronous review.
 
-## Why SQLite? Why not Postgres from day one?
+## Can I reuse a board as a starting point?
 
-The pitch promises one Docker container, under 60 seconds to first board. SQLite makes that possible — no second service, no connection string, no init job. v1 adds an optional Postgres sub-chart for teams that want shared state across replicas; v0 doesn't need it.
+Yes — click **Duplicate** on any board's card in the overview. It deep-copies every screen and region into a new "… (copy)" board, with its own image files and share link, and opens it so you can change only what differs. Handy when each release or quarter is mostly the same board with a couple of screens swapped.
+
+## Why Postgres?
+
+v1 is the team-ready cut — multiple replicas, shared state — so it's Postgres-backed. (The v0 wedge used SQLite for a single-container demo.) Bring your own Postgres, or let the Helm chart run a bundled one. Uploaded screenshots live on a filesystem volume beside it; an S3-compatible adapter is planned for v2.
 
 ## Will my data survive an upgrade?
 
-Yes — as long as the PVC (Helm) or volume (Docker) survives. The schema uses `CREATE TABLE IF NOT EXISTS` for v0, so adding columns in patches is safe. When v1 ships and brings real schema migrations, we'll document a deliberate migration path before you run the upgrade.
+Yes, as long as your Postgres data and the uploads volume survive. Schema changes ship as numbered SQL migrations under `migrations/`, applied by `pnpm migrate` — the Docker Compose and Helm deploys run it for you on upgrade. Back up Postgres and the uploads volume together; see [Self-hosting → Backups](/docs/self-hosting#backups).
 
 ## Can I host the screenshots on S3?
 
-Not in v0. Uploads go to the local filesystem alongside the SQLite database, on the same volume. v1 introduces a pluggable storage layer with S3 as a built-in backend — the data model already separates "filename" from "where the bytes live", so the migration is mechanical.
+Not yet. Uploads go to a local filesystem volume (`STATEBOARD_DATA_DIR`), separate from Postgres. An S3-compatible storage adapter is planned for v2; the data model already separates a screen's filename from where its bytes live, so the migration will be mechanical. For multi-replica deploys today, give the uploads volume `ReadWriteMany`.
 
 ## Does it phone home?
 
-No. There's no analytics, no telemetry, no license server, no remote font fetching at runtime. The only outbound traffic is what you initiate at install (pulling the image, fetching dependencies). The docs search runs locally on an Orama index built at compile time. See [Self-hosting → Airgap deployments](/docs/self-hosting#airgap-deployments).
+No. There's no analytics, no telemetry, no license server, no remote font fetching at runtime. At runtime the only outbound call is to your OIDC provider, during sign-in. The docs search runs locally on an Orama index built at compile time. See [Self-hosting → Airgap considerations](/docs/self-hosting#airgap-considerations).
 
 ## Why isn't this a roadmap tool?
 
@@ -39,7 +43,7 @@ Roadmap tools answer "when will it ship." StateBoard answers "what state is it i
 
 ## Can I integrate Jira / Linear / Slack?
 
-Not yet. Those land in v1 (Jira issue linking on regions) and v2 (two-way Jira sync, Slack notifications). The product is deliberately small in v0 — adding integrations now would broaden the surface area before the core wedge has a chance to prove itself.
+Not yet. Jira issue linking on regions is slated for v1.x; two-way Jira sync and Slack notifications for v2. Integrations are staged deliberately so the core — screens, regions, states — stays solid first. See the [roadmap](/docs/roadmap) for where each one sits.
 
 ## Why MIT and not something more protective?
 

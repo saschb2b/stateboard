@@ -1,0 +1,16 @@
+{{- /*
+Holds an inline CA bundle (caCert.pem) so it can be mounted and trusted via
+NODE_EXTRA_CA_CERTS. Only rendered when an inline PEM is provided; pointing at
+an existing ConfigMap/Secret skips this.
+*/ -}}
+{{- if .Values.caCert.pem }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "stateboard.fullname" . }}-ca
+  labels:
+    {{- include "stateboard.labels" . | nindent 4 }}
+data:
+  {{ .Values.caCert.key }}: |
+{{ .Values.caCert.pem | indent 4 }}
+{{- end }}

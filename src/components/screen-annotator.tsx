@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
@@ -20,6 +21,14 @@ import {
   type ScreenWithRegions,
 } from "@/lib/types";
 import { RegionOverlay } from "./region-overlay";
+import {
+  MIN_REGION_SIZE,
+  moveBox,
+  resizeBox,
+  nudgeBox,
+  type Box as RegionBox,
+  type ResizeCorner,
+} from "@/lib/region-geometry";
 import { StateChip } from "./state-chip";
 
 interface ScreenAnnotatorProps {
@@ -54,8 +63,27 @@ interface DraftRect {
   h: number;
 }
 
-/** Minimum draw size (relative units) to count as a region. */
-const MIN_REGION_SIZE = 0.005;
+type DragMode = "move" | `resize-${ResizeCorner}`;
+
+interface DragState {
+  id: string;
+  mode: DragMode;
+  /** Pointer position (relative units) where the drag began. */
+  start: { x: number; y: number };
+  /** The region's box at drag start, used as the delta base. */
+  orig: RegionBox;
+}
+
+/** Dispatch a drag delta to the shared move / corner-resize geometry. */
+function applyDrag(drag: DragState, dx: number, dy: number): RegionBox {
+  if (drag.mode === "move") return moveBox(drag.orig, dx, dy);
+  return resizeBox(
+    drag.orig,
+    drag.mode.slice("resize-".length) as ResizeCorner,
+    dx,
+    dy,
+  );
+}
 
 export function ScreenAnnotator({
   screen,
@@ -69,6 +97,19 @@ export function ScreenAnnotator({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftRect | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  // Always-fresh handle to regions for callbacks that outlive the render that
+  // created them (the debounced geometry persist and keyboard nudging). Kept
+  // current via an effect — callbacks only fire after commit, never mid-render.
+  const regionsRef = useRef(regions);
+  useEffect(() => {
+    regionsRef.current = regions;
+  }, [regions]);
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudgePending = useRef<{
+    id: string;
+    orig: { x: number; y: number; w: number; h: number };
+  } | null>(null);
   const [draftDefaults, setDraftDefaults] = useState<{
     state: RegionState;
     label: string;
@@ -117,28 +158,149 @@ export function ScreenAnnotator({
     [readOnly, toRel],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!drawing || !draft) return;
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (drag) {
       const rel = toRel(e.clientX, e.clientY);
       if (!rel) return;
-      setDraft({
-        x: Math.min(draft.x, rel.x),
-        y: Math.min(draft.y, rel.y),
-        w: Math.abs(rel.x - draft.x),
-        h: Math.abs(rel.y - draft.y),
-      });
-    },
-    [drawing, draft, toRel],
-  );
+      const box = applyDrag(drag, rel.x - drag.start.x, rel.y - drag.start.y);
+      setRegions((prev) =>
+        prev.map((r) => (r.id === drag.id ? { ...r, ...box } : r)),
+      );
+      return;
+    }
+    if (!drawing || !draft) return;
+    const rel = toRel(e.clientX, e.clientY);
+    if (!rel) return;
+    setDraft({
+      x: Math.min(draft.x, rel.x),
+      y: Math.min(draft.y, rel.y),
+      w: Math.abs(rel.x - draft.x),
+      h: Math.abs(rel.y - draft.y),
+    });
+  };
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
+    if (drag) {
+      const region = regions.find((r) => r.id === drag.id);
+      const { orig, id } = drag;
+      setDrag(null);
+      if (
+        region &&
+        (region.x !== orig.x ||
+          region.y !== orig.y ||
+          region.w !== orig.w ||
+          region.h !== orig.h)
+      ) {
+        void persistGeometry(
+          id,
+          { x: region.x, y: region.y, w: region.w, h: region.h },
+          orig,
+        );
+      }
+      return;
+    }
     if (!drawing) return;
     setDrawing(false);
     if (!draft || draft.w < MIN_REGION_SIZE || draft.h < MIN_REGION_SIZE) {
       setDraft(null);
     }
-  }, [drawing, draft]);
+  };
+
+  // Grab a region's body to move it: select it and record the drag origin;
+  // the surface's mousemove/up handlers carry it from there.
+  const beginRegionDrag = (id: string, e: React.MouseEvent) => {
+    if (readOnly) return;
+    e.stopPropagation();
+    const region = regions.find((r) => r.id === id);
+    const rel = toRel(e.clientX, e.clientY);
+    if (!region || !rel) return;
+    setDraft(null);
+    setSelectedId(id);
+    setDrag({
+      id,
+      mode: "move",
+      start: rel,
+      orig: { x: region.x, y: region.y, w: region.w, h: region.h },
+    });
+  };
+
+  const beginResize = (
+    id: string,
+    corner: ResizeCorner,
+    e: React.MouseEvent,
+  ) => {
+    if (readOnly) return;
+    e.stopPropagation();
+    const region = regions.find((r) => r.id === id);
+    const rel = toRel(e.clientX, e.clientY);
+    if (!region || !rel) return;
+    setSelectedId(id);
+    setDrag({
+      id,
+      mode: `resize-${corner}`,
+      start: rel,
+      orig: { x: region.x, y: region.y, w: region.w, h: region.h },
+    });
+  };
+
+  // Persist a moved/resized box. The optimistic geometry is already in local
+  // state from the drag/nudge; on failure we roll back to the pre-change box.
+  // Reads regions through the ref so a debounced call sees the latest state.
+  const persistGeometry = useCallback(
+    async (
+      id: string,
+      box: { x: number; y: number; w: number; h: number },
+      orig: { x: number; y: number; w: number; h: number },
+    ) => {
+      const res = await fetch(`/api/regions/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(box),
+      });
+      if (!res.ok) {
+        const reverted = regionsRef.current.map((r) =>
+          r.id === id ? { ...r, ...orig } : r,
+        );
+        setRegions(reverted);
+        onScreenUpdated({ ...screen, regions: reverted });
+        onError?.(await failureMessage(res, "Couldn't update the region."));
+        return;
+      }
+      const updated: Region = await res.json();
+      const next = regionsRef.current.map((r) =>
+        r.id === updated.id ? updated : r,
+      );
+      setRegions(next);
+      onScreenUpdated({ ...screen, regions: next });
+    },
+    [screen, onScreenUpdated, onError],
+  );
+
+  // Persist a pending keyboard nudge. Fired on a short idle, and also when the
+  // selection changes or the screen unmounts, so a nudge is never lost.
+  const flushNudge = useCallback(() => {
+    if (nudgeTimer.current) {
+      clearTimeout(nudgeTimer.current);
+      nudgeTimer.current = null;
+    }
+    const pending = nudgePending.current;
+    nudgePending.current = null;
+    if (!pending) return;
+    const cur = regionsRef.current.find((r) => r.id === pending.id);
+    if (
+      cur &&
+      (cur.x !== pending.orig.x ||
+        cur.y !== pending.orig.y ||
+        cur.w !== pending.orig.w ||
+        cur.h !== pending.orig.h)
+    ) {
+      void persistGeometry(
+        pending.id,
+        { x: cur.x, y: cur.y, w: cur.w, h: cur.h },
+        pending.orig,
+      );
+    }
+  }, [persistGeometry]);
 
   // --- API actions -------------------------------------------------------
 
@@ -247,11 +409,41 @@ export function ScreenAnnotator({
       } else if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         void deleteSelected();
+      } else if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowDown"
+      ) {
+        const region = regionsRef.current.find((r) => r.id === selectedId);
+        if (!region) return;
+        e.preventDefault();
+        // If a different region was mid-nudge, save it before starting this one.
+        if (nudgePending.current && nudgePending.current.id !== selectedId) {
+          flushNudge();
+        }
+        // Remember the pre-nudge box once per run so a failed save rolls back.
+        if (!nudgePending.current) {
+          nudgePending.current = {
+            id: selectedId,
+            orig: { x: region.x, y: region.y, w: region.w, h: region.h },
+          };
+        }
+        const box = nudgeBox(region, e.key, e.shiftKey, 0.005);
+        setRegions((prev) =>
+          prev.map((r) => (r.id === selectedId ? { ...r, ...box } : r)),
+        );
+        if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
+        nudgeTimer.current = setTimeout(flushNudge, 350);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedId, readOnly, updateSelected, deleteSelected]);
+  }, [selectedId, readOnly, updateSelected, deleteSelected, flushNudge]);
+
+  // Save a still-pending nudge if the screen unmounts before the idle timer
+  // fires (e.g. switching tabs right after nudging), so the move isn't lost.
+  useEffect(() => () => flushNudge(), [flushNudge]);
 
   const aspect = `${screen.width} / ${screen.height}`;
   const hintVisible = !readOnly && Boolean(selectedId);
@@ -304,6 +496,8 @@ export function ScreenAnnotator({
               setDraft(null);
               setSelectedId(id);
             }}
+            onRegionMouseDown={readOnly ? undefined : beginRegionDrag}
+            onResizeStart={readOnly ? undefined : beginResize}
             filterState={filterState}
           />
 
@@ -338,7 +532,8 @@ export function ScreenAnnotator({
             minHeight: "1.4em",
           }}
         >
-          1 shipped · 2 mock · 3 missing · ⌫ delete · esc deselect
+          1 shipped · 2 mock · 3 missing · arrows move · ⇧ resize · ⌫ delete ·
+          esc deselect
         </Typography>
       </Box>
 
@@ -389,7 +584,7 @@ export function ScreenAnnotator({
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 You have viewer access to this workspace. There are no regions
-                on this screen yet — ask an editor to add some.
+                on this screen yet. Ask an editor to add some.
               </Typography>
             </Stack>
           )
@@ -465,6 +660,9 @@ export function ScreenAnnotator({
                 <CloseIcon fontSize="small" />
               </IconButton>
             </Stack>
+            <Typography variant="caption" color="text.secondary">
+              Drag the box to move it, or pull a corner to resize.
+            </Typography>
             <StateSelector
               value={selected.state}
               onChange={(state) => updateSelected({ state })}
@@ -604,20 +802,31 @@ function RegionList({
       <Stack spacing={0.5}>
         {regions.map((r, i) => {
           const dimmed = filterState !== null && r.state !== filterState;
+          const name = r.label ?? `Region ${i + 1}`;
           return (
-            <Box
+            <ButtonBase
               key={r.id}
               onClick={() => onSelect(r.id)}
+              aria-label={`${STATE_META[r.state].label}: ${name}`}
               sx={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "flex-start",
+                width: "100%",
+                textAlign: "left",
                 gap: 1,
                 px: 1,
                 py: 0.75,
                 borderRadius: 1,
-                cursor: "pointer",
                 opacity: dimmed ? 0.4 : 1,
                 "&:hover": { bgcolor: "action.hover" },
+                "&.Mui-focusVisible": {
+                  bgcolor: "action.hover",
+                  outline: 2,
+                  outlineStyle: "solid",
+                  outlineColor: "primary.main",
+                  outlineOffset: -2,
+                },
                 transition: "opacity 160ms ease",
               }}
             >
@@ -634,9 +843,9 @@ function RegionList({
                   fontStyle: r.label ? "normal" : "italic",
                 }}
               >
-                {r.label ?? `Region ${i + 1}`}
+                {name}
               </Typography>
-            </Box>
+            </ButtonBase>
           );
         })}
       </Stack>

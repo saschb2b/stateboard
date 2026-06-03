@@ -3,23 +3,61 @@ title: Changelog
 description: What shipped in each release of StateBoard, and what's intentionally not here yet.
 ---
 
-Versions follow [CalVer](https://calver.org/) — `YYYY.M.PATCH`. A new minor cuts whenever a release ships; patches fix issues against a released minor.
+Versions follow [CalVer](https://calver.org/): `YYYY.M.PATCH`. A new minor cuts whenever a release ships; patches fix issues against a released minor.
 
 The canonical source is [`CHANGELOG.md`](https://github.com/saschb2b/stateboard/blob/main/CHANGELOG.md) on GitHub. Individual releases (with tarballs, Docker tags, and signed tags) live on [the Releases page](https://github.com/saschb2b/stateboard/releases).
 
 ---
 
+## 2026.6.0
+
+A feature-and-polish release on top of `2026.5.1`. The board overview becomes an at-a-glance dashboard, regions are directly editable, boards can be duplicated, and self-hosting behind an internal or self-signed CA is now a first-class path. No breaking changes, no new migrations.
+
+### Overview
+
+- **Mini-board card previews.** Each board on `/boards` shows a swipeable carousel of its screens with the state-colored regions painted on, so a board reads at a glance instead of as a name. Dots, hover arrows, a `1 / N` counter, and native touch swipe.
+- **Status and freshness on every card.** A `shipped` / `mock` / `missing` count plus a relative "last touched" time.
+- **One-click back to the overview.** The top-left wordmark returns to your boards from inside the editor instead of bouncing out to the marketing page.
+- **Duplicate a board.** Deep-copies every screen (with its own copy of the image bytes), every region, and a fresh share link into a `… (copy)` board — for when a new board is mostly an old one with a screen or two swapped.
+
+### Editor
+
+- **Move and resize regions.** Drag a region to reposition it or pull a corner to resize it — no more delete-and-redraw. Arrow keys nudge the selected region; hold Shift to resize from the keyboard.
+- **Reorder screens** by dragging their tabs; the order carries through to the share view and Present mode.
+- **Reuse a screenshot across boards.** The Add-screen dialog now splits into Upload and Reuse tabs. Reuse is a searchable, multi-select gallery of screenshots from your other boards, grouped by board — pick one or several to drop into this board without re-uploading. The image bytes are copied, so the new screen is independent and starts unannotated.
+- **Replace a screen's image, keep its regions.** "Replace image" swaps the screenshot under an existing screen — upload a newer shot or reuse one from the workspace — while every rectangle you've drawn stays put. No more delete-and-redraw when a screen just got a fresh capture; the normalized coordinates re-render against the new picture.
+- **Board settings.** A gear in the editor opens per-board settings (`/boards/[id]/settings`) with a section sidebar. **General** renames the board, edits its description, and — in a GitHub-style Danger Zone — deletes the board behind a type-the-name confirmation (which removes its screens, regions, share links, and image files). **Sharing** mints public links named per audience, copies them, and revokes any one without affecting the others — one click away via "Manage links" in the editor's Share menu.
+- **Keyboard-accessible region list** — list items are focusable buttons, so the `1` / `2` / `3` state shortcuts are reachable without a mouse.
+
+### Share view
+
+- **The three states explain themselves.** The totals row now spells out each state ("Live & real", "UI built, data fake", "Not built yet"), so an exec reads the artifact cold.
+
+### Self-hosting
+
+- **Internal / self-signed CA support.** Trust your IdP's certificate via `NODE_EXTRA_CA_CERTS` — a first-class Helm `caCert` value (inline PEM or an existing Secret/ConfigMap) mounts the bundle and wires the env, with a documented Docker / Compose path. The secure fix: verification stays on.
+
+### Polish & docs
+
+- **Loading skeletons** on the boards list, editor, and share view, so navigations fill in place instead of flashing blank.
+- **Plainer punctuation** across the app and docs (em dashes removed), consistent screen alt text, an honest 404 button label, and a cleaner landing pull-quote.
+- **Docs corrected to match shipped v1** — the FAQ and getting-started had drifted back to the v0 wedge (SQLite, "no auth"); fixed a broken docs anchor, and documented the new editor and clone features.
+
+### Under the hood
+
+- Region move/resize/nudge geometry extracted to a pure, unit-tested module; the `node:test` suite grows to 77 cases.
+
 ## 2026.5.1
 
-A fix release for `2026.5.0`. **Headline: sign-in actually works now.** Two mismatches introduced by the Better Auth dependency bump broke OIDC sign-in on a fresh `2026.5.0` install — every attempt ended in a 500 or a Keycloak `invalid_redirect_uri`. Anyone running `2026.5.0` should upgrade.
+A fix release for `2026.5.0`. **Headline: sign-in actually works now.** Two mismatches introduced by the Better Auth dependency bump broke OIDC sign-in on a fresh `2026.5.0` install. Every attempt ended in a 500 or a Keycloak `invalid_redirect_uri`. Anyone running `2026.5.0` should upgrade.
 
-### Fixed — sign-in (broken in 2026.5.0)
+### Fixed: sign-in (broken in 2026.5.0)
 
-- **Better Auth columns match the library again.** They were created snake_case while Better Auth queries camelCase (`expiresAt`, `emailVerified`, `userId`, …), so sign-in 500'd with `column "expiresAt" of relation "verification" does not exist`. New migration `0005` renames them — data, indexes, and foreign keys preserved.
+- **Better Auth columns match the library again.** They were created snake_case while Better Auth queries camelCase (`expiresAt`, `emailVerified`, `userId`, …), so sign-in 500'd with `column "expiresAt" of relation "verification" does not exist`. New migration `0005` renames them: data, indexes, and foreign keys preserved.
 - **OIDC callback path corrected** to `/api/auth/oauth2/callback/keycloak` (Better Auth's genericOAuth path). The bundled realm and every setup doc had registered `/api/auth/callback/keycloak`, which Keycloak rejected.
 - **`pnpm migrate` now loads `.env`**, so `cp .env.example .env && pnpm migrate` creates the schema instead of failing with "DATABASE_URL required".
 
-### Fixed — deployment
+### Fixed: deployment
 
 - Base64 DB passwords (e.g. from `openssl rand -base64`) no longer break `DATABASE_URL` parsing; the parse-error log masks the password rather than leaking or hiding it entirely.
 
@@ -38,42 +76,42 @@ A fix release for `2026.5.0`. **Headline: sign-in actually works now.** Two mism
 
 ---
 
-## 2026.5.0 — Team-ready
+## 2026.5.0: Team-ready
 
 The first stable cut. You can stand StateBoard up in a company, hand the URL to your stakeholders, and stop pasting screenshots into Confluence.
 
 ### What you get
 
 - **The primitive:** screenshot → drag rectangles → tag each one `SHIPPED` / `MOCK` / `MISSING` → share one link. Three states, no more. Stakeholders read a board in 30 seconds without logging in.
-- **Multi-user via OIDC.** Sign-in is delegated to your IdP — Keycloak is the documented default, but any OIDC discovery URL works (Auth0, Okta, Entra, Authentik, Dex…). No email/password to manage, no invite emails to send.
+- **Multi-user via OIDC.** Sign-in is delegated to your IdP. Keycloak is the documented default, but any OIDC discovery URL works (Auth0, Okta, Entra, Authentik, Dex…). No email/password to manage, no invite emails to send.
 - **Workspaces & roles.** A single workspace per deployed instance with `owner` / `editor` / `viewer` roles. Boards belong to the workspace, so when a teammate leaves, their boards stay.
 - **Revocable share links.** Mint multiple public links per board, name them per audience, kill any one without affecting the others.
-- **Append-only audit log.** Every board / region / share-link / membership change writes a row in Postgres. (No UI yet — query the table directly until v3.)
+- **Append-only audit log.** Every board / region / share-link / membership change writes a row in Postgres. (No UI yet; query the table directly until v3.)
 - **Self-host, airgap-adjacent.** One container, one Postgres, one IdP. Zero outbound calls to any third-party at runtime.
 
 ### Editor
 
-- **Region list panel** with keyboard shortcuts — arrow keys to navigate, `Tab` between regions, number keys to set state.
+- **Region list panel** with keyboard shortcuts: arrow keys to navigate, `Tab` between regions, number keys to set state.
 - **Labels anchor to their box** so they don't drift when the screenshot resizes.
 - **Filter the canvas by state** by clicking a state pill in the header.
-- **Inline-edit** board and screen names — no dialog round-trip.
+- **Inline-edit** board and screen names, no dialog round-trip.
 - **Present mode** for fullscreen, distraction-free walkthroughs.
 
 ### Marketing surface
 
 - **Landing page** at `/` with a working mockup of a board.
 - **Docs site** at `/docs` (Fumadocs + MDX) with full-text search.
-- **Read-only static demo** auto-published to GitHub Pages on every push — the same example board the empty-state link points to.
+- **Read-only static demo** auto-published to GitHub Pages on every push, the same example board the empty-state link points to.
 
 ### Deployment
 
 - **Docker image** published to GHCR: `ghcr.io/saschb2b/stateboard:2026.5.0` (also `:latest`, `:2026.5`, and `:sha-…`).
-- **Helm chart** under `deploy/helm/stateboard` — single-replica by default, multi-replica safe with a `ReadWriteMany` PVC. Fails closed if `auth.secret` is empty.
+- **Helm chart** under `deploy/helm/stateboard`: single-replica by default, multi-replica safe with a `ReadWriteMany` PVC. Fails closed if `auth.secret` is empty.
 - **Runtime image** is now Node 26 on Debian Bookworm slim.
 
 ### Migrating from v0
 
-Legacy v0 URLs keep working — `/b/:id` and `/v/:slug` redirect permanently to `/boards/:id` and `/share/:slug`, so any links shared before this release stay live.
+Legacy v0 URLs keep working: `/b/:id` and `/v/:slug` redirect permanently to `/boards/:id` and `/share/:slug`, so any links shared before this release stay live.
 
 ### Known limitations (intentional)
 
@@ -81,6 +119,6 @@ The roadmap is staged. The following are explicitly **not** in this release; ask
 
 - Headless capture from a URL → v1.x
 - Scheduled re-capture, diff / time-travel → v2
-- Jira / Linear / Slack integrations → v1.x – v2
+- Jira / Linear / Slack integrations → v1.x to v2
 - Region comments, real-time collaboration → out of scope
 - Audit-log UI, SAML/SSO beyond OIDC → v3

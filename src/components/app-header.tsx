@@ -16,6 +16,12 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 interface AppHeaderProps {
   /** Optional right-side slot for page-specific actions (Save, Share, etc). */
   actions?: React.ReactNode;
+  /**
+   * Where the wordmark links. Defaults to the landing page; in-app surfaces
+   * (board list, editor, members) pass `/boards` so the top-left click lands
+   * on the board overview instead of bouncing out to marketing.
+   */
+  homeHref?: string;
   /** Optional crumb shown after the wordmark, e.g. board name in editor. */
   crumb?: string;
   /**
@@ -31,7 +37,12 @@ interface AppHeaderProps {
  * The diamond mark + wordmark is the brand identity — same gem as the
  * favicon, sized to sit next to "STATEBOARD" without overpowering it.
  */
-export function AppHeader({ actions, crumb, onCrumbChange }: AppHeaderProps) {
+export function AppHeader({
+  actions,
+  homeHref = "/",
+  crumb,
+  onCrumbChange,
+}: AppHeaderProps) {
   return (
     <AppBar position="sticky">
       <Toolbar
@@ -41,7 +52,10 @@ export function AppHeader({ actions, crumb, onCrumbChange }: AppHeaderProps) {
           px: { xs: 2, sm: 3 },
         }}
       >
-        <Link href="/" style={{ textDecoration: "none", color: "inherit" }}>
+        <Link
+          href={homeHref}
+          style={{ textDecoration: "none", color: "inherit" }}
+        >
           <Stack direction="row" alignItems="center" spacing={1.25}>
             <Box
               component="img"

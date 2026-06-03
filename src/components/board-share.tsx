@@ -15,6 +15,7 @@ import { AppHeader } from "./app-header";
 import { BoardPresenter } from "./board-presenter";
 import { RegionOverlay } from "./region-overlay";
 import { StateChip } from "./state-chip";
+import { STATE_META } from "@/lib/state-meta";
 import type { Board, ScreenWithRegions } from "@/lib/types";
 import { REGION_STATES } from "@/lib/types";
 
@@ -114,8 +115,16 @@ export function BoardShare({ board, screens }: BoardShareProps) {
               }}
             >
               <StateChip state={s} size="sm" />
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700 }}>
                 {totals[s]}
+              </Typography>
+              <Box sx={{ width: "1px", height: 14, bgcolor: "divider" }} />
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                {STATE_META[s].summary}
               </Typography>
             </Stack>
           ))}
@@ -165,7 +174,9 @@ export function BoardShare({ board, screens }: BoardShareProps) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={active.mediaUrl}
-                    alt={active.label ?? "screen"}
+                    alt={
+                      active.label ?? `Screen ${screens.indexOf(active) + 1}`
+                    }
                     style={{
                       position: "absolute",
                       inset: 0,

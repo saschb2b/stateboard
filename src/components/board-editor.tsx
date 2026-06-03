@@ -5,8 +5,11 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
+import ButtonGroup from "@mui/material/ButtonGroup";
 import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import InputBase from "@mui/material/InputBase";
 import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
@@ -18,7 +21,13 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CloseIcon from "@mui/icons-material/Close";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
+import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
+import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import Link from "next/link";
 import { AppHeader } from "./app-header";
+import { AddScreenDialog } from "./add-screen-dialog";
 import { BoardPresenter } from "./board-presenter";
 import { ScreenAnnotator } from "./screen-annotator";
 import { ScreenUploader } from "./screen-uploader";
@@ -60,8 +69,29 @@ export function BoardEditor({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [filterState, setFilterState] = useState<RegionState | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addTab, setAddTab] = useState<"upload" | "reuse">("upload");
+  const [addMode, setAddMode] = useState<"add" | "replace">("add");
+  const [replaceScreenId, setReplaceScreenId] = useState<string | null>(null);
+  const [shareAnchorEl, setShareAnchorEl] = useState<HTMLElement | null>(null);
 
   const editable = canEdit(viewer.role);
+
+  const openAddScreen = (tab: "upload" | "reuse" = "upload") => {
+    setAddMode("add");
+    setReplaceScreenId(null);
+    setAddTab(tab);
+    setAddOpen(true);
+  };
+
+  const openReplaceScreen = (screenId: string) => {
+    setAddMode("replace");
+    setReplaceScreenId(screenId);
+    setAddTab("upload");
+    setAddOpen(true);
+  };
 
   // Surface a failed mutation instead of silently swallowing it. Reads the
   // API's `{ error }` body when present, falling back to a plain-language line.
@@ -83,6 +113,13 @@ export function BoardEditor({
   const handleUploaded = (screen: ScreenWithRegions) => {
     setScreens((prev) => [...prev, screen]);
     setActiveId(screen.id);
+  };
+
+  const handleScreensAdded = (added: ScreenWithRegions[]) => {
+    const last = added[added.length - 1];
+    if (!last) return;
+    setScreens((prev) => [...prev, ...added]);
+    setActiveId(last.id);
   };
 
   const handleScreenUpdated = (updated: ScreenWithRegions) => {
@@ -130,6 +167,42 @@ export function BoardEditor({
       return;
     }
     handleScreenUpdated({ ...screen, label: trimmed || null });
+  };
+
+  // Persist a new screen order; roll back the optimistic move on failure.
+  const persistScreenOrder = async (
+    next: ScreenWithRegions[],
+    prev: ScreenWithRegions[],
+  ) => {
+    const res = await fetch(`/api/boards/${board.id}/screens`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ order: next.map((s) => s.id) }),
+    });
+    if (!res.ok) {
+      setScreens(prev);
+      await reportFailure(res, "Couldn't reorder the screens.");
+    }
+  };
+
+  // Drop the dragged tab in front of the target tab, then persist.
+  const reorderTo = (targetId: string) => {
+    const draggedId = dragId;
+    setDragId(null);
+    setDragOverId(null);
+    if (!draggedId || draggedId === targetId) return;
+    const prev = screens;
+    const dragged = prev.find((s) => s.id === draggedId);
+    const without = prev.filter((s) => s.id !== draggedId);
+    const targetIdx = without.findIndex((s) => s.id === targetId);
+    if (!dragged || targetIdx === -1) return;
+    const next = [
+      ...without.slice(0, targetIdx),
+      dragged,
+      ...without.slice(targetIdx),
+    ];
+    setScreens(next);
+    void persistScreenOrder(next, prev);
   };
 
   const renameBoard = async (next: string) => {
@@ -214,6 +287,7 @@ export function BoardEditor({
   return (
     <>
       <AppHeader
+        homeHref="/boards"
         crumb={boardName}
         onCrumbChange={editable ? renameBoard : undefined}
         actions={
@@ -233,18 +307,54 @@ export function BoardEditor({
               </span>
             </Tooltip>
             {editable ? (
-              <Tooltip title={copied ? "Copied!" : "Copy share link"}>
-                <Button
-                  size="small"
-                  startIcon={<ContentCopyIcon />}
-                  onClick={copyShare}
+              <>
+                <ButtonGroup
                   variant="outlined"
+                  size="small"
                   color="inherit"
-                  sx={{ borderColor: "divider" }}
+                  sx={{
+                    "& .MuiButtonGroup-grouped": { borderColor: "divider" },
+                  }}
                 >
-                  {copied ? "Copied" : "Share"}
-                </Button>
-              </Tooltip>
+                  <Button
+                    startIcon={<ContentCopyIcon />}
+                    onClick={copyShare}
+                    title="Copy share link"
+                  >
+                    {copied ? "Copied" : "Share"}
+                  </Button>
+                  <Button
+                    onClick={(e) => setShareAnchorEl(e.currentTarget)}
+                    aria-label="More sharing options"
+                    sx={{ px: 0.5, minWidth: "auto" }}
+                  >
+                    <ArrowDropDownIcon fontSize="small" />
+                  </Button>
+                </ButtonGroup>
+                <Menu
+                  anchorEl={shareAnchorEl}
+                  open={Boolean(shareAnchorEl)}
+                  onClose={() => setShareAnchorEl(null)}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                  transformOrigin={{ vertical: "top", horizontal: "right" }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setShareAnchorEl(null);
+                      void copyShare();
+                    }}
+                  >
+                    Copy share link
+                  </MenuItem>
+                  <MenuItem
+                    component={Link}
+                    href={`/boards/${board.id}/settings?section=sharing`}
+                    onClick={() => setShareAnchorEl(null)}
+                  >
+                    Manage links…
+                  </MenuItem>
+                </Menu>
+              </>
             ) : null}
             {activeShareLink ? (
               <Tooltip title="Open share view">
@@ -260,6 +370,18 @@ export function BoardEditor({
                 </IconButton>
               </Tooltip>
             ) : null}
+            {editable ? (
+              <Tooltip title="Board settings">
+                <IconButton
+                  size="small"
+                  component={Link}
+                  href={`/boards/${board.id}/settings`}
+                  aria-label="Board settings"
+                >
+                  <SettingsOutlinedIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ) : null}
             <UserMenu user={viewer.user} role={viewer.role} />
           </>
         }
@@ -268,7 +390,35 @@ export function BoardEditor({
         {screens.length === 0 ? (
           <Stack spacing={1.5} sx={{ mt: 4 }}>
             {editable ? (
-              <ScreenUploader boardId={board.id} onUploaded={handleUploaded} />
+              <Stack spacing={1}>
+                <ScreenUploader
+                  boardId={board.id}
+                  onUploaded={handleUploaded}
+                />
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ textAlign: "center" }}
+                >
+                  or{" "}
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => openAddScreen("reuse")}
+                    sx={{
+                      p: 0,
+                      border: 0,
+                      bgcolor: "transparent",
+                      cursor: "pointer",
+                      font: "inherit",
+                      color: "primary.main",
+                      "&:hover": { textDecoration: "underline" },
+                    }}
+                  >
+                    reuse a screenshot from another board
+                  </Box>
+                </Typography>
+              </Stack>
             ) : (
               <Box
                 sx={{
@@ -343,9 +493,40 @@ export function BoardEditor({
                   <Tab
                     key={s.id}
                     value={s.id}
+                    draggable={editable && renamingId !== s.id}
+                    onDragStart={(e) => {
+                      setDragId(s.id);
+                      e.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragOver={(e) => {
+                      if (!dragId || dragId === s.id) return;
+                      e.preventDefault();
+                      setDragOverId(s.id);
+                    }}
+                    onDragLeave={() =>
+                      setDragOverId((cur) => (cur === s.id ? null : cur))
+                    }
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      reorderTo(s.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setDragOverId(null);
+                    }}
                     onDoubleClick={
                       editable ? () => setRenamingId(s.id) : undefined
                     }
+                    sx={{
+                      opacity: dragId === s.id ? 0.4 : 1,
+                      boxShadow:
+                        dragOverId === s.id
+                          ? "inset 3px 0 0 var(--mui-palette-primary-main)"
+                          : "none",
+                      cursor:
+                        editable && renamingId !== s.id ? "grab" : undefined,
+                      transition: "opacity 120ms ease",
+                    }}
                     label={
                       editable && renamingId === s.id ? (
                         <TabRenameField
@@ -399,11 +580,28 @@ export function BoardEditor({
               </Tabs>
 
               {editable ? (
-                <ScreenUploader
-                  boardId={board.id}
-                  onUploaded={handleUploaded}
-                  compact
-                />
+                <Button
+                  startIcon={<AddPhotoAlternateOutlinedIcon />}
+                  variant="outlined"
+                  size="small"
+                  onClick={() => openAddScreen("upload")}
+                >
+                  Add screen
+                </Button>
+              ) : null}
+
+              {editable && active ? (
+                <Tooltip title="Swap this screen's image, keeping its regions">
+                  <Button
+                    startIcon={<SwapHorizOutlinedIcon />}
+                    variant="text"
+                    size="small"
+                    color="inherit"
+                    onClick={() => openReplaceScreen(active.id)}
+                  >
+                    Replace image
+                  </Button>
+                </Tooltip>
               ) : null}
 
               <Box sx={{ flex: 1 }} />
@@ -488,6 +686,24 @@ export function BoardEditor({
           {actionError}
         </Alert>
       </Snackbar>
+      {editable && addOpen ? (
+        <AddScreenDialog
+          open
+          onClose={() => setAddOpen(false)}
+          boardId={board.id}
+          initialTab={addTab}
+          mode={addMode}
+          replaceScreenId={replaceScreenId ?? undefined}
+          onResult={(result) => {
+            if (addMode === "replace") {
+              const s = result[0];
+              if (s) handleScreenUpdated(s);
+            } else {
+              handleScreensAdded(result);
+            }
+          }}
+        />
+      ) : null}
     </>
   );
 }

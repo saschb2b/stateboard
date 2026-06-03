@@ -6,6 +6,16 @@ import Typography from "@mui/material/Typography";
 import { STATE_META } from "@/lib/state-meta";
 import type { Region, RegionState } from "@/lib/types";
 import { StateChip } from "./state-chip";
+import type { ResizeCorner } from "@/lib/region-geometry";
+
+const RESIZE_CORNERS: ResizeCorner[] = ["nw", "ne", "sw", "se"];
+
+const CORNER_CURSOR: Record<ResizeCorner, string> = {
+  nw: "nwse-resize",
+  ne: "nesw-resize",
+  sw: "nesw-resize",
+  se: "nwse-resize",
+};
 
 interface RegionOverlayProps {
   regions: Region[];
@@ -22,6 +32,19 @@ interface RegionOverlayProps {
    * clickable state-counter pills.
    */
   filterState?: RegionState | null;
+  /**
+   * Editor only. When provided, a region's body becomes a move handle:
+   * pressing it selects the region and begins a drag. Resize handles are
+   * drawn on the selected region and report which corner was grabbed via
+   * onResizeStart. The share view and presenter omit both, so they stay
+   * strictly read-only.
+   */
+  onRegionMouseDown?: (id: string, e: React.MouseEvent) => void;
+  onResizeStart?: (
+    id: string,
+    corner: ResizeCorner,
+    e: React.MouseEvent,
+  ) => void;
 }
 
 /**
@@ -41,7 +64,10 @@ export function RegionOverlay({
   selectedId,
   onSelect,
   filterState = null,
+  onRegionMouseDown,
+  onResizeStart,
 }: RegionOverlayProps) {
+  const editable = Boolean(onRegionMouseDown);
   return (
     <Box
       sx={{
@@ -86,7 +112,14 @@ export function RegionOverlay({
           >
             <Box
               onClick={
-                interactive && onSelect ? () => onSelect(r.id) : undefined
+                interactive && onSelect && !editable
+                  ? () => onSelect(r.id)
+                  : undefined
+              }
+              onMouseDown={
+                editable && onRegionMouseDown
+                  ? (e) => onRegionMouseDown(r.id, e)
+                  : undefined
               }
               sx={{
                 position: "absolute",
@@ -97,7 +130,13 @@ export function RegionOverlay({
                 border: `2px solid ${meta.color}`,
                 bgcolor: meta.fill,
                 borderRadius: 0.5,
-                cursor: interactive ? "pointer" : "default",
+                cursor: editable
+                  ? isSelected
+                    ? "move"
+                    : "pointer"
+                  : interactive
+                    ? "pointer"
+                    : "default",
                 pointerEvents: interactive ? "auto" : "none",
                 outline: isSelected ? `2px solid ${meta.color}` : "none",
                 outlineOffset: isSelected ? 2 : 0,
@@ -144,6 +183,34 @@ export function RegionOverlay({
                   </Box>
                 ) : null}
               </Box>
+
+              {/* Resize handles, only on the selected region in the editor. */}
+              {editable && isSelected && onResizeStart
+                ? RESIZE_CORNERS.map((corner) => (
+                    <Box
+                      key={corner}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        onResizeStart(r.id, corner, e);
+                      }}
+                      sx={{
+                        position: "absolute",
+                        top: corner.startsWith("n") ? 0 : "100%",
+                        left: corner.endsWith("w") ? 0 : "100%",
+                        transform: "translate(-50%, -50%)",
+                        width: 12,
+                        height: 12,
+                        bgcolor: meta.color,
+                        border: "1.5px solid rgba(255,255,255,0.92)",
+                        borderRadius: "2px",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
+                        cursor: CORNER_CURSOR[corner],
+                        pointerEvents: "auto",
+                        zIndex: 3,
+                      }}
+                    />
+                  ))
+                : null}
             </Box>
           </Tooltip>
         );

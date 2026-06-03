@@ -2,12 +2,20 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
 import fs from "node:fs/promises";
-import { createScreen, getBoard, writeAudit } from "@/lib/db";
+import { createScreen, getBoard, reorderScreens, writeAudit } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
 import { newId } from "@/lib/ids";
 import { ensureDataDirs, UPLOADS_DIR } from "@/lib/paths";
 import { readImageDims } from "@/lib/image";
-import { badRequest, created, notFound, serverError } from "@/lib/http";
+import { readJsonBody } from "@/lib/read-json-body";
+import {
+  badRequest,
+  created,
+  notFound,
+  ok,
+  payloadTooLarge,
+  serverError,
+} from "@/lib/http";
 
 const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 const ALLOWED_MIME = new Set([
@@ -93,4 +101,50 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   });
 
   return created(screen);
+}
+
+// Reorder a board's screens from a fully-specified id list (drag-and-drop in
+// the editor). The body is { order: string[] } listing every screen once.
+export async function PATCH(req: NextRequest, { params }: Ctx) {
+  const member = await requireApiMember("editor");
+  if (member instanceof NextResponse) return member;
+
+  const { id: boardId } = await params;
+  const board = await getBoard(boardId);
+  if (!board || board.workspaceId !== member.workspaceId) {
+    return notFound("board not found");
+  }
+
+  const parsed = await readJsonBody(req);
+  if (!parsed.ok) {
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
+  }
+  const order = parsed.value.order;
+  if (!Array.isArray(order) || !order.every((x) => typeof x === "string")) {
+    return badRequest("order must be an array of screen ids");
+  }
+
+  const screens = await reorderScreens(
+    boardId,
+    order as string[],
+    member.user.id,
+  );
+  if (!screens) {
+    return badRequest(
+      "order must list each of this board's screens exactly once",
+    );
+  }
+
+  await writeAudit({
+    workspaceId: member.workspaceId,
+    actorId: member.user.id,
+    action: "screen.reorder",
+    targetType: "board",
+    targetId: boardId,
+    meta: { order },
+  });
+
+  return ok(screens);
 }
