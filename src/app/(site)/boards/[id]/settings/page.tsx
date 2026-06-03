@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getBoard } from "@/lib/db";
+import { getBoard, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardSettings } from "@/components/board-settings";
 
@@ -16,5 +16,12 @@ export default async function BoardSettingsPage({ params }: PageProps) {
   const { id } = await params;
   const board = await getBoard(id);
   if (!board || board.workspaceId !== member.workspaceId) notFound();
-  return <BoardSettings board={board} viewer={member} />;
+  const shareLinks = await listShareLinks(id);
+  return (
+    <BoardSettings
+      board={board}
+      viewer={member}
+      initialShareLinks={shareLinks}
+    />
+  );
 }
