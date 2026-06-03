@@ -20,6 +20,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import Link from "next/link";
 import { AppHeader } from "./app-header";
 import { AddScreenDialog } from "./add-screen-dialog";
 import { BoardPresenter } from "./board-presenter";
@@ -324,6 +326,18 @@ export function BoardEditor({
                   aria-label="Open share view in a new tab"
                 >
                   <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ) : null}
+            {editable ? (
+              <Tooltip title="Board settings">
+                <IconButton
+                  size="small"
+                  component={Link}
+                  href={`/boards/${board.id}/settings`}
+                  aria-label="Board settings"
+                >
+                  <SettingsOutlinedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             ) : null}
