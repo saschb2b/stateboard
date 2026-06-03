@@ -7,25 +7,24 @@ This walkthrough takes you from a fresh install to your first share link.
 
 ## 1. Run StateBoard
 
-The fastest path is the Docker image:
+For a local spin-up, the repo ships a `docker-compose.yaml` with Postgres and a pre-seeded Keycloak (test users `alice` / `bob`, password = username):
 
 ```bash
-docker run --rm -p 3000:3000 -v stateboard-data:/data stateboard
-```
-
-Or run it from source:
-
-```bash
+cp .env.example .env
+docker compose up -d        # Postgres + Keycloak
 pnpm install
+pnpm migrate                # create the tables
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). You'll land on the marketing page. Click **Open boards** to get to the app.
+Open [http://localhost:3000](http://localhost:3000) and click **Open boards**. You'll be sent to sign in: choose **Continue with Keycloak** and log in as `alice` — the first sign-in becomes the workspace owner.
+
+For a real deployment (your own Keycloak, via Docker Compose or Helm), see [Self-hosting](/docs/self-hosting).
 
 <Callout type="info">
-  Data, the SQLite database and uploaded screenshots, is written to `./data/`
-  when you run from source, or to the mounted Docker volume in production. Keep
-  this safe; it holds every board.
+  Boards and regions live in Postgres; uploaded screenshots live on a filesystem
+  volume (`./data/` from source, or the mounted volume in production). Back up
+  both together — they hold every board.
 </Callout>
 
 ## 2. Create a board
@@ -46,8 +45,8 @@ Inside your board, drop a screenshot onto the upload area or click to browse. Al
 You can upload as many screens as you want. They appear as tabs. Drag a tab to reorder them; the order carries through to the share view and Present mode.
 
 <Callout type="warn">
-  Don't upload anything you can't show stakeholders. v0 has no auth. Anyone with
-  the share link can see every screen on that board.
+  Don't upload anything you can't show stakeholders. Share links are public by
+  design — anyone with the link can see every screen on that board, no login.
 </Callout>
 
 ## 4. Mark your first region
