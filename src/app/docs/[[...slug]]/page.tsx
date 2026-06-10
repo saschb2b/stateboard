@@ -40,8 +40,12 @@ export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page) return {};
+  // The docs index titles itself "StateBoard" (it's the page's H1), which
+  // the root "%s · StateBoard" template would double in the browser tab.
+  // Give the index an absolute title; every other doc keeps the template.
+  const isIndex = !slug || slug.length === 0;
   return {
-    title: page.data.title,
+    title: isIndex ? { absolute: "Docs · StateBoard" } : page.data.title,
     description: page.data.description,
   };
 }
