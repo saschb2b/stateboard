@@ -68,6 +68,12 @@ export function RegionOverlay({
   onResizeStart,
 }: RegionOverlayProps) {
   const editable = Boolean(onRegionMouseDown);
+  // Read-only surfaces (share view, presenter, viewer-role editor) have no
+  // pointer affordance for keyboard users, so each region becomes a tab stop
+  // there: focusing it opens the same tooltip the mouse hover shows, and the
+  // aria-label carries the state + label + notes for screen readers. The
+  // editor handles selection itself; its regions stay mouse-driven here.
+  const focusable = interactive && !editable;
   return (
     <Box
       sx={{
@@ -111,6 +117,14 @@ export function RegionOverlay({
             disableHoverListener={!interactive && !r.label && !r.notes}
           >
             <Box
+              tabIndex={focusable ? 0 : undefined}
+              aria-label={
+                focusable
+                  ? [meta.label, r.label || meta.description, r.notes]
+                      .filter(Boolean)
+                      .join(". ")
+                  : undefined
+              }
               onClick={
                 interactive && onSelect && !editable
                   ? () => onSelect(r.id)
@@ -142,6 +156,10 @@ export function RegionOverlay({
                 outlineOffset: isSelected ? 2 : 0,
                 opacity: dimmed ? 0.18 : 1,
                 transition: "outline-offset 120ms ease, opacity 160ms ease",
+                "&:focus-visible": {
+                  outline: `2px solid ${meta.color}`,
+                  outlineOffset: 2,
+                },
               }}
             >
               {/* Combined state chip + label, anchored to top-left edge.
