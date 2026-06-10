@@ -544,9 +544,21 @@ export function BoardEditor({
                           alignItems="center"
                           spacing={0.5}
                         >
-                          <Box component="span">
-                            {s.label || `Screen ${i + 1}`}
-                          </Box>
+                          {/* Rename + reorder are gesture-only; this is their
+                              single discoverable affordance. Delayed so it
+                              doesn't flash while switching tabs. */}
+                          <Tooltip
+                            title={
+                              editable
+                                ? "Double-click to rename · drag to reorder"
+                                : ""
+                            }
+                            enterDelay={600}
+                          >
+                            <Box component="span">
+                              {s.label || `Screen ${i + 1}`}
+                            </Box>
+                          </Tooltip>
                           {editable && s.id === activeId ? (
                             <Tooltip title="Delete this screen">
                               <ButtonBase
