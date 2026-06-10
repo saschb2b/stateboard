@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBoardWithScreens, getShareLink } from "@/lib/db";
+import { timeAgo } from "@/lib/time";
 import { BoardShare } from "@/components/board-share";
 
 export const dynamic = "force-dynamic";
@@ -37,5 +38,16 @@ export default async function BoardSharePage({ params }: PageProps) {
   if (!link || link.revokedAt !== null) notFound();
   const result = await getBoardWithScreens(link.boardId);
   if (!result) notFound();
-  return <BoardShare board={result.board} screens={result.screens} />;
+  // A force-dynamic server component renders once per request, so reading the
+  // wall clock here is correct and stable — not the impure-render hazard the
+  // purity rule guards against (which targets unpredictable client re-renders).
+  // eslint-disable-next-line react-hooks/purity
+  const updatedLabel = timeAgo(result.board.updatedAt, Date.now());
+  return (
+    <BoardShare
+      board={result.board}
+      screens={result.screens}
+      updatedLabel={updatedLabel}
+    />
+  );
 }

@@ -22,6 +22,12 @@ import { REGION_STATES } from "@/lib/types";
 interface BoardShareProps {
   board: Board;
   screens: ScreenWithRegions[];
+  /**
+   * Pre-rendered "3d ago" freshness label. Computed server-side so the
+   * client render stays pure; omitted for the demo board, whose timestamps
+   * are fictional.
+   */
+  updatedLabel?: string | null;
 }
 
 /**
@@ -31,7 +37,7 @@ interface BoardShareProps {
  * no upload, no draw, no delete. Tooltips on regions remain so the
  * label/notes can still be read on hover.
  */
-export function BoardShare({ board, screens }: BoardShareProps) {
+export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
   const [activeId, setActiveId] = useState<string | null>(
     screens[0]?.id ?? null,
   );
@@ -97,6 +103,7 @@ export function BoardShare({ board, screens }: BoardShareProps) {
         <Stack
           direction="row"
           spacing={1.5}
+          useFlexGap
           alignItems="center"
           sx={{ mb: 3, flexWrap: "wrap" }}
         >
@@ -128,6 +135,15 @@ export function BoardShare({ board, screens }: BoardShareProps) {
               </Typography>
             </Stack>
           ))}
+          {updatedLabel ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ ml: "auto", whiteSpace: "nowrap" }}
+            >
+              Updated {updatedLabel}
+            </Typography>
+          ) : null}
         </Stack>
 
         {screens.length === 0 ? (
