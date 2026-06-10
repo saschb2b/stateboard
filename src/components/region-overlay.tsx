@@ -115,6 +115,11 @@ export function RegionOverlay({
             arrow
             placement="top"
             disableHoverListener={!interactive && !r.label && !r.notes}
+            // On touch screens hover doesn't exist and the 700ms long-press
+            // default is undiscoverable, so a plain tap opens the tooltip and
+            // it lingers long enough to read.
+            enterTouchDelay={0}
+            leaveTouchDelay={4000}
           >
             <Box
               tabIndex={focusable ? 0 : undefined}
