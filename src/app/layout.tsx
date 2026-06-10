@@ -19,7 +19,14 @@ export const metadata: Metadata = {
   description:
     "Status reporting for visual products. Mark regions on your screens as shipped, mock, or missing, then share one link execs can read in 30 seconds.",
   icons: { icon: `${BASE_PATH}/icon.svg` },
-  robots: { index: false, follow: false },
+  // Self-hosted instances are private deployments and must never be indexed.
+  // The GitHub Pages build is the project's public face (landing, docs, the
+  // example board) — there the ban would hide it from search, so lift it.
+  // STATEBOARD_PAGES is set by `pnpm build:pages`, read here at build time.
+  robots:
+    process.env.STATEBOARD_PAGES === "1"
+      ? null
+      : { index: false, follow: false },
 };
 
 /**
