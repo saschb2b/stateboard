@@ -29,6 +29,15 @@ export async function generateMetadata({
   return {
     title: result.board.name,
     description: result.board.description ?? undefined,
+    // Explicit OG tags so the link unfurls with the board's own name and
+    // description in Slack / Teams / email, where these links get passed
+    // around. No og:image — the board content stays behind the token.
+    openGraph: {
+      title: result.board.name,
+      description: result.board.description ?? undefined,
+      siteName: "StateBoard",
+      type: "website",
+    },
   };
 }
 

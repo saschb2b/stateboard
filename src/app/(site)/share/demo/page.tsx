@@ -13,6 +13,13 @@ export const metadata: Metadata = {
   title: "Example board",
   description:
     "An example StateBoard with two screens and twelve regions across the three states. Use it as a reference whenever you're not sure how to annotate.",
+  openGraph: {
+    title: "Example board",
+    description:
+      "An example StateBoard with two screens and twelve regions across the three states. Use it as a reference whenever you're not sure how to annotate.",
+    siteName: "StateBoard",
+    type: "website",
+  },
 };
 
 export default function DemoBoardPage() {
