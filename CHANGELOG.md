@@ -4,6 +4,26 @@ All notable changes to StateBoard are documented here.
 
 Versions follow [CalVer](https://calver.org/): `YYYY.M.PATCH`. A new minor cuts whenever a release ships; patches fix issues against a released minor.
 
+## Unreleased
+
+Reading-experience polish on the share surface, plus small fixes.
+
+### Share view
+
+- **The artifact carries a date.** The share page shows "Updated 3d ago" in its totals row, the same freshness label the board overview already had. A status report you can't date is a status report you can't trust.
+- **Region notes work without a mouse.** On read-only surfaces (share view, Present mode, viewer-role editor) every region is a keyboard tab stop: focusing it opens the tooltip and exposes the state, label, and notes to screen readers. On phones and tablets a plain tap opens the note; no more undiscoverable long-press.
+- **Share links unfurl properly.** OpenGraph tags carry the board's name and description into Slack, Teams, and email previews. Deliberately no `og:image`; the board's visual content stays behind the token.
+
+### Editor
+
+- **Screen tabs hint their gestures.** A tooltip on each tab names the double-click-to-rename and drag-to-reorder gestures, which previously had no visible affordance.
+- **Browser tabs are tellable apart.** The boards list, editor, board settings, and members pages now set page titles (the editor and settings carry the board's name) instead of all reading "StateBoard · Show, don't tell."
+
+### Fixed
+
+- **The GitHub Pages site is indexable again.** The global `noindex` shipped with v0, when the app only existed as a private deployment, and the public marketing/docs/demo site inherited it by accident. Self-hosted instances keep `noindex`.
+- The Pages demo stub sets a page title and loses a stray em dash.
+
 ## 2026.6.0
 
 A feature-and-polish release on top of `2026.5.1`. The board overview becomes an at-a-glance dashboard, regions are directly editable, boards can be duplicated, and self-hosting behind an internal or self-signed CA is now a first-class path. No breaking changes, no new migrations.
