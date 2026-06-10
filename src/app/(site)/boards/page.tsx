@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import { getBoardWithScreens, listBoards, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { timeAgo } from "@/lib/time";
 import { BoardList, type BoardListItem } from "@/components/board-list";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Boards" };
 
 export default async function BoardsPage() {
   const member = await requirePageMember("viewer");

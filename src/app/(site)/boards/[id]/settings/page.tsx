@@ -1,5 +1,6 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getBoardWithScreens, listShareLinks } from "@/lib/db";
+import { getBoard, getBoardWithScreens, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardSettings } from "@/components/board-settings";
 
@@ -8,6 +9,18 @@ export const dynamic = "force-dynamic";
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ section?: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const member = await requirePageMember("editor");
+  const { id } = await params;
+  const board = await getBoard(id);
+  if (!board || board.workspaceId !== member.workspaceId) {
+    return { title: "Not found" };
+  }
+  return { title: `Settings · ${board.name}` };
 }
 
 export default async function BoardSettingsPage({
