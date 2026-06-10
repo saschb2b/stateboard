@@ -50,7 +50,8 @@ for (const rel of REMOVE) {
 // Replace the boards-list page with a stub that points visitors at the
 // example or self-hosting. We can't read the user's DB on Pages — better
 // to be honest about it than to render a half-broken empty list.
-const stub = `import Link from "next/link";
+const stub = `import type { Metadata } from "next";
+import Link from "next/link";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -59,6 +60,8 @@ import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import { AppHeader } from "@/components/app-header";
+
+export const metadata: Metadata = { title: "Demo mode" };
 
 export default function DemoBoardsPage() {
   return (
@@ -73,7 +76,7 @@ export default function DemoBoardsPage() {
             The editor needs a server. This deployment is read-only.
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 540 }}>
-            Open the example board to see what a finished StateBoard looks like —
+            Open the example board to see what a finished StateBoard looks like:
             two screens, twelve regions, and Present mode all work here. To create
             your own boards, run StateBoard yourself (it&apos;s one Docker container).
           </Typography>
