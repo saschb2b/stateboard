@@ -1,28 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import ButtonGroup from "@mui/material/ButtonGroup";
-import Container from "@mui/material/Container";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import InputBase from "@mui/material/InputBase";
 import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
-import Tab from "@mui/material/Tab";
-import Tabs from "@mui/material/Tabs";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import CloseIcon from "@mui/icons-material/Close";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
-import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
-import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -31,8 +24,8 @@ import { AppHeader } from "./app-header";
 import { AddScreenDialog } from "./add-screen-dialog";
 import { BoardPresenter } from "./board-presenter";
 import { ScreenAnnotator } from "./screen-annotator";
+import { ScreenSidebar } from "./screen-sidebar";
 import { ScreenUploader } from "./screen-uploader";
-import { StateChip } from "./state-chip";
 import { UserMenu } from "./user-menu";
 import type {
   Board,
@@ -42,6 +35,7 @@ import type {
   UserRef,
 } from "@/lib/types";
 import { REGION_STATES, attributionName } from "@/lib/types";
+import { STATE_META } from "@/lib/state-meta";
 import { timeAgo } from "@/lib/time";
 import type { CurrentMember } from "@/lib/auth";
 
@@ -75,11 +69,9 @@ export function BoardEditor({
   );
   const [copied, setCopied] = useState(false);
   const [presenting, setPresenting] = useState(false);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [filterState, setFilterState] = useState<RegionState | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [addTab, setAddTab] = useState<"upload" | "reuse">("upload");
   const [addMode, setAddMode] = useState<"add" | "replace">("add");
@@ -210,12 +202,9 @@ export function BoardEditor({
     }
   };
 
-  // Drop the dragged tab in front of the target tab, then persist.
-  const reorderTo = (targetId: string) => {
-    const draggedId = dragId;
-    setDragId(null);
-    setDragOverId(null);
-    if (!draggedId || draggedId === targetId) return;
+  // Move the dragged screen in front of the target, then persist the order.
+  const moveScreen = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
     const prev = screens;
     const dragged = prev.find((s) => s.id === draggedId);
     const without = prev.filter((s) => s.id !== draggedId);
@@ -304,19 +293,33 @@ export function BoardEditor({
     return counts;
   }, [screens]);
 
-  const totalRegions = totals.shipped + totals.mock + totals.missing;
-
   const toggleFilter = (s: RegionState) =>
     setFilterState((cur) => (cur === s ? null : s));
 
+  const attribution = (
+    <BoardAttribution board={board} authors={authorsWithViewer} now={now} />
+  );
+
   return (
-    <>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100dvh",
+        overflow: "hidden",
+      }}
+    >
       <AppHeader
         homeHref="/boards"
         crumb={boardName}
         onCrumbChange={editable ? renameBoard : undefined}
         actions={
           <>
+            <HeaderStateFilter
+              totals={totals}
+              filterState={filterState}
+              onToggle={toggleFilter}
+            />
             <Tooltip title="Present (P)">
               <span>
                 <Button
@@ -421,295 +424,124 @@ export function BoardEditor({
           </>
         }
       />
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        <BoardAttribution board={board} authors={authorsWithViewer} now={now} />
-        {screens.length === 0 ? (
-          <Stack spacing={1.5} sx={{ mt: 4 }}>
-            {editable ? (
-              <Stack spacing={1}>
-                <ScreenUploader
-                  boardId={board.id}
-                  onUploaded={handleUploaded}
-                />
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ textAlign: "center" }}
-                >
-                  or{" "}
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => openAddScreen("reuse")}
-                    sx={{
-                      p: 0,
-                      border: 0,
-                      bgcolor: "transparent",
-                      cursor: "pointer",
-                      font: "inherit",
-                      color: "primary.main",
-                      "&:hover": { textDecoration: "underline" },
-                    }}
-                  >
-                    reuse a screenshot from another board
-                  </Box>
-                </Typography>
-              </Stack>
-            ) : (
-              <Box
-                sx={{
-                  p: 6,
-                  border: 1,
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  textAlign: "center",
-                }}
-              >
-                <Typography variant="h6" sx={{ mb: 0.5 }}>
-                  No screens yet
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  An editor hasn&apos;t uploaded any screenshots to this board.
-                </Typography>
-              </Box>
-            )}
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ textAlign: "center" }}
-            >
-              Not sure what to upload?{" "}
-              <Box
-                component="a"
-                href="/share/demo"
-                target="_blank"
-                rel="noopener"
-                sx={{
-                  color: "primary.main",
-                  textDecoration: "none",
-                  "&:hover": { textDecoration: "underline" },
-                }}
-              >
-                See the example board ↗
-              </Box>
-            </Typography>
-          </Stack>
-        ) : (
-          <Stack spacing={1.5}>
-            {/* Single editor chrome row: tabs (each editable + closable) ·
-                add screen · state filter pills. The screen name is
-                canonical on the tab — no separate label input. Edit
-                affordances are suppressed for viewer-role members. */}
-            <Stack
-              direction="row"
-              spacing={1.5}
-              alignItems="center"
-              sx={{ flexWrap: "wrap", rowGap: 1 }}
-            >
-              <Tabs
-                value={activeId}
-                onChange={(_, v) => {
-                  if (renamingId) return; // don't switch tabs while renaming
-                  setActiveId(v as string);
-                }}
-                variant="scrollable"
-                scrollButtons="auto"
-                sx={{
-                  minHeight: 40,
-                  "& .MuiTab-root": {
-                    minHeight: 40,
-                    py: 0.5,
-                    pr: 1,
-                    textTransform: "none",
-                    fontWeight: 600,
-                  },
-                }}
-              >
-                {screens.map((s, i) => (
-                  <Tab
-                    key={s.id}
-                    value={s.id}
-                    draggable={editable && renamingId !== s.id}
-                    onDragStart={(e) => {
-                      setDragId(s.id);
-                      e.dataTransfer.effectAllowed = "move";
-                    }}
-                    onDragOver={(e) => {
-                      if (!dragId || dragId === s.id) return;
-                      e.preventDefault();
-                      setDragOverId(s.id);
-                    }}
-                    onDragLeave={() =>
-                      setDragOverId((cur) => (cur === s.id ? null : cur))
-                    }
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      reorderTo(s.id);
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null);
-                      setDragOverId(null);
-                    }}
-                    onDoubleClick={
-                      editable ? () => setRenamingId(s.id) : undefined
-                    }
-                    sx={{
-                      opacity: dragId === s.id ? 0.4 : 1,
-                      boxShadow:
-                        dragOverId === s.id
-                          ? "inset 3px 0 0 var(--mui-palette-primary-main)"
-                          : "none",
-                      cursor:
-                        editable && renamingId !== s.id ? "grab" : undefined,
-                      transition: "opacity 120ms ease",
-                    }}
-                    label={
-                      editable && renamingId === s.id ? (
-                        <TabRenameField
-                          initial={s.label ?? ""}
-                          placeholder={`Screen ${i + 1}`}
-                          onCommit={(next) => {
-                            setRenamingId(null);
-                            void renameScreen(s.id, next);
-                          }}
-                          onCancel={() => setRenamingId(null)}
-                        />
-                      ) : (
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={0.5}
-                        >
-                          {/* Rename + reorder are gesture-only; this is their
-                              single discoverable affordance. Delayed so it
-                              doesn't flash while switching tabs. */}
-                          <Tooltip
-                            title={
-                              editable
-                                ? "Double-click to rename · drag to reorder"
-                                : ""
-                            }
-                            enterDelay={600}
-                          >
-                            <Box component="span">
-                              {s.label || `Screen ${i + 1}`}
-                            </Box>
-                          </Tooltip>
-                          {editable && s.id === activeId ? (
-                            <Tooltip title="Delete this screen">
-                              <ButtonBase
-                                component="span"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void deleteScreenById(s.id);
-                                }}
-                                aria-label="Delete this screen"
-                                sx={{
-                                  ml: 0.5,
-                                  p: 0.25,
-                                  borderRadius: 0.5,
-                                  display: "inline-flex",
-                                  color: "text.secondary",
-                                  "&:hover": {
-                                    bgcolor: "action.hover",
-                                    color: "error.main",
-                                  },
-                                }}
-                              >
-                                <CloseIcon sx={{ fontSize: 14 }} />
-                              </ButtonBase>
-                            </Tooltip>
-                          ) : null}
-                        </Stack>
-                      )
-                    }
-                  />
-                ))}
-              </Tabs>
 
+      {screens.length === 0 ? (
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            display: "flex",
+            justifyContent: "center",
+            p: 3,
+          }}
+        >
+          <Box sx={{ width: "100%", maxWidth: 540, mt: { xs: 2, sm: 6 } }}>
+            <Stack spacing={1.5}>
               {editable ? (
-                <Button
-                  startIcon={<AddPhotoAlternateOutlinedIcon />}
-                  variant="outlined"
-                  size="small"
-                  onClick={() => openAddScreen("upload")}
-                >
-                  Add screen
-                </Button>
-              ) : null}
-
-              {editable && active ? (
-                <Tooltip title="Swap this screen's image, keeping its regions">
-                  <Button
-                    startIcon={<SwapHorizOutlinedIcon />}
-                    variant="text"
-                    size="small"
-                    color="inherit"
-                    onClick={() => openReplaceScreen(active.id)}
+                <Stack spacing={1}>
+                  <ScreenUploader
+                    boardId={board.id}
+                    onUploaded={handleUploaded}
+                  />
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ textAlign: "center" }}
                   >
-                    Replace image
-                  </Button>
-                </Tooltip>
-              ) : null}
-
-              <Box sx={{ flex: 1 }} />
-
-              {totalRegions > 0
-                ? REGION_STATES.map((s) => {
-                    const isActive = filterState === s;
-                    const dimmed = filterState !== null && !isActive;
-                    return (
-                      <Tooltip
-                        key={s}
-                        title={
-                          isActive
-                            ? "Click to clear filter"
-                            : `Show only ${s} regions`
-                        }
-                      >
-                        <ButtonBase
-                          onClick={() => toggleFilter(s)}
-                          aria-pressed={isActive}
-                          sx={{
-                            px: 1.5,
-                            py: 0.5,
-                            border: 1,
-                            borderColor: isActive ? "primary.main" : "divider",
-                            borderRadius: 1,
-                            opacity: dimmed ? 0.4 : 1,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 1,
-                            transition: "all 120ms ease",
-                            "&:hover": { borderColor: "text.primary" },
-                          }}
-                        >
-                          <StateChip state={s} size="sm" />
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {totals[s]}
-                          </Typography>
-                        </ButtonBase>
-                      </Tooltip>
-                    );
-                  })
-                : null}
+                    or{" "}
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => openAddScreen("reuse")}
+                      sx={{
+                        p: 0,
+                        border: 0,
+                        bgcolor: "transparent",
+                        cursor: "pointer",
+                        font: "inherit",
+                        color: "primary.main",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                    >
+                      reuse a screenshot from another board
+                    </Box>
+                  </Typography>
+                </Stack>
+              ) : (
+                <Box
+                  sx={{
+                    p: 6,
+                    border: 1,
+                    borderColor: "divider",
+                    borderRadius: 1,
+                    textAlign: "center",
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 0.5 }}>
+                    No screens yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    An editor hasn&apos;t uploaded any screenshots to this
+                    board.
+                  </Typography>
+                </Box>
+              )}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ textAlign: "center" }}
+              >
+                Not sure what to upload?{" "}
+                <Box
+                  component="a"
+                  href="/share/demo"
+                  target="_blank"
+                  rel="noopener"
+                  sx={{
+                    color: "primary.main",
+                    textDecoration: "none",
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                >
+                  See the example board ↗
+                </Box>
+              </Typography>
             </Stack>
+          </Box>
+        </Box>
+      ) : (
+        <Box sx={{ flex: 1, minHeight: 0, display: "flex" }}>
+          <ScreenSidebar
+            screens={screens}
+            activeId={activeId}
+            editable={editable}
+            collapsed={sidebarCollapsed}
+            onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
+            onSelect={setActiveId}
+            onAdd={() => openAddScreen("upload")}
+            onRename={(id, label) => void renameScreen(id, label)}
+            onReplace={openReplaceScreen}
+            onDelete={(id) => void deleteScreenById(id)}
+            onReorder={moveScreen}
+            footer={attribution}
+          />
+          {active ? (
+            <ScreenAnnotator
+              key={active.id}
+              screen={active}
+              onScreenUpdated={handleScreenUpdated}
+              onError={setActionError}
+              readOnly={!editable}
+              filterState={filterState}
+              authors={authorsWithViewer}
+              now={now}
+              onWorkStart={() => setSidebarCollapsed(true)}
+            />
+          ) : null}
+        </Box>
+      )}
 
-            {active ? (
-              <ScreenAnnotator
-                key={active.id}
-                screen={active}
-                onScreenUpdated={handleScreenUpdated}
-                onError={setActionError}
-                readOnly={!editable}
-                filterState={filterState}
-                authors={authorsWithViewer}
-                now={now}
-              />
-            ) : null}
-          </Stack>
-        )}
-      </Container>
       {presenting ? (
         <BoardPresenter
           boardName={boardName}
@@ -754,12 +586,86 @@ export function BoardEditor({
           }}
         />
       ) : null}
-    </>
+    </Box>
   );
 }
 
 /**
- * Muted creation-attribution line under the board header ("Created by …").
+ * Board-wide state tally that doubles as a filter, in the header. Board-level
+ * view control, so it lives with the board chrome — deliberately separate from
+ * the per-region editor in the inspector. Clicking a segment isolates that
+ * state across the canvas; clicking again clears. Compact (color dot + count)
+ * to sit unobtrusively among the header actions; hidden until a region exists.
+ */
+function HeaderStateFilter({
+  totals,
+  filterState,
+  onToggle,
+}: {
+  totals: Record<RegionState, number>;
+  filterState: RegionState | null;
+  onToggle: (s: RegionState) => void;
+}) {
+  const total = totals.shipped + totals.mock + totals.missing;
+  if (total === 0) return null;
+  return (
+    <Stack
+      direction="row"
+      spacing={0.5}
+      sx={{ mr: { sm: 0.5 }, display: { xs: "none", sm: "flex" } }}
+    >
+      {REGION_STATES.map((s) => {
+        const isActive = filterState === s;
+        const dimmed = filterState !== null && !isActive;
+        return (
+          <Tooltip
+            key={s}
+            title={
+              isActive
+                ? `Showing only ${s} — click to clear`
+                : `Show only ${s} (${totals[s]})`
+            }
+          >
+            <ButtonBase
+              onClick={() => onToggle(s)}
+              aria-pressed={isActive}
+              aria-label={`${s}: ${totals[s]}`}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.625,
+                px: 0.875,
+                py: 0.375,
+                borderRadius: 1,
+                border: 1,
+                borderColor: isActive ? "primary.main" : "divider",
+                opacity: dimmed ? 0.5 : 1,
+                transition: "all 120ms ease",
+                "&:hover": { borderColor: "text.primary" },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  bgcolor: STATE_META[s].color,
+                }}
+              />
+              <Typography variant="caption" sx={{ fontWeight: 700 }}>
+                {totals[s]}
+              </Typography>
+            </ButtonBase>
+          </Tooltip>
+        );
+      })}
+    </Stack>
+  );
+}
+
+/**
+ * Muted creation-attribution line ("Created by …"), pinned to the foot of the
+ * screens sidebar.
  *
  * Board-level attribution is deliberately creation-only: `updated_by` on a board
  * is touched by any child change (a new screenshot, a moved region), so it
@@ -782,68 +688,9 @@ function BoardAttribution({
     <Typography
       variant="caption"
       color="text.secondary"
-      sx={{ display: "block", mb: 1.5 }}
+      sx={{ display: "block" }}
     >
       Created by {attributionName(creator)} · {timeAgo(board.createdAt, now)}
     </Typography>
-  );
-}
-
-/**
- * Inline rename field used inside an MUI Tab's label slot.
- *
- * MUI Tab is a button — pointer events on a child input bubble up and
- * confuse focus, so we stop propagation on mousedown/click here.
- */
-function TabRenameField({
-  initial,
-  placeholder,
-  onCommit,
-  onCancel,
-}: {
-  initial: string;
-  placeholder: string;
-  onCommit: (next: string) => void;
-  onCancel: () => void;
-}) {
-  const [draft, setDraft] = useState(initial);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    inputRef.current?.select();
-  }, []);
-
-  return (
-    <InputBase
-      inputRef={inputRef}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => onCommit(draft)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          (e.target as HTMLInputElement).blur();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          onCancel();
-        }
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onClick={(e) => e.stopPropagation()}
-      placeholder={placeholder}
-      autoFocus
-      sx={{
-        color: "text.primary",
-        fontWeight: 600,
-        fontSize: "0.875rem",
-        minWidth: 120,
-        "& input": {
-          p: 0.25,
-          px: 0.5,
-          borderRadius: 0.5,
-          bgcolor: "action.hover",
-        },
-      }}
-    />
   );
 }

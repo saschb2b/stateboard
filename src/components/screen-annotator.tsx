@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
@@ -52,6 +50,11 @@ interface ScreenAnnotatorProps {
   authors: Record<string, UserRef>;
   /** Server render time, so the relative-time label needs no client clock. */
   now: number;
+  /**
+   * Fired when the user starts working on the canvas (any mousedown on the
+   * surface). Lets the shell tuck the screens sidebar away to free up room.
+   */
+  onWorkStart?: () => void;
 }
 
 /** Pull the API's `{ error }` message off a failed response, else a fallback. */
@@ -100,6 +103,7 @@ export function ScreenAnnotator({
   filterState = null,
   authors,
   now,
+  onWorkStart,
 }: ScreenAnnotatorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
@@ -564,74 +568,116 @@ export function ScreenAnnotator({
   const aspect = `${screen.width} / ${screen.height}`;
   const hintVisible = !readOnly && Boolean(selectedId);
 
+  // The inspector is contextual: it only claims canvas width when there's
+  // something to edit — a selected region, an in-progress draft, or the
+  // first-region onboarding on an empty screen. Otherwise it slides away so the
+  // canvas spans the full width.
+  const draftActive = Boolean(
+    draft && draft.w >= MIN_REGION_SIZE && draft.h >= MIN_REGION_SIZE,
+  );
+  const inspectorOpen =
+    Boolean(selected) || draftActive || regions.length === 0;
+
   return (
-    <Stack direction={{ xs: "column", lg: "row" }} spacing={3}>
-      {/* canvas */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        overflow: { xs: "auto", md: "hidden" },
+      }}
+    >
+      {/* canvas — grows to fill; the surface is sized to fit the box on both
+          axes (its max width is capped by the available height × aspect) so a
+          wide screenshot also uses the vertical space, no JS measurement. */}
+      <Box
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          p: 2,
+        }}
+      >
         <Box
-          ref={surfaceRef}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
           sx={{
-            position: "relative",
-            width: "100%",
-            aspectRatio: aspect,
-            bgcolor: "background.paper",
-            border: 1,
-            borderColor: "divider",
-            borderRadius: 1,
-            overflow: "hidden",
-            cursor: readOnly ? "default" : "crosshair",
-            userSelect: "none",
+            flex: 1,
+            minHeight: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {/* background image */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={screen.mediaUrl}
-            alt={screen.label ?? "screen"}
-            draggable={false}
-            style={{
-              position: "absolute",
-              inset: 0,
+          <Box
+            ref={surfaceRef}
+            onMouseDownCapture={() => onWorkStart?.()}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            sx={{
+              position: "relative",
               width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              pointerEvents: "none",
+              maxWidth: `calc((100dvh - 150px) * ${screen.width} / ${screen.height})`,
+              aspectRatio: aspect,
+              bgcolor: "background.paper",
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1,
+              overflow: "hidden",
+              cursor: readOnly ? "default" : "crosshair",
+              userSelect: "none",
             }}
-          />
-
-          {/* existing regions */}
-          <RegionOverlay
-            regions={regions}
-            interactive
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setDraft(null);
-              setSelectedId(id);
-            }}
-            onRegionMouseDown={readOnly ? undefined : beginRegionDrag}
-            onResizeStart={readOnly ? undefined : beginResize}
-            filterState={filterState}
-          />
-
-          {/* live draft rectangle */}
-          {draft && draft.w > 0 && draft.h > 0 ? (
-            <Box
-              sx={{
+          >
+            {/* background image */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={screen.mediaUrl}
+              alt={screen.label ?? "screen"}
+              draggable={false}
+              style={{
                 position: "absolute",
-                left: `${draft.x * 100}%`,
-                top: `${draft.y * 100}%`,
-                width: `${draft.w * 100}%`,
-                height: `${draft.h * 100}%`,
-                border: `2px dashed ${STATE_META[draftDefaults.state].color}`,
-                bgcolor: STATE_META[draftDefaults.state].fill,
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
                 pointerEvents: "none",
               }}
             />
-          ) : null}
+
+            {/* existing regions */}
+            <RegionOverlay
+              regions={regions}
+              interactive
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setDraft(null);
+                setSelectedId(id);
+              }}
+              onRegionMouseDown={readOnly ? undefined : beginRegionDrag}
+              onResizeStart={readOnly ? undefined : beginResize}
+              filterState={filterState}
+            />
+
+            {/* live draft rectangle */}
+            {draft && draft.w > 0 && draft.h > 0 ? (
+              <Box
+                sx={{
+                  position: "absolute",
+                  left: `${draft.x * 100}%`,
+                  top: `${draft.y * 100}%`,
+                  width: `${draft.w * 100}%`,
+                  height: `${draft.h * 100}%`,
+                  border: `2px dashed ${STATE_META[draftDefaults.state].color}`,
+                  bgcolor: STATE_META[draftDefaults.state].fill,
+                  pointerEvents: "none",
+                }}
+              />
+            ) : null}
+          </Box>
         </Box>
 
         {/* keyboard shortcut hint, only useful while a region is selected
@@ -641,6 +687,7 @@ export function ScreenAnnotator({
           sx={{
             display: "block",
             mt: 0.75,
+            textAlign: "center",
             color: "text.secondary",
             fontFamily: "monospace",
             opacity: hintVisible ? 1 : 0,
@@ -653,48 +700,69 @@ export function ScreenAnnotator({
         </Typography>
       </Box>
 
-      {/* side panel: draft form OR selected region OR region list / help */}
-      <Paper sx={{ p: 2.5, width: { xs: "100%", lg: 320 }, flexShrink: 0 }}>
-        {readOnly && selected ? (
-          <Stack spacing={2}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Region
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => setSelectedId(null)}
-                aria-label="Close"
+      {/* inspector: the per-region editor. Contextual — it only claims canvas
+          width when there's something to edit (a selected region, a draft, or
+          the empty-screen onboarding), otherwise it slides away so the canvas
+          spans full width. Board-wide status/filter lives in the header. */}
+      <Box
+        component="aside"
+        aria-label="Inspector"
+        aria-hidden={!inspectorOpen}
+        sx={{
+          width: inspectorOpen ? { xs: "100%", md: 312 } : 0,
+          flexShrink: 0,
+          overflow: "hidden",
+          borderLeft: inspectorOpen ? { md: 1 } : 0,
+          borderTop: inspectorOpen ? { xs: 1, md: 0 } : 0,
+          borderColor: "divider",
+          bgcolor: "background.paper",
+          transition: "width 160ms ease",
+        }}
+      >
+        <Box
+          sx={{
+            width: { xs: "100%", md: 312 },
+            height: "100%",
+            overflowY: "auto",
+            p: 2,
+          }}
+        >
+          {!inspectorOpen ? null : readOnly && selected ? (
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
               >
-                <CloseIcon fontSize="small" />
-              </IconButton>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  Region
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setSelectedId(null)}
+                  aria-label="Close"
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <StateChip state={selected.state} size="sm" />
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {selected.label || "Untitled"}
+                </Typography>
+              </Stack>
+              {selected.notes ? (
+                <Typography variant="body2" color="text.secondary">
+                  {selected.notes}
+                </Typography>
+              ) : null}
+              <RegionAttribution
+                region={selected}
+                authors={authors}
+                now={now}
+              />
             </Stack>
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <StateChip state={selected.state} size="sm" />
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {selected.label || "Untitled"}
-              </Typography>
-            </Stack>
-            {selected.notes ? (
-              <Typography variant="body2" color="text.secondary">
-                {selected.notes}
-              </Typography>
-            ) : null}
-            <RegionAttribution region={selected} authors={authors} now={now} />
-          </Stack>
-        ) : readOnly ? (
-          regions.length > 0 ? (
-            <RegionList
-              regions={regions}
-              onSelect={setSelectedId}
-              filterState={filterState}
-              readOnly
-            />
-          ) : (
+          ) : readOnly ? (
             <Stack spacing={2}>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 Read-only
@@ -704,153 +772,149 @@ export function ScreenAnnotator({
                 on this screen yet. Ask an editor to add some.
               </Typography>
             </Stack>
-          )
-        ) : draft &&
-          draft.w >= MIN_REGION_SIZE &&
-          draft.h >= MIN_REGION_SIZE ? (
-          <Stack spacing={2}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                New region
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => setDraft(null)}
-                aria-label="Discard draft"
+          ) : draftActive ? (
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
               >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-            <StateSelector
-              value={draftDefaults.state}
-              onChange={(state) => setDraftDefaults((d) => ({ ...d, state }))}
-            />
-            <TextField
-              size="small"
-              label="Label"
-              placeholder="e.g. Revenue card"
-              value={draftDefaults.label}
-              onChange={(e) =>
-                setDraftDefaults((d) => ({ ...d, label: e.target.value }))
-              }
-            />
-            <TextField
-              size="small"
-              label="Notes (optional)"
-              multiline
-              minRows={2}
-              value={draftDefaults.notes}
-              onChange={(e) =>
-                setDraftDefaults((d) => ({ ...d, notes: e.target.value }))
-              }
-            />
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={persistDraft}
-              >
-                Add region
-              </Button>
-              <Button onClick={() => setDraft(null)}>Cancel</Button>
-            </Stack>
-          </Stack>
-        ) : selected ? (
-          <Stack spacing={2}>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-            >
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Region
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={() => setSelectedId(null)}
-                aria-label="Close"
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-            <Typography variant="caption" color="text.secondary">
-              Drag the box to move it, or pull a corner to resize.
-            </Typography>
-            <StateSelector
-              value={selected.state}
-              onChange={(state) => updateSelected({ state })}
-            />
-            <TextField
-              size="small"
-              label="Label"
-              helperText="Appears on the share link · saved when you pause or click away"
-              value={draftLabel}
-              onChange={(e) => {
-                setDraftLabel(e.target.value);
-                scheduleTextSave(selected.id);
-              }}
-              onBlur={() => flushText()}
-            />
-            <TextField
-              size="small"
-              label="Notes"
-              multiline
-              minRows={2}
-              value={draftNotes}
-              onChange={(e) => {
-                setDraftNotes(e.target.value);
-                scheduleTextSave(selected.id);
-              }}
-              onBlur={() => flushText()}
-            />
-            <Button
-              color="error"
-              variant="outlined"
-              startIcon={<DeleteOutlineIcon />}
-              onClick={deleteSelected}
-            >
-              Delete region
-            </Button>
-            <RegionAttribution region={selected} authors={authors} now={now} />
-          </Stack>
-        ) : regions.length > 0 ? (
-          <RegionList
-            regions={regions}
-            onSelect={setSelectedId}
-            filterState={filterState}
-          />
-        ) : (
-          <Stack spacing={2}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-              Drag to mark a region
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Click and drag anywhere on the screenshot. You&apos;ll pick one of
-              three states for what you draw:
-            </Typography>
-            <Stack spacing={1}>
-              {REGION_STATES.map((s) => (
-                <Stack
-                  key={s}
-                  direction="row"
-                  spacing={1.5}
-                  alignItems="center"
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  New region
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setDraft(null)}
+                  aria-label="Discard draft"
                 >
-                  <StateChip state={s} size="sm" />
-                  <Typography variant="body2" color="text.secondary">
-                    {STATE_META[s].description}
-                  </Typography>
-                </Stack>
-              ))}
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+              <StateSelector
+                value={draftDefaults.state}
+                onChange={(state) => setDraftDefaults((d) => ({ ...d, state }))}
+              />
+              <TextField
+                size="small"
+                label="Label"
+                placeholder="e.g. Revenue card"
+                value={draftDefaults.label}
+                onChange={(e) =>
+                  setDraftDefaults((d) => ({ ...d, label: e.target.value }))
+                }
+              />
+              <TextField
+                size="small"
+                label="Notes (optional)"
+                multiline
+                minRows={2}
+                value={draftDefaults.notes}
+                onChange={(e) =>
+                  setDraftDefaults((d) => ({ ...d, notes: e.target.value }))
+                }
+              />
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={persistDraft}
+                >
+                  Add region
+                </Button>
+                <Button onClick={() => setDraft(null)}>Cancel</Button>
+              </Stack>
             </Stack>
-          </Stack>
-        )}
-      </Paper>
-    </Stack>
+          ) : selected ? (
+            <Stack spacing={2}>
+              <Stack
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  Region
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => setSelectedId(null)}
+                  aria-label="Close"
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+              <Typography variant="caption" color="text.secondary">
+                Drag the box to move it, or pull a corner to resize.
+              </Typography>
+              <StateSelector
+                value={selected.state}
+                onChange={(state) => updateSelected({ state })}
+              />
+              <TextField
+                size="small"
+                label="Label"
+                helperText="Appears on the share link · saved when you pause or click away"
+                value={draftLabel}
+                onChange={(e) => {
+                  setDraftLabel(e.target.value);
+                  scheduleTextSave(selected.id);
+                }}
+                onBlur={() => flushText()}
+              />
+              <TextField
+                size="small"
+                label="Notes"
+                multiline
+                minRows={2}
+                value={draftNotes}
+                onChange={(e) => {
+                  setDraftNotes(e.target.value);
+                  scheduleTextSave(selected.id);
+                }}
+                onBlur={() => flushText()}
+              />
+              <Button
+                color="error"
+                variant="outlined"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={deleteSelected}
+              >
+                Delete region
+              </Button>
+              <RegionAttribution
+                region={selected}
+                authors={authors}
+                now={now}
+              />
+            </Stack>
+          ) : (
+            <Stack spacing={2}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Drag to mark a region
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Click and drag anywhere on the screenshot. You&apos;ll pick one
+                of three states for what you draw:
+              </Typography>
+              <Stack spacing={1}>
+                {REGION_STATES.map((s) => (
+                  <Stack
+                    key={s}
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                  >
+                    <StateChip state={s} size="sm" />
+                    <Typography variant="body2" color="text.secondary">
+                      {STATE_META[s].description}
+                    </Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </Stack>
+          )}
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -924,95 +988,6 @@ function StateSelector({
           </ToggleButton>
         ))}
       </ToggleButtonGroup>
-    </Stack>
-  );
-}
-
-/**
- * Idle-state region list. Replaces the static three-state legend once
- * the user has any regions, since the legend at that point is just
- * describing what they've already done.
- */
-function RegionList({
-  regions,
-  onSelect,
-  filterState,
-  readOnly = false,
-}: {
-  regions: Region[];
-  onSelect: (id: string) => void;
-  filterState: RegionState | null;
-  readOnly?: boolean;
-}) {
-  return (
-    <Stack spacing={1.5}>
-      <Stack direction="row" alignItems="baseline" spacing={1}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-          Regions
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {regions.length}
-        </Typography>
-      </Stack>
-      <Stack spacing={0.5}>
-        {regions.map((r, i) => {
-          const dimmed = filterState !== null && r.state !== filterState;
-          const name = r.label ?? `Region ${i + 1}`;
-          return (
-            <ButtonBase
-              key={r.id}
-              onClick={() => onSelect(r.id)}
-              aria-label={`${STATE_META[r.state].label}: ${name}`}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                width: "100%",
-                textAlign: "left",
-                gap: 1,
-                px: 1,
-                py: 0.75,
-                borderRadius: 1,
-                opacity: dimmed ? 0.4 : 1,
-                "&:hover": { bgcolor: "action.hover" },
-                "&.Mui-focusVisible": {
-                  bgcolor: "action.hover",
-                  outline: 2,
-                  outlineStyle: "solid",
-                  outlineColor: "primary.main",
-                  outlineOffset: -2,
-                },
-                transition: "opacity 160ms ease",
-              }}
-            >
-              <StateChip state={r.state} size="sm" />
-              <Typography
-                variant="body2"
-                sx={{
-                  flex: 1,
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  color: r.label ? "text.primary" : "text.secondary",
-                  fontStyle: r.label ? "normal" : "italic",
-                }}
-              >
-                {name}
-              </Typography>
-            </ButtonBase>
-          );
-        })}
-      </Stack>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ pt: 0.5, borderTop: 1, borderColor: "divider", mt: 1 }}
-      >
-        {readOnly
-          ? "Click a region to see its label and notes."
-          : "Drag on the screenshot to add another, or click a region above to edit it."}
-      </Typography>
     </Stack>
   );
 }
