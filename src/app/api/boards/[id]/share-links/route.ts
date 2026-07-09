@@ -66,6 +66,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     action: "share_link.create",
     targetType: "share_link",
     targetId: link.token,
+    boardId: id,
     meta: { boardId: id, label },
   });
 

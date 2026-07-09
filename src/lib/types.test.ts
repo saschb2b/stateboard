@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   TEXT_LIMITS,
+  attributionName,
   checkTextLength,
   isFiniteIn01,
   isWorkspaceRole,
@@ -125,6 +126,31 @@ describe("meetsRole", () => {
     assert.equal(meetsRole("viewer", "editor"), false);
     assert.equal(meetsRole("viewer", "owner"), false);
     assert.equal(meetsRole("editor", "owner"), false);
+  });
+});
+
+describe("attributionName", () => {
+  it("prefers the display name when present", () => {
+    assert.equal(
+      attributionName({ id: "u1", name: "Anna Ray", email: "anna@x.io" }),
+      "Anna Ray",
+    );
+  });
+
+  it("falls back to the email when the name is null or blank", () => {
+    assert.equal(
+      attributionName({ id: "u1", name: null, email: "anna@x.io" }),
+      "anna@x.io",
+    );
+    assert.equal(
+      attributionName({ id: "u1", name: "   ", email: "anna@x.io" }),
+      "anna@x.io",
+    );
+  });
+
+  it("names a neutral label when the ref is gone (deleted account)", () => {
+    assert.equal(attributionName(null), "a former member");
+    assert.equal(attributionName(undefined), "a former member");
   });
 });
 

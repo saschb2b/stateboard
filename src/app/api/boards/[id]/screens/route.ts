@@ -97,6 +97,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     action: "screen.create",
     targetType: "screen",
     targetId: screen.id,
+    boardId,
     meta: { boardId, filename },
   });
 
@@ -143,6 +144,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     action: "screen.reorder",
     targetType: "board",
     targetId: boardId,
+    boardId,
     meta: { order },
   });
 

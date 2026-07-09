@@ -7,9 +7,16 @@ import type {
   Screen,
   ScreenWithRegions,
   ShareLink,
+  UserRef,
   WorkspaceMember,
   WorkspaceScreen,
 } from "./types";
+import type {
+  AuditAction,
+  AuditCursor,
+  AuditEntry,
+  AuditFilters,
+} from "./audit";
 
 /**
  * Single Postgres pool for the app process.
@@ -219,23 +226,29 @@ function mapMember(row: WorkspaceMemberRow): WorkspaceMember {
 
 // ----- audit log ------------------------------------------------------------
 
-export type AuditAction =
-  | "board.create"
-  | "board.clone"
-  | "board.update"
-  | "board.delete"
-  | "screen.create"
-  | "screen.update"
-  | "screen.delete"
-  | "screen.reorder"
-  | "region.create"
-  | "region.update"
-  | "region.delete"
-  | "share_link.create"
-  | "share_link.revoke"
-  | "member.add"
-  | "member.remove"
-  | "member.role_change";
+interface AuditRow {
+  id: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  action: string;
+  target_type: string;
+  target_id: string | null;
+  meta: Record<string, unknown> | null;
+  at: string;
+}
+
+function mapAudit(row: AuditRow): AuditEntry {
+  return {
+    id: num(row.id),
+    actorId: row.actor_id,
+    actorName: row.actor_name,
+    action: row.action,
+    targetType: row.target_type,
+    targetId: row.target_id,
+    meta: row.meta,
+    at: num(row.at),
+  };
+}
 
 export async function writeAudit(input: {
   workspaceId: string;
@@ -244,10 +257,16 @@ export async function writeAudit(input: {
   targetType: string;
   targetId: string | null;
   meta?: Record<string, unknown>;
+  /**
+   * The board this event belongs to, denormalized so a board-scoped history
+   * survives deletion of the immediate target. Omit for workspace-level events
+   * (member.*), which have no board.
+   */
+  boardId?: string | null;
 }): Promise<void> {
   await query(
-    `INSERT INTO audit_log (workspace_id, actor_id, action, target_type, target_id, meta, at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    `INSERT INTO audit_log (workspace_id, actor_id, action, target_type, target_id, meta, at, board_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       input.workspaceId,
       input.actorId,
@@ -256,8 +275,93 @@ export async function writeAudit(input: {
       input.targetId,
       input.meta ? JSON.stringify(input.meta) : null,
       Date.now(),
+      input.boardId ?? null,
     ],
   );
+}
+
+/**
+ * The distinct users who appear as actors in a workspace's audit log, joined
+ * to their identity for the "actor" filter dropdown. Includes members who have
+ * since left (their `user` row survives), which is exactly who a compliance
+ * reviewer wants to be able to filter by. Rows whose actor account was deleted
+ * (actor_id NULL) are naturally excluded.
+ */
+export async function listAuditActors(
+  workspaceId: string,
+  boardId?: string,
+): Promise<UserRef[]> {
+  const params: unknown[] = [workspaceId];
+  let scope = "";
+  if (boardId) {
+    params.push(boardId);
+    scope = ` AND a.board_id = $${params.length}`;
+  }
+  const rows = await query<{ id: string; name: string | null; email: string }>(
+    `SELECT DISTINCT u.id, u.name, u.email
+       FROM audit_log a
+       JOIN "user" u ON u.id = a.actor_id
+      WHERE a.workspace_id = $1${scope}
+      ORDER BY u.name`,
+    params,
+  );
+  return rows.map((r) => ({ id: r.id, name: r.name, email: r.email }));
+}
+
+/**
+ * A page of audit-log entries, newest first, with the applied filters.
+ *
+ * Uses keyset pagination on `(at DESC, id DESC)` rather than OFFSET: the log is
+ * append-only and unbounded, and this rides the `(workspace_id, at DESC)` index
+ * with stable pages even as new rows land. Pass the previous page's `nextCursor`
+ * to fetch the next. The filter clauses are all parameterized; `limit` is
+ * clamped so a caller can't ask for the whole table in one shot.
+ */
+export async function listAuditLog(
+  workspaceId: string,
+  filters: AuditFilters,
+  opts: { cursor?: AuditCursor | null; limit: number },
+): Promise<{ entries: AuditEntry[]; nextCursor: AuditCursor | null }> {
+  const params: unknown[] = [workspaceId];
+  const where: string[] = ["a.workspace_id = $1"];
+  const bind = (value: unknown): string => {
+    params.push(value);
+    return `$${params.length}`;
+  };
+
+  if (filters.boardId) where.push(`a.board_id = ${bind(filters.boardId)}`);
+  if (filters.actor) where.push(`a.actor_id = ${bind(filters.actor)}`);
+  if (filters.action) where.push(`a.action = ${bind(filters.action)}`);
+  if (filters.targetType) {
+    where.push(`a.target_type = ${bind(filters.targetType)}`);
+  }
+  if (filters.fromMs !== undefined)
+    where.push(`a.at >= ${bind(filters.fromMs)}`);
+  if (filters.toMs !== undefined) where.push(`a.at < ${bind(filters.toMs)}`);
+  if (opts.cursor) {
+    const at = bind(opts.cursor.at);
+    const id = bind(opts.cursor.id);
+    where.push(`(a.at < ${at} OR (a.at = ${at} AND a.id < ${id}))`);
+  }
+
+  const limit = Math.max(1, Math.min(10_000, Math.trunc(opts.limit)));
+  // Fetch one extra to detect a following page without a second count query.
+  const rows = await query<AuditRow>(
+    `SELECT a.id, a.actor_id, u.name AS actor_name, a.action,
+            a.target_type, a.target_id, a.meta, a.at
+       FROM audit_log a
+       LEFT JOIN "user" u ON u.id = a.actor_id
+      WHERE ${where.join(" AND ")}
+      ORDER BY a.at DESC, a.id DESC
+      LIMIT ${bind(limit + 1)}`,
+    params,
+  );
+
+  const hasMore = rows.length > limit;
+  const entries = (hasMore ? rows.slice(0, limit) : rows).map(mapAudit);
+  const last = entries[entries.length - 1];
+  const nextCursor = hasMore && last ? { at: last.at, id: last.id } : null;
+  return { entries, nextCursor };
 }
 
 // ----- workspace + membership ----------------------------------------------
@@ -341,6 +445,27 @@ export async function removeMember(input: {
     [input.workspaceId, input.userId],
   );
   return result.rowCount! > 0;
+}
+
+/**
+ * Resolve a set of user ids to their display identity, for attribution lines
+ * ("created by …", "last edited by …") in the editor.
+ *
+ * Joins the auth `user` table directly rather than `workspace_members`, so
+ * someone who has since left the workspace still resolves to their name — their
+ * `user` row survives (only `workspace_members` is deleted on removal). Ids with
+ * no surviving user row (a deleted account) are simply absent from the result;
+ * the caller renders those as "a former member". Nulls and duplicates are
+ * dropped, and an empty request skips the query entirely.
+ */
+export async function getUserRefs(ids: (string | null)[]): Promise<UserRef[]> {
+  const unique = [...new Set(ids.filter((id): id is string => id !== null))];
+  if (unique.length === 0) return [];
+  const rows = await query<{ id: string; name: string | null; email: string }>(
+    `SELECT id, name, email FROM "user" WHERE id = ANY($1)`,
+    [unique],
+  );
+  return rows.map((r) => ({ id: r.id, name: r.name, email: r.email }));
 }
 
 // ----- boards ---------------------------------------------------------------

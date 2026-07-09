@@ -118,6 +118,28 @@ export interface WorkspaceMember {
   image: string | null;
 }
 
+/**
+ * Minimal identity for an attribution line ("edited by …"), resolved from a
+ * board/region's `createdBy` / `updatedBy` id. Kept deliberately small: it's
+ * an editor-only affordance, never rendered on the public share link.
+ */
+export interface UserRef {
+  id: string;
+  name: string | null;
+  email: string;
+}
+
+/**
+ * The name to show in an attribution line. Prefers the display name, falls back
+ * to the email when the user never set one, and to a neutral label when the ref
+ * is absent — which happens when `updated_by` went NULL on account deletion, so
+ * the person genuinely can't be named anymore.
+ */
+export function attributionName(ref: UserRef | null | undefined): string {
+  if (!ref) return "a former member";
+  return ref.name?.trim() || ref.email;
+}
+
 /** Narrows an unknown to a finite number within the normalized [0, 1] range. */
 export const isFiniteIn01 = (n: unknown): n is number =>
   typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;

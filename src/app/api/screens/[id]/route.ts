@@ -69,6 +69,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     action: "screen.update",
     targetType: "screen",
     targetId: id,
+    boardId: owned.boardId,
     meta: patch,
   });
 
@@ -97,6 +98,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     action: "screen.delete",
     targetType: "screen",
     targetId: id,
+    boardId: existing.boardId,
   });
 
   return noContent();

@@ -98,6 +98,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     action: "screen.update",
     targetType: "screen",
     targetId: id,
+    boardId: screen.boardId,
     meta: { replacedImage: true, from: oldFilename, to: newFilename },
   });
 

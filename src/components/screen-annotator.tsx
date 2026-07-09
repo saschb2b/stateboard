@@ -16,10 +16,13 @@ import CloseIcon from "@mui/icons-material/Close";
 import { STATE_META } from "@/lib/state-meta";
 import {
   REGION_STATES,
+  attributionName,
   type Region,
   type RegionState,
   type ScreenWithRegions,
+  type UserRef,
 } from "@/lib/types";
+import { timeAgo } from "@/lib/time";
 import { RegionOverlay } from "./region-overlay";
 import {
   MIN_REGION_SIZE,
@@ -45,6 +48,10 @@ interface ScreenAnnotatorProps {
   readOnly?: boolean;
   /** When set, dim regions whose state does not match (filter pills). */
   filterState?: RegionState | null;
+  /** Author id → identity, for the selected region's "last edited by" line. */
+  authors: Record<string, UserRef>;
+  /** Server render time, so the relative-time label needs no client clock. */
+  now: number;
 }
 
 /** Pull the API's `{ error }` message off a failed response, else a fallback. */
@@ -91,6 +98,8 @@ export function ScreenAnnotator({
   onError,
   readOnly = false,
   filterState = null,
+  authors,
+  now,
 }: ScreenAnnotatorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
@@ -115,6 +124,24 @@ export function ScreenAnnotator({
     label: string;
     notes: string;
   }>({ state: "shipped", label: "", notes: "" });
+
+  // Local draft of the selected region's text fields. These drive the inputs so
+  // typing is instant and a slow save can't reset the value mid-keystroke (which
+  // used to drop characters like spaces). Persistence is debounced separately.
+  const [draftLabel, setDraftLabel] = useState("");
+  const [draftNotes, setDraftNotes] = useState("");
+  // Mirror the drafts into refs so the debounced/blur save reads the latest
+  // value without being re-created on every keystroke.
+  const draftLabelRef = useRef(draftLabel);
+  const draftNotesRef = useRef(draftNotes);
+  useEffect(() => {
+    draftLabelRef.current = draftLabel;
+  }, [draftLabel]);
+  useEffect(() => {
+    draftNotesRef.current = draftNotes;
+  }, [draftNotes]);
+  const textTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTextId = useRef<string | null>(null);
 
   // No effect needed to reset on screen change: the parent passes
   // `key={screen.id}`, which remounts this component and re-runs the
@@ -329,35 +356,124 @@ export function ScreenAnnotator({
     setSelectedId(created.id);
   };
 
+  // Persist a region's label/notes. Called on a short idle after typing stops
+  // and on blur — never per keystroke — so a burst of typing becomes one PATCH
+  // (and one audit row). Merges through the always-fresh regionsRef so a slow
+  // response can't clobber newer local state.
+  const persistText = useCallback(
+    async (
+      id: string,
+      patch: { label?: string | null; notes?: string | null },
+    ) => {
+      const res = await fetch(`/api/regions/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        onError?.(await failureMessage(res, "Couldn't save the region."));
+        return;
+      }
+      const updated: Region = await res.json();
+      const next = regionsRef.current.map((r) =>
+        r.id === updated.id ? updated : r,
+      );
+      setRegions(next);
+      onScreenUpdated({ ...screen, regions: next });
+    },
+    [screen, onScreenUpdated, onError],
+  );
+
+  // Flush a pending text edit now, sending only the fields that actually
+  // changed from what's stored. Fired on idle, on blur, when the selection
+  // changes, and on unmount, so an edit is never lost.
+  const flushText = useCallback(() => {
+    if (textTimer.current) {
+      clearTimeout(textTimer.current);
+      textTimer.current = null;
+    }
+    const id = pendingTextId.current;
+    pendingTextId.current = null;
+    if (!id) return;
+    const cur = regionsRef.current.find((r) => r.id === id);
+    if (!cur) return;
+    const label = draftLabelRef.current.trim() || null;
+    const notes = draftNotesRef.current.trim() || null;
+    const patch: { label?: string | null; notes?: string | null } = {};
+    if (label !== (cur.label ?? null)) patch.label = label;
+    if (notes !== (cur.notes ?? null)) patch.notes = notes;
+    if (Object.keys(patch).length > 0) void persistText(id, patch);
+  }, [persistText]);
+
+  // Stable handle to the latest flushText, so the debounce timer and the
+  // selection/unmount effects can call it without listing it as a dependency
+  // (which would otherwise re-fire them on unrelated parent re-renders).
+  const flushTextRef = useRef(flushText);
+  useEffect(() => {
+    flushTextRef.current = flushText;
+  }, [flushText]);
+
+  // Debounce a text save 600ms after the last keystroke.
+  const scheduleTextSave = (id: string) => {
+    pendingTextId.current = id;
+    if (textTimer.current) clearTimeout(textTimer.current);
+    textTimer.current = setTimeout(() => flushTextRef.current(), 600);
+  };
+
+  // On selection change, flush the previous region's pending edit, then repoint
+  // the draft fields at the newly-selected region. Keyed on selectedId only: it
+  // must not re-run (and wipe in-progress typing) on unrelated renders.
+  useEffect(() => {
+    flushTextRef.current();
+    const r = regionsRef.current.find((x) => x.id === selectedId);
+    setDraftLabel(r?.label ?? "");
+    setDraftNotes(r?.notes ?? "");
+  }, [selectedId]);
+
+  // Save a still-pending text edit if the screen unmounts (e.g. tab switch).
+  useEffect(() => () => flushTextRef.current(), []);
+
   const updateSelected = useCallback(
-    async (patch: Partial<Pick<Region, "state" | "label" | "notes">>) => {
-      if (!selected) return;
-      // optimistic
-      const optimistic = regions.map((r) =>
-        r.id === selected.id ? { ...r, ...patch } : r,
+    async (patch: Partial<Pick<Region, "state">>) => {
+      const id = selectedId;
+      if (!id) return;
+      // Serialize any pending text edit ahead of this discrete change.
+      flushTextRef.current();
+      const before = regionsRef.current;
+      const optimistic = before.map((r) =>
+        r.id === id ? { ...r, ...patch } : r,
       );
       setRegions(optimistic);
-      const res = await fetch(`/api/regions/${selected.id}`, {
+      const res = await fetch(`/api/regions/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(patch),
       });
       if (!res.ok) {
         // revert on failure
-        setRegions(regions);
+        setRegions(before);
         onError?.(await failureMessage(res, "Couldn't update the region."));
         return;
       }
       const updated: Region = await res.json();
-      const next = regions.map((r) => (r.id === updated.id ? updated : r));
+      const next = regionsRef.current.map((r) =>
+        r.id === updated.id ? updated : r,
+      );
       setRegions(next);
       onScreenUpdated({ ...screen, regions: next });
     },
-    [selected, regions, screen, onScreenUpdated, onError],
+    [selectedId, screen, onScreenUpdated, onError],
   );
 
   const deleteSelected = useCallback(async () => {
     if (!selected) return;
+    // Drop any pending text save for this region so it can't PATCH a row that's
+    // about to be deleted.
+    if (textTimer.current) {
+      clearTimeout(textTimer.current);
+      textTimer.current = null;
+    }
+    pendingTextId.current = null;
     const res = await fetch(`/api/regions/${selected.id}`, {
       method: "DELETE",
     });
@@ -568,6 +684,7 @@ export function ScreenAnnotator({
                 {selected.notes}
               </Typography>
             ) : null}
+            <RegionAttribution region={selected} authors={authors} now={now} />
           </Stack>
         ) : readOnly ? (
           regions.length > 0 ? (
@@ -670,17 +787,25 @@ export function ScreenAnnotator({
             <TextField
               size="small"
               label="Label"
-              helperText="Appears on the share link"
-              value={selected.label ?? ""}
-              onChange={(e) => updateSelected({ label: e.target.value })}
+              helperText="Appears on the share link · saved when you pause or click away"
+              value={draftLabel}
+              onChange={(e) => {
+                setDraftLabel(e.target.value);
+                scheduleTextSave(selected.id);
+              }}
+              onBlur={() => flushText()}
             />
             <TextField
               size="small"
               label="Notes"
               multiline
               minRows={2}
-              value={selected.notes ?? ""}
-              onChange={(e) => updateSelected({ notes: e.target.value })}
+              value={draftNotes}
+              onChange={(e) => {
+                setDraftNotes(e.target.value);
+                scheduleTextSave(selected.id);
+              }}
+              onBlur={() => flushText()}
             />
             <Button
               color="error"
@@ -690,6 +815,7 @@ export function ScreenAnnotator({
             >
               Delete region
             </Button>
+            <RegionAttribution region={selected} authors={authors} now={now} />
           </Stack>
         ) : regions.length > 0 ? (
           <RegionList
@@ -725,6 +851,35 @@ export function ScreenAnnotator({
         )}
       </Paper>
     </Stack>
+  );
+}
+
+/**
+ * Muted footer on the selected-region panel: who last touched this region and
+ * when. Region `updated_by` is written on the same PATCH as the label/notes, so
+ * unlike the board line this is an accurate "who wrote this note" answer. A null
+ * editor (the account was deleted) reads as "a former member". Editor-only — the
+ * public share view never renders this panel.
+ */
+function RegionAttribution({
+  region,
+  authors,
+  now,
+}: {
+  region: Region;
+  authors: Record<string, UserRef>;
+  now: number;
+}) {
+  const editor = region.updatedBy ? authors[region.updatedBy] : null;
+  return (
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      sx={{ pt: 1.5, borderTop: 1, borderColor: "divider" }}
+    >
+      Last edited by {attributionName(editor)} ·{" "}
+      {timeAgo(region.updatedAt, now)}
+    </Typography>
   );
 }
 

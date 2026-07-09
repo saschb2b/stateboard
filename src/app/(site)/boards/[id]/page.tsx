@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getBoard, getBoardWithScreens, listShareLinks } from "@/lib/db";
+import {
+  getBoard,
+  getBoardWithScreens,
+  getUserRefs,
+  listShareLinks,
+} from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardEditor } from "@/components/board-editor";
 
@@ -29,12 +34,30 @@ export default async function BoardEditorPage({ params }: PageProps) {
   const result = await getBoardWithScreens(id);
   if (!result || result.board.workspaceId !== member.workspaceId) notFound();
   const links = await listShareLinks(id);
+
+  // Resolve every author id on the board (creator, last editor, and each
+  // region's editor) to a name once, so the editor can render "who wrote this"
+  // attribution without a per-region lookup. Keyed by id for O(1) access.
+  const refs = await getUserRefs([
+    result.board.createdBy,
+    result.board.updatedBy,
+    ...result.screens.flatMap((s) => s.regions.map((r) => r.updatedBy)),
+  ]);
+  const authors = Object.fromEntries(refs.map((r) => [r.id, r]));
+  // A force-dynamic server component renders once per request, so reading the
+  // wall clock here is correct and stable — not the impure-render hazard the
+  // purity rule guards against (which targets unpredictable client re-renders).
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+
   return (
     <BoardEditor
       board={result.board}
       initialScreens={result.screens}
       initialShareLinks={links}
       viewer={member}
+      authors={authors}
+      now={now}
     />
   );
 }

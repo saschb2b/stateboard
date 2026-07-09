@@ -105,6 +105,7 @@ export async function POST(_req: NextRequest, { params }: Ctx) {
     action: "board.clone",
     targetType: "board",
     targetId: board.id,
+    boardId: board.id,
     meta: { sourceBoardId: source.board.id, screens: source.screens.length },
   });
 

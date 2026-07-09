@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     action: "board.create",
     targetType: "board",
     targetId: board.id,
+    boardId: board.id,
     meta: { name },
   });
 

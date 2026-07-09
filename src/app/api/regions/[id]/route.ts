@@ -33,14 +33,14 @@ interface Ctx {
 async function loadRegionInWorkspace(
   id: string,
   workspaceId: string,
-): Promise<Region | null> {
+): Promise<{ region: Region; boardId: string } | null> {
   const region = await getRegion(id);
   if (!region) return null;
   const screen = await getScreen(region.screenId);
   if (!screen) return null;
   const board = await getBoard(screen.boardId);
   if (!board || board.workspaceId !== workspaceId) return null;
-  return region;
+  return { region, boardId: screen.boardId };
 }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
@@ -48,8 +48,9 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (member instanceof NextResponse) return member;
 
   const { id } = await params;
-  const existing = await loadRegionInWorkspace(id, member.workspaceId);
-  if (!existing) return notFound("region not found");
+  const owned = await loadRegionInWorkspace(id, member.workspaceId);
+  if (!owned) return notFound("region not found");
+  const existing = owned.region;
 
   const parsed = await readJsonBody(req);
   if (!parsed.ok) {
@@ -114,6 +115,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     action: "region.update",
     targetType: "region",
     targetId: id,
+    boardId: owned.boardId,
     meta: patch,
   });
 
@@ -125,7 +127,8 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
   if (member instanceof NextResponse) return member;
 
   const { id } = await params;
-  if (!(await loadRegionInWorkspace(id, member.workspaceId))) {
+  const owned = await loadRegionInWorkspace(id, member.workspaceId);
+  if (!owned) {
     return notFound("region not found");
   }
   if (!(await deleteRegion(id, member.user.id))) {
@@ -138,6 +141,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     action: "region.delete",
     targetType: "region",
     targetId: id,
+    boardId: owned.boardId,
   });
 
   return noContent();

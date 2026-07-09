@@ -47,7 +47,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (member instanceof NextResponse) return member;
 
   const { id: screenId } = await params;
-  if (!(await loadOwnedScreen(screenId, member.workspaceId))) {
+  const screen = await loadOwnedScreen(screenId, member.workspaceId);
+  if (!screen) {
     return notFound("screen not found");
   }
 
@@ -112,6 +113,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     action: "region.create",
     targetType: "region",
     targetId: region.id,
+    boardId: screen.boardId,
     meta: { screenId, state: region.state },
   });
 

@@ -24,6 +24,7 @@ import SlideshowIcon from "@mui/icons-material/Slideshow";
 import AddPhotoAlternateOutlinedIcon from "@mui/icons-material/AddPhotoAlternateOutlined";
 import SwapHorizOutlinedIcon from "@mui/icons-material/SwapHorizOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import HistoryIcon from "@mui/icons-material/History";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import Link from "next/link";
 import { AppHeader } from "./app-header";
@@ -38,8 +39,10 @@ import type {
   RegionState,
   ScreenWithRegions,
   ShareLink,
+  UserRef,
 } from "@/lib/types";
-import { REGION_STATES } from "@/lib/types";
+import { REGION_STATES, attributionName } from "@/lib/types";
+import { timeAgo } from "@/lib/time";
 import type { CurrentMember } from "@/lib/auth";
 
 interface BoardEditorProps {
@@ -47,6 +50,10 @@ interface BoardEditorProps {
   initialScreens: ScreenWithRegions[];
   initialShareLinks: ShareLink[];
   viewer: CurrentMember;
+  /** Author id → identity, for the "who wrote this" attribution lines. */
+  authors: Record<string, UserRef>;
+  /** Server render time, so relative-time labels don't need a client clock. */
+  now: number;
 }
 
 const canEdit = (role: CurrentMember["role"]) =>
@@ -57,6 +64,8 @@ export function BoardEditor({
   initialScreens,
   initialShareLinks,
   viewer,
+  authors,
+  now,
 }: BoardEditorProps) {
   const [boardName, setBoardName] = useState(board.name);
   const [screens, setScreens] = useState<ScreenWithRegions[]>(initialScreens);
@@ -78,6 +87,22 @@ export function BoardEditor({
   const [shareAnchorEl, setShareAnchorEl] = useState<HTMLElement | null>(null);
 
   const editable = canEdit(viewer.role);
+
+  // The current viewer may not appear in the server-fetched `authors` map if
+  // they'd never touched this board before now. Fold their own identity in so
+  // that a region they edit this session attributes to them, not "a former
+  // member". The server map wins on conflict (it's equally correct there).
+  const authorsWithViewer = useMemo<Record<string, UserRef>>(
+    () => ({
+      [viewer.user.id]: {
+        id: viewer.user.id,
+        name: viewer.user.name,
+        email: viewer.user.email,
+      },
+      ...authors,
+    }),
+    [authors, viewer.user],
+  );
 
   const openAddScreen = (tab: "upload" | "reuse" = "upload") => {
     setAddMode("add");
@@ -370,6 +395,16 @@ export function BoardEditor({
                 </IconButton>
               </Tooltip>
             ) : null}
+            <Tooltip title="Board history">
+              <IconButton
+                size="small"
+                component={Link}
+                href={`/boards/${board.id}/history`}
+                aria-label="Board history"
+              >
+                <HistoryIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             {editable ? (
               <Tooltip title="Board settings">
                 <IconButton
@@ -387,6 +422,7 @@ export function BoardEditor({
         }
       />
       <Container maxWidth="xl" sx={{ py: 2 }}>
+        <BoardAttribution board={board} authors={authorsWithViewer} now={now} />
         {screens.length === 0 ? (
           <Stack spacing={1.5} sx={{ mt: 4 }}>
             {editable ? (
@@ -667,6 +703,8 @@ export function BoardEditor({
                 onError={setActionError}
                 readOnly={!editable}
                 filterState={filterState}
+                authors={authorsWithViewer}
+                now={now}
               />
             ) : null}
           </Stack>
@@ -717,6 +755,37 @@ export function BoardEditor({
         />
       ) : null}
     </>
+  );
+}
+
+/**
+ * Muted creation-attribution line under the board header ("Created by …").
+ *
+ * Board-level attribution is deliberately creation-only: `updated_by` on a board
+ * is touched by any child change (a new screenshot, a moved region), so it
+ * answers "last activity", not "who wrote the title". Naming the creator is the
+ * honest line that never misattributes. Live, per-edit authorship lives on
+ * regions, where `updated_by` is set on the same write as the note. Never shown
+ * on the public share link — this is an editor affordance.
+ */
+function BoardAttribution({
+  board,
+  authors,
+  now,
+}: {
+  board: Board;
+  authors: Record<string, UserRef>;
+  now: number;
+}) {
+  const creator = board.createdBy ? authors[board.createdBy] : null;
+  return (
+    <Typography
+      variant="caption"
+      color="text.secondary"
+      sx={{ display: "block", mb: 1.5 }}
+    >
+      Created by {attributionName(creator)} · {timeAgo(board.createdAt, now)}
+    </Typography>
   );
 }
 

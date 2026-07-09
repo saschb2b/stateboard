@@ -28,6 +28,7 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
     action: "share_link.revoke",
     targetType: "share_link",
     targetId: token,
+    boardId: link.boardId,
     meta: { boardId: link.boardId },
   });
   return noContent();

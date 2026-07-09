@@ -11,6 +11,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import LogoutIcon from "@mui/icons-material/Logout";
 import GroupIcon from "@mui/icons-material/Group";
+import HistoryIcon from "@mui/icons-material/History";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -29,7 +30,7 @@ interface UserMenuProps {
 /**
  * Avatar + dropdown in the top-right.
  *
- * Owners see a "Members" entry. Sign-out is always last and routes to
+ * Owners see "Members" and "Audit log" entries. Sign-out is always last and routes to
  * /sign-in via Better Auth's redirect. We deliberately don't show the
  * raw user id or workspace id — that's debugging info, not user-facing.
  */
@@ -114,6 +115,16 @@ export function UserMenu({ user, role }: UserMenuProps) {
           >
             <GroupIcon fontSize="small" sx={{ mr: 1.5 }} />
             Members
+          </MenuItem>
+        ) : null}
+        {role === "owner" ? (
+          <MenuItem
+            component={Link}
+            href="/settings/audit"
+            onClick={() => setAnchor(null)}
+          >
+            <HistoryIcon fontSize="small" sx={{ mr: 1.5 }} />
+            Audit log
           </MenuItem>
         ) : null}
         <MenuItem onClick={onSignOut}>

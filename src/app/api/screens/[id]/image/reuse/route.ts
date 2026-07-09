@@ -101,6 +101,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     action: "screen.update",
     targetType: "screen",
     targetId: id,
+    boardId: screen.boardId,
     meta: { replacedImage: true, reusedFrom: source.id },
   });
 

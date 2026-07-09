@@ -92,6 +92,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         action: "screen.create",
         targetType: "screen",
         targetId: screen.id,
+        boardId,
         meta: { boardId, reusedFrom: source.id },
       });
     }
