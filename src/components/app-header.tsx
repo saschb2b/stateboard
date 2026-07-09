@@ -53,6 +53,7 @@ export function AppHeader({
     <AppBar position="sticky">
       <Toolbar
         sx={{
+          position: "relative",
           minHeight: { xs: 56, sm: 60 },
           gap: 2,
           px: { xs: 2, sm: 3 },
@@ -104,15 +105,28 @@ export function AppHeader({
             )}
           </>
         ) : null}
-        {/* Two flex spacers straddle the optional centered element: with none,
-            they collapse into one and push the actions to the right as before. */}
-        <Box sx={{ flex: 1 }} />
-        {center ?? null}
         <Box sx={{ flex: 1 }} />
         {actions ? (
           <Stack direction="row" spacing={1.5} alignItems="center">
             {actions}
           </Stack>
+        ) : null}
+        {/* Truly centered to the toolbar (not to the gap between crumb and
+            actions), so it reads as a command bar. Out of flow, so the side
+            content lays out independently. Hidden below md, where the actions
+            would collide with it — the Cmd/Ctrl+K shortcut still works. */}
+        {center ? (
+          <Box
+            sx={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              display: { xs: "none", md: "block" },
+            }}
+          >
+            {center}
+          </Box>
         ) : null}
       </Toolbar>
     </AppBar>

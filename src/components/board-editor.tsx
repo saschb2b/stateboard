@@ -6,6 +6,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
 import ButtonGroup from "@mui/material/ButtonGroup";
+import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -13,12 +14,10 @@ import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import HistoryIcon from "@mui/icons-material/History";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -80,6 +79,7 @@ export function BoardEditor({
   const [addMode, setAddMode] = useState<"add" | "replace">("add");
   const [replaceScreenId, setReplaceScreenId] = useState<string | null>(null);
   const [shareAnchorEl, setShareAnchorEl] = useState<HTMLElement | null>(null);
+  const [moreAnchorEl, setMoreAnchorEl] = useState<HTMLElement | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // One-shot request to select a region after jumping to its screen from the
   // command palette. Cleared once the annotator has consumed it.
@@ -414,6 +414,13 @@ export function BoardEditor({
               filterState={filterState}
               onToggle={toggleFilter}
             />
+            {totals.shipped + totals.mock + totals.missing > 0 ? (
+              <Divider
+                orientation="vertical"
+                flexItem
+                sx={{ my: 1, borderColor: "divider" }}
+              />
+            ) : null}
             <Tooltip title="Present (P)">
               <span>
                 <Button
@@ -460,14 +467,17 @@ export function BoardEditor({
                   anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                   transformOrigin={{ vertical: "top", horizontal: "right" }}
                 >
-                  <MenuItem
-                    onClick={() => {
-                      setShareAnchorEl(null);
-                      void copyShare();
-                    }}
-                  >
-                    Copy share link
-                  </MenuItem>
+                  {activeShareLink ? (
+                    <MenuItem
+                      component="a"
+                      href={`/share/${activeShareLink.token}`}
+                      target="_blank"
+                      rel="noopener"
+                      onClick={() => setShareAnchorEl(null)}
+                    >
+                      Open share view ↗
+                    </MenuItem>
+                  ) : null}
                   <MenuItem
                     component={Link}
                     href={`/boards/${board.id}/settings?section=sharing`}
@@ -478,42 +488,39 @@ export function BoardEditor({
                 </Menu>
               </>
             ) : null}
-            {activeShareLink ? (
-              <Tooltip title="Open share view">
-                <IconButton
-                  size="small"
-                  component="a"
-                  href={`/share/${activeShareLink.token}`}
-                  target="_blank"
-                  rel="noopener"
-                  aria-label="Open share view in a new tab"
-                >
-                  <OpenInNewIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            ) : null}
-            <Tooltip title="Board history">
+            <Tooltip title="More board options">
               <IconButton
                 size="small"
-                component={Link}
-                href={`/boards/${board.id}/history`}
-                aria-label="Board history"
+                onClick={(e) => setMoreAnchorEl(e.currentTarget)}
+                aria-label="More board options"
               >
-                <HistoryIcon fontSize="small" />
+                <MoreVertIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            {editable ? (
-              <Tooltip title="Board settings">
-                <IconButton
-                  size="small"
+            <Menu
+              anchorEl={moreAnchorEl}
+              open={Boolean(moreAnchorEl)}
+              onClose={() => setMoreAnchorEl(null)}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem
+                component={Link}
+                href={`/boards/${board.id}/history`}
+                onClick={() => setMoreAnchorEl(null)}
+              >
+                Board history
+              </MenuItem>
+              {editable ? (
+                <MenuItem
                   component={Link}
                   href={`/boards/${board.id}/settings`}
-                  aria-label="Board settings"
+                  onClick={() => setMoreAnchorEl(null)}
                 >
-                  <SettingsOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            ) : null}
+                  Board settings
+                </MenuItem>
+              ) : null}
+            </Menu>
             <UserMenu user={viewer.user} role={viewer.role} />
           </>
         }
