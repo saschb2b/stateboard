@@ -24,7 +24,7 @@ The cut you can deploy in a company.
 - Multi-user via OIDC (Keycloak is documented; any IdP works)
 - Workspace with `owner` / `editor` / `viewer` roles
 - Revocable share-link tokens: multiple per board, mint per audience
-- Append-only audit log (rows in Postgres; UI lands in v3)
+- Append-only audit log (rows in Postgres; a read-only UI and per-board history arrived in `2026.7.0`)
 - Postgres-backed; multi-replica safe with a `ReadWriteMany` PVC
 - One container + one Postgres. Zero outbound calls except to your IdP.
 
@@ -57,7 +57,7 @@ The features that make StateBoard hard to displace once a team has standardised 
 - **Journey-level views**: sequence screens left-to-right ("sign-up → onboarding → first action").
 - **Portfolio rollup**: workspace-level dashboard aggregating state counts across boards.
 - **SAML SSO**: for orgs that still mandate it. Better Auth has the helper; we ship a tested example.
-- **Audit-log UI**: `/settings/audit` for owners, with filters and CSV export.
+- **Audit-log UI** — _shipped in `2026.7.0`._ `/settings/audit` for owners with actor / action / resource / date filters and CSV export, plus a per-board history at `/boards/[id]/history` visible to any board member.
 - **Template gallery**: starter boards a workspace owner can clone in one click. Templates live in code, never seeded into the user's database.
 
 ## What we won't build
