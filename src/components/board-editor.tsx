@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -19,10 +19,13 @@ import SlideshowIcon from "@mui/icons-material/Slideshow";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import SearchIcon from "@mui/icons-material/Search";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AppHeader } from "./app-header";
 import { AddScreenDialog } from "./add-screen-dialog";
 import { BoardPresenter } from "./board-presenter";
+import { CommandPalette, type PaletteAction } from "./command-palette";
 import { ScreenAnnotator } from "./screen-annotator";
 import { ScreenSidebar } from "./screen-sidebar";
 import { ScreenUploader } from "./screen-uploader";
@@ -77,8 +80,20 @@ export function BoardEditor({
   const [addMode, setAddMode] = useState<"add" | "replace">("add");
   const [replaceScreenId, setReplaceScreenId] = useState<string | null>(null);
   const [shareAnchorEl, setShareAnchorEl] = useState<HTMLElement | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  // One-shot request to select a region after jumping to its screen from the
+  // command palette. Cleared once the annotator has consumed it.
+  const [focusReq, setFocusReq] = useState<{
+    screenId: string;
+    regionId: string;
+  } | null>(null);
+  // "⌘" on Mac, "Ctrl" elsewhere — resolved after mount to avoid a hydration
+  // mismatch on the server-rendered header.
+  const [modKey, setModKey] = useState("Ctrl");
 
+  const router = useRouter();
   const editable = canEdit(viewer.role);
+  const clearFocus = useCallback(() => setFocusReq(null), []);
 
   // The current viewer may not appear in the server-fetched `authors` map if
   // they'd never touched this board before now. Fold their own identity in so
@@ -284,6 +299,80 @@ export function BoardEditor({
     return () => window.removeEventListener("keydown", onKey);
   }, [presenting, screens.length]);
 
+  // global Cmd/Ctrl+K → toggle the command palette (works even while typing)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    // One-shot, client-only: the server has no `navigator`, and reading it
+    // during render would hydration-mismatch. Runs once on mount, so it can't
+    // cascade — the set-state-in-effect rule is a false positive here.
+    const platform = typeof navigator !== "undefined" ? navigator.platform : "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (/Mac|iPhone|iPad|iPod/.test(platform)) setModKey("⌘");
+  }, []);
+
+  // Jump handlers for the palette: switch to a screen, optionally requesting the
+  // annotator to select a specific region once it mounts.
+  const jumpScreen = (screenId: string) => setActiveId(screenId);
+  const jumpRegion = (screenId: string, regionId: string) => {
+    setActiveId(screenId);
+    setFocusReq({ screenId, regionId });
+  };
+
+  const paletteActions: PaletteAction[] = [
+    ...(screens.length > 0
+      ? [
+          {
+            id: "present",
+            label: "Present",
+            hint: "P",
+            run: () => setPresenting(true),
+          },
+        ]
+      : []),
+    ...(editable
+      ? [
+          {
+            id: "add-screen",
+            label: "Add screen",
+            hint: "Action",
+            run: () => openAddScreen("upload"),
+          },
+          {
+            id: "share",
+            label: "Copy share link",
+            hint: "Action",
+            run: () => void copyShare(),
+          },
+        ]
+      : []),
+    {
+      id: "history",
+      label: "Board history",
+      hint: "Go",
+      run: () => router.push(`/boards/${board.id}/history`),
+    },
+    ...(editable
+      ? [
+          {
+            id: "settings",
+            label: "Board settings",
+            hint: "Go",
+            run: () => router.push(`/boards/${board.id}/settings`),
+          },
+        ]
+      : []),
+  ];
+
   // count regions by state across all screens (status overview / filter pills)
   const totals = useMemo(() => {
     const counts = { shipped: 0, mock: 0, missing: 0 };
@@ -313,6 +402,11 @@ export function BoardEditor({
         homeHref="/boards"
         crumb={boardName}
         onCrumbChange={editable ? renameBoard : undefined}
+        center={
+          screens.length > 0 ? (
+            <SearchPill mod={modKey} onClick={() => setPaletteOpen(true)} />
+          ) : undefined
+        }
         actions={
           <>
             <HeaderStateFilter
@@ -537,6 +631,12 @@ export function BoardEditor({
               authors={authorsWithViewer}
               now={now}
               onWorkStart={() => setSidebarCollapsed(true)}
+              focusRegionId={
+                focusReq && active.id === focusReq.screenId
+                  ? focusReq.regionId
+                  : undefined
+              }
+              onFocusConsumed={clearFocus}
             />
           ) : null}
         </Box>
@@ -586,7 +686,69 @@ export function BoardEditor({
           }}
         />
       ) : null}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        screens={screens}
+        onJumpScreen={jumpScreen}
+        onJumpRegion={jumpRegion}
+        actions={paletteActions}
+      />
     </Box>
+  );
+}
+
+/**
+ * Header trigger for the command palette: a compact search field that opens the
+ * palette and advertises the Cmd/Ctrl+K shortcut. On narrow screens it collapses
+ * to just the icon.
+ */
+function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
+  return (
+    <ButtonBase
+      onClick={onClick}
+      aria-label="Search this board (Ctrl or Cmd + K)"
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        px: { xs: 0.75, sm: 1.25 },
+        py: 0.5,
+        border: 1,
+        borderColor: "divider",
+        borderRadius: 1.5,
+        color: "text.secondary",
+        width: { sm: 240 },
+        "&:hover": { borderColor: "text.primary", color: "text.primary" },
+      }}
+    >
+      <SearchIcon fontSize="small" />
+      <Typography
+        variant="body2"
+        sx={{
+          flex: 1,
+          textAlign: "left",
+          display: { xs: "none", sm: "block" },
+        }}
+      >
+        Search…
+      </Typography>
+      <Box
+        component="span"
+        sx={{
+          display: { xs: "none", sm: "inline" },
+          fontFamily: "monospace",
+          fontSize: 11,
+          px: 0.5,
+          py: 0.125,
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 0.5,
+        }}
+      >
+        {mod} K
+      </Box>
+    </ButtonBase>
   );
 }
 

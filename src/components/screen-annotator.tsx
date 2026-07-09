@@ -55,6 +55,14 @@ interface ScreenAnnotatorProps {
    * surface). Lets the shell tuck the screens sidebar away to free up room.
    */
   onWorkStart?: () => void;
+  /**
+   * A region on this screen to select — set by the command palette when it
+   * jumps to a region. One-shot: `onFocusConsumed` fires once it's applied so
+   * the shell can clear it (and a later manual return to this screen doesn't
+   * re-select it).
+   */
+  focusRegionId?: string;
+  onFocusConsumed?: () => void;
 }
 
 /** Pull the API's `{ error }` message off a failed response, else a fallback. */
@@ -104,6 +112,8 @@ export function ScreenAnnotator({
   authors,
   now,
   onWorkStart,
+  focusRegionId,
+  onFocusConsumed,
 }: ScreenAnnotatorProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
@@ -436,6 +446,17 @@ export function ScreenAnnotator({
 
   // Save a still-pending text edit if the screen unmounts (e.g. tab switch).
   useEffect(() => () => flushTextRef.current(), []);
+
+  // Select the region the command palette jumped to, once. Guarded to this
+  // screen; `onFocusConsumed` clears the request so returning here later (or a
+  // parent re-render) doesn't re-select it.
+  useEffect(() => {
+    if (!focusRegionId) return;
+    if (!regionsRef.current.some((r) => r.id === focusRegionId)) return;
+    setDraft(null);
+    setSelectedId(focusRegionId);
+    onFocusConsumed?.();
+  }, [focusRegionId, onFocusConsumed]);
 
   const updateSelected = useCallback(
     async (patch: Partial<Pick<Region, "state">>) => {

@@ -29,6 +29,11 @@ interface AppHeaderProps {
    * blur or Enter to save, Escape to cancel. Empty values are rejected.
    */
   onCrumbChange?: (next: string) => void;
+  /**
+   * Optional element centered in the toolbar between the crumb and the
+   * actions — the editor uses it for the command-palette search trigger.
+   */
+  center?: React.ReactNode;
 }
 
 /**
@@ -42,6 +47,7 @@ export function AppHeader({
   homeHref = "/",
   crumb,
   onCrumbChange,
+  center,
 }: AppHeaderProps) {
   return (
     <AppBar position="sticky">
@@ -87,15 +93,22 @@ export function AppHeader({
               <Typography
                 variant="subtitle1"
                 noWrap
-                sx={{ color: "text.secondary", fontWeight: 500, flex: 1 }}
+                sx={{
+                  color: "text.secondary",
+                  fontWeight: 500,
+                  maxWidth: { xs: 120, sm: 260 },
+                }}
               >
                 {crumb}
               </Typography>
             )}
           </>
-        ) : (
-          <Box sx={{ flex: 1 }} />
-        )}
+        ) : null}
+        {/* Two flex spacers straddle the optional centered element: with none,
+            they collapse into one and push the actions to the right as before. */}
+        <Box sx={{ flex: 1 }} />
+        {center ?? null}
+        <Box sx={{ flex: 1 }} />
         {actions ? (
           <Stack direction="row" spacing={1.5} alignItems="center">
             {actions}
@@ -152,7 +165,7 @@ function EditableCrumb({
         }}
         autoFocus
         sx={{
-          flex: 1,
+          width: { xs: 140, sm: 260 },
           color: "text.primary",
           fontWeight: 500,
           fontSize: "1rem",
@@ -172,7 +185,7 @@ function EditableCrumb({
       sx={{
         color: "text.secondary",
         fontWeight: 500,
-        flex: 1,
+        maxWidth: { xs: 140, sm: 260 },
         cursor: "text",
         px: 0.5,
         borderRadius: 0.5,
