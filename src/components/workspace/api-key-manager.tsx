@@ -151,18 +151,23 @@ export function ApiKeyManager({
             <ApiKeyReveal key={revealed.id} secret={revealed.key} />
           ) : null}
 
-          <ApiKeyList
-            keys={keys}
-            now={now}
-            viewerId={viewer.user.id}
-            pendingId={pendingId}
-            onRevoke={onRevoke}
-            emptyText="No keys yet. Create one above to let an agent read this workspace."
-          />
+          <Box>
+            <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+              Your keys
+            </Typography>
+            <ApiKeyList
+              keys={keys}
+              now={now}
+              viewerId={viewer.user.id}
+              pendingId={pendingId}
+              onRevoke={onRevoke}
+              emptyText="No keys yet. Create one above to let an agent read this workspace."
+            />
+          </Box>
 
           {workspaceKeys ? (
             <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+              <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
                 All workspace keys
               </Typography>
               <Typography

@@ -56,16 +56,30 @@ export function ApiKeyCreateForm({
 
   return (
     <Paper sx={{ p: 2.5 }}>
-      <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+      <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
         New key
       </Typography>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ display: "block", mb: 2 }}
+      >
+        The name appears in the key list and the audit log. Viewer keys read
+        boards; editor keys also change regions, screens, and share links.
+      </Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1.5}
+        alignItems={{ xs: "stretch", sm: "center" }}
+      >
         <TextField
           size="small"
           placeholder="e.g. release-bot"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          helperText="Shown in this list and in the audit log."
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && name.trim() && !creating) void submit();
+          }}
           sx={{ flex: 1 }}
         />
         <Select
@@ -97,18 +111,11 @@ export function ApiKeyCreateForm({
           variant="contained"
           onClick={submit}
           disabled={creating || !name.trim()}
+          sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
         >
           Create key
         </Button>
       </Stack>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: "block", mt: 1 }}
-      >
-        Viewer keys can read boards; editor keys can also change regions,
-        screens, and share links. Expired keys stop working on their own.
-      </Typography>
     </Paper>
   );
 }
