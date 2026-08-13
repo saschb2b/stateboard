@@ -29,7 +29,7 @@ This is `v1`, the cut you can deploy in a company.
 - **Multi-user via Keycloak / OIDC** (any OIDC-compliant IdP works; Keycloak is the documented default)
 - **Roles**: owner / editor / viewer
 - **Append-only audit log** of mutations (read directly from Postgres for now)
-- **Agent access**: per-member API keys unlock the REST API and a built-in zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp`, so agents can read boards and flip region states — every edit audited
+- **Agent access**: per-member API keys unlock the REST API and a built-in zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp`, so agents can read boards and flip region states — every edit audited. `npx skills@latest add saschb2b/stateboard` installs the [agent skill](./skills/stateboard/SKILL.md) that teaches the workflow
 - Postgres-backed, multi-replica safe (with `ReadWriteMany` for uploads)
 - One container + one Postgres. Zero outbound calls except to your IdP.
 

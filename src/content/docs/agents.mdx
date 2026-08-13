@@ -19,6 +19,16 @@ Open your avatar menu → **API keys** (`/settings/api-keys`), name the key, pic
 - Revoke from the same page. Creation and revocation are written to the audit log, and every edit an agent makes is attributed to you with a `via: "mcp"` marker where applicable.
 - Keys can't manage keys: minting and revoking requires a browser session, so a leaked key can't multiply itself.
 
+## Teach your agent the workflow
+
+The repo ships an installable [agent skill](https://skills.sh) that carries the working knowledge an agent needs in the repos where it does the shipping — how to connect, the three-state semantics, normalized coordinates, and the "verify before you flip to shipped" discipline:
+
+```bash
+npx skills@latest add saschb2b/stateboard
+```
+
+The MCP server also self-describes (tool descriptions plus server instructions), so a connected client gets the mechanics automatically; the skill adds the setup steps and the judgment.
+
 ## MCP
 
 Point any MCP client at `https://your-instance/api/mcp` with the key as a bearer token. Claude Code, for example:
