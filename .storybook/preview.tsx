@@ -19,6 +19,8 @@ const preview: Preview = {
     ),
   ],
   parameters: {
+    // The app is App Router throughout; mock next/navigation, not next/router.
+    nextjs: { appDirectory: true },
     backgrounds: { disable: true },
     controls: {
       matchers: {
