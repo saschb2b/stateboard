@@ -145,6 +145,22 @@ When you change anything in `src/app/(site)/boards`, `src/app/(site)/share`, `sr
 
 For UI changes, also run `pnpm dev` (against the docker-compose Postgres + Keycloak) and exercise the change in a browser. Type checks verify code, not features.
 
+### Agent dev loop (Next.js runtime visibility)
+
+The repo ships a project-scoped [`.mcp.json`](./.mcp.json) that starts `next-devtools-mcp`, which auto-discovers the running dev server via its built-in `/_next/mcp` endpoint. With `pnpm dev` running, use those tools instead of guessing from static code:
+
+- **`get_errors`** — current build, runtime, and type errors, including browser-side errors forwarded to the terminal.
+- **`get_compilation_issues`** / **`compile_route`** — check whether the project or one route compiles without running a full `pnpm build`.
+- **`get_routes`** / **`get_page_metadata`** / **`get_project_metadata`** — the live route table and dev-server URL.
+
+`next dev` writes its PID/port to `.next/dev/lock`; if a server is already running, connect to it rather than starting a second one. For a full inspect-edit-verify cycle (including browser-side verification via `agent-browser`), install the first-party skill — it's a per-developer install (`.claude/` and `skills-lock.json` are gitignored here):
+
+```bash
+npx skills add vercel/next.js --skill next-dev-loop
+```
+
+After a Cache Components validation error or insight, prefer the labeled fixes Next.js prints (`stream` / `cache` / `block`) and the per-error page it links under nextjs.org/docs/messages — they're written for agents.
+
 For Helm changes, run `helm dependency build deploy/helm/stateboard`, then `helm lint deploy/helm/stateboard --set auth.secret=test` and `helm template stateboard deploy/helm/stateboard --set auth.secret=test ... | kubectl apply --dry-run=client -f -`. The chart fails closed if `auth.secret` is empty. That's deliberate, don't disable it.
 
 ## API conventions
