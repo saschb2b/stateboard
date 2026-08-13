@@ -33,6 +33,16 @@ export function meetsRole(
   return ROLE_RANK[actual] >= ROLE_RANK[required];
 }
 
+/**
+ * The lower of two roles. Used to cap an API key's stored role by its
+ * owner's *current* membership role, so a demoted member's keys demote
+ * with them. Same privilege-boundary reasoning as meetsRole: pure and
+ * tested here.
+ */
+export function minRole(a: WorkspaceRole, b: WorkspaceRole): WorkspaceRole {
+  return ROLE_RANK[a] <= ROLE_RANK[b] ? a : b;
+}
+
 /** Narrows an unknown to a valid WorkspaceRole (e.g. a role from a request body). */
 export function isWorkspaceRole(v: unknown): v is WorkspaceRole {
   return (
