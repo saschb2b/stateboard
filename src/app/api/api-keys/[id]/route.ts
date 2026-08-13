@@ -40,7 +40,9 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     action: "api_key.revoke",
     targetType: "api_key",
     targetId: id,
-    meta: { name: key.name },
+    // userId names whose key it was — matters when an owner revokes a key
+    // they didn't create.
+    meta: { name: key.name, userId: key.userId },
   });
   return noContent();
 }

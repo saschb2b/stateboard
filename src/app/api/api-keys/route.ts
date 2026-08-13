@@ -1,8 +1,17 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { createApiKey, listApiKeys, writeAudit } from "@/lib/db";
+import {
+  createApiKey,
+  listApiKeys,
+  listWorkspaceApiKeys,
+  writeAudit,
+} from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
-import { bearerApiKey, generateApiKey } from "@/lib/api-keys";
+import {
+  bearerApiKey,
+  generateApiKey,
+  parseExpiresInDays,
+} from "@/lib/api-keys";
 import { newId } from "@/lib/ids";
 import {
   TEXT_LIMITS,
@@ -31,6 +40,15 @@ function rejectKeyAuth(req: NextRequest): NextResponse | null {
 export async function GET(req: NextRequest) {
   const rejected = rejectKeyAuth(req);
   if (rejected) return rejected;
+
+  // ?scope=workspace is the owner-only governance view: every key in the
+  // workspace with its owner attached. Default scope is your own keys.
+  if (req.nextUrl.searchParams.get("scope") === "workspace") {
+    const owner = await requireApiMember("owner");
+    if (owner instanceof NextResponse) return owner;
+    return ok(await listWorkspaceApiKeys(owner.workspaceId));
+  }
+
   const member = await requireApiMember("viewer");
   if (member instanceof NextResponse) return member;
   return ok(await listApiKeys(member.workspaceId, member.user.id));
@@ -47,7 +65,11 @@ export async function POST(req: NextRequest) {
     return parsed.tooLarge
       ? payloadTooLarge()
       : badRequest("invalid JSON body");
-  const body = parsed.value as { name?: unknown; role?: unknown };
+  const body = parsed.value as {
+    name?: unknown;
+    role?: unknown;
+    expiresInDays?: unknown;
+  };
 
   if (typeof body.name !== "string" || !body.name.trim()) {
     return badRequest("name is required");
@@ -65,6 +87,10 @@ export async function POST(req: NextRequest) {
     role = minRole(body.role, member.role);
   }
 
+  // Absent → 90-day default; explicit null → never expires.
+  const expiry = parseExpiresInDays(body.expiresInDays, Date.now());
+  if (!expiry.ok) return badRequest(expiry.error);
+
   const secret = generateApiKey();
   const apiKey = await createApiKey({
     id: newId(),
@@ -74,6 +100,7 @@ export async function POST(req: NextRequest) {
     keyHash: secret.keyHash,
     keyPrefix: secret.keyPrefix,
     role,
+    expiresAt: expiry.expiresAt,
   });
 
   await writeAudit({
@@ -82,7 +109,7 @@ export async function POST(req: NextRequest) {
     action: "api_key.create",
     targetType: "api_key",
     targetId: apiKey.id,
-    meta: { name, role },
+    meta: { name, role, expiresAt: expiry.expiresAt },
   });
 
   // The one and only time the plaintext leaves the server.

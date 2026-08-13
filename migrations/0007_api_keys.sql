@@ -21,6 +21,10 @@ CREATE TABLE api_keys (
     key_prefix    TEXT NOT NULL,
     role          TEXT NOT NULL CHECK (role IN ('owner', 'editor', 'viewer')),
     created_at    BIGINT NOT NULL,
+    -- NULL = never expires (an explicit opt-out at creation; the default
+    -- path stamps created_at + 90 days). Enforced at lookup, not by a
+    -- background job — an expired key simply stops resolving.
+    expires_at    BIGINT,
     last_used_at  BIGINT,
     revoked_at    BIGINT
 );

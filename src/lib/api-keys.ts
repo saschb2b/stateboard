@@ -45,6 +45,58 @@ export function isApiKeyFormat(value: unknown): value is string {
   return typeof value === "string" && API_KEY_RE.test(value);
 }
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Creation-time expiry presets, in days. 90 is the default (GitHub's
+ * fine-grained-token posture: keys should rot unless someone decides
+ * otherwise); "no expiration" is an explicit choice, never the default.
+ */
+export const API_KEY_EXPIRY_PRESETS = [30, 60, 90, 365] as const;
+export const DEFAULT_API_KEY_EXPIRY_DAYS = 90;
+export const MAX_API_KEY_EXPIRY_DAYS = 3650;
+
+export type ExpiryParse =
+  | { ok: true; expiresAt: number | null }
+  | { ok: false; error: string };
+
+/**
+ * Turn a request's `expiresInDays` field into an absolute expiry.
+ * Absent → the 90-day default. Explicit `null` → never expires.
+ * Anything else must be a whole number of days in [1, 3650].
+ */
+export function parseExpiresInDays(value: unknown, now: number): ExpiryParse {
+  if (value === undefined) {
+    return { ok: true, expiresAt: now + DEFAULT_API_KEY_EXPIRY_DAYS * DAY_MS };
+  }
+  if (value === null) return { ok: true, expiresAt: null };
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > MAX_API_KEY_EXPIRY_DAYS
+  ) {
+    return {
+      ok: false,
+      error: `expiresInDays must be a whole number of days between 1 and ${MAX_API_KEY_EXPIRY_DAYS}, or null for no expiration`,
+    };
+  }
+  return { ok: true, expiresAt: now + value * DAY_MS };
+}
+
+export type ApiKeyExpiryStatus = "active" | "expiring-soon" | "expired";
+
+/** UI-facing expiry status; "expiring-soon" inside a 14-day warning window. */
+export function apiKeyExpiryStatus(
+  expiresAt: number | null,
+  now: number,
+  soonWindowMs = 14 * DAY_MS,
+): ApiKeyExpiryStatus {
+  if (expiresAt === null) return "active";
+  if (expiresAt <= now) return "expired";
+  return expiresAt - now <= soonWindowMs ? "expiring-soon" : "active";
+}
+
 /**
  * Extract a well-formed API key from an Authorization header, or null.
  * The scheme is matched case-insensitively per RFC 9110; anything that

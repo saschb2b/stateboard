@@ -133,8 +133,16 @@ export interface ApiKey {
   /** Ceiling on what the key may do; effective role is min(this, member role). */
   role: WorkspaceRole;
   createdAt: number;
+  /** Epoch ms after which the key stops resolving; null = never expires. */
+  expiresAt: number | null;
   lastUsedAt: number | null;
   revokedAt: number | null;
+}
+
+/** An API key plus its owner's identity, for the owner-only governance list. */
+export interface WorkspaceApiKey extends ApiKey {
+  userName: string | null;
+  userEmail: string | null;
 }
 
 export interface WorkspaceMember {

@@ -9,6 +9,7 @@ import type {
   ScreenWithRegions,
   ShareLink,
   UserRef,
+  WorkspaceApiKey,
   WorkspaceMember,
   WorkspaceRole,
   WorkspaceScreen,
@@ -161,6 +162,7 @@ interface ApiKeyRow {
   key_prefix: string;
   role: WorkspaceRole;
   created_at: string;
+  expires_at: string | null;
   last_used_at: string | null;
   revoked_at: string | null;
 }
@@ -249,6 +251,7 @@ function mapApiKey(row: ApiKeyRow): ApiKey {
     keyPrefix: row.key_prefix,
     role: row.role,
     createdAt: num(row.created_at),
+    expiresAt: row.expires_at === null ? null : num(row.expires_at),
     lastUsedAt: row.last_used_at === null ? null : num(row.last_used_at),
     revokedAt: row.revoked_at === null ? null : num(row.revoked_at),
   };
@@ -933,7 +936,7 @@ export async function listApiKeys(
 ): Promise<ApiKey[]> {
   const rows = await query<ApiKeyRow>(
     `SELECT id, workspace_id, user_id, name, key_prefix, role,
-            created_at, last_used_at, revoked_at
+            created_at, expires_at, last_used_at, revoked_at
      FROM api_keys
      WHERE workspace_id = $1 AND user_id = $2
      ORDER BY created_at DESC`,
@@ -942,10 +945,35 @@ export async function listApiKeys(
   return rows.map(mapApiKey);
 }
 
+/**
+ * Every key in the workspace with its owner's identity — the owner-only
+ * governance view. Owners need to see (and be able to revoke) keys they
+ * didn't create; a credential nobody can inventory is a liability.
+ */
+export async function listWorkspaceApiKeys(
+  workspaceId: string,
+): Promise<WorkspaceApiKey[]> {
+  const rows = await query<ApiKeyRow & { user_name: string | null; user_email: string | null }>(
+    `SELECT ak.id, ak.workspace_id, ak.user_id, ak.name, ak.key_prefix, ak.role,
+            ak.created_at, ak.expires_at, ak.last_used_at, ak.revoked_at,
+            u.name AS user_name, u.email AS user_email
+     FROM api_keys ak
+     LEFT JOIN "user" u ON u.id = ak.user_id
+     WHERE ak.workspace_id = $1
+     ORDER BY ak.created_at DESC`,
+    [workspaceId],
+  );
+  return rows.map((row) => ({
+    ...mapApiKey(row),
+    userName: row.user_name,
+    userEmail: row.user_email,
+  }));
+}
+
 export async function getApiKey(id: string): Promise<ApiKey | null> {
   const row = await queryOne<ApiKeyRow>(
     `SELECT id, workspace_id, user_id, name, key_prefix, role,
-            created_at, last_used_at, revoked_at
+            created_at, expires_at, last_used_at, revoked_at
      FROM api_keys WHERE id = $1`,
     [id],
   );
@@ -960,12 +988,13 @@ export async function createApiKey(input: {
   keyHash: string;
   keyPrefix: string;
   role: WorkspaceRole;
+  expiresAt: number | null;
 }): Promise<ApiKey> {
   const row = await queryOne<ApiKeyRow>(
-    `INSERT INTO api_keys (id, workspace_id, user_id, name, key_hash, key_prefix, role, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO api_keys (id, workspace_id, user_id, name, key_hash, key_prefix, role, created_at, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING id, workspace_id, user_id, name, key_prefix, role,
-               created_at, last_used_at, revoked_at`,
+               created_at, expires_at, last_used_at, revoked_at`,
     [
       input.id,
       input.workspaceId,
@@ -975,6 +1004,7 @@ export async function createApiKey(input: {
       input.keyPrefix,
       input.role,
       Date.now(),
+      input.expiresAt,
     ],
   );
   return mapApiKey(row!);
@@ -1008,7 +1038,8 @@ export interface ApiKeyPrincipal {
  * Resolve a key hash to its principal in one round-trip, stamping
  * last_used_at as a side effect. Joining through workspace_members means a
  * removed member's keys stop resolving the moment their membership row is
- * gone — no separate cleanup needed.
+ * gone, and the expires_at guard makes expiry pure lookup-time enforcement —
+ * no separate cleanup needed for either.
  */
 export async function findMemberByApiKeyHash(
   keyHash: string,
@@ -1028,6 +1059,7 @@ export async function findMemberByApiKeyHash(
      FROM workspace_members wm, "user" u
      WHERE ak.key_hash = $1
        AND ak.revoked_at IS NULL
+       AND (ak.expires_at IS NULL OR ak.expires_at > $2)
        AND wm.workspace_id = ak.workspace_id
        AND wm.user_id = ak.user_id
        AND u.id = ak.user_id

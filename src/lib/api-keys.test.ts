@@ -2,10 +2,14 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   API_KEY_PREFIX,
+  DEFAULT_API_KEY_EXPIRY_DAYS,
+  MAX_API_KEY_EXPIRY_DAYS,
+  apiKeyExpiryStatus,
   bearerApiKey,
   generateApiKey,
   hashApiKey,
   isApiKeyFormat,
+  parseExpiresInDays,
 } from "./api-keys.ts";
 import { minRole } from "./types.ts";
 
@@ -65,6 +69,62 @@ describe("bearerApiKey", () => {
     assert.equal(bearerApiKey(key), null); // no scheme
     assert.equal(bearerApiKey(`Basic ${key}`), null);
     assert.equal(bearerApiKey("Bearer eyJhbGciOi.some.jwt"), null);
+  });
+});
+
+describe("parseExpiresInDays", () => {
+  const now = 1_700_000_000_000;
+  const day = 86_400_000;
+
+  it("defaults an absent value to 90 days out", () => {
+    assert.deepEqual(parseExpiresInDays(undefined, now), {
+      ok: true,
+      expiresAt: now + DEFAULT_API_KEY_EXPIRY_DAYS * day,
+    });
+  });
+
+  it("treats explicit null as no expiration", () => {
+    assert.deepEqual(parseExpiresInDays(null, now), {
+      ok: true,
+      expiresAt: null,
+    });
+  });
+
+  it("accepts whole days within [1, max]", () => {
+    assert.deepEqual(parseExpiresInDays(1, now), {
+      ok: true,
+      expiresAt: now + day,
+    });
+    assert.deepEqual(parseExpiresInDays(MAX_API_KEY_EXPIRY_DAYS, now), {
+      ok: true,
+      expiresAt: now + MAX_API_KEY_EXPIRY_DAYS * day,
+    });
+  });
+
+  it("rejects zero, negatives, fractions, overflow, and non-numbers", () => {
+    for (const bad of [0, -1, 0.5, MAX_API_KEY_EXPIRY_DAYS + 1, "30", NaN]) {
+      assert.equal(parseExpiresInDays(bad, now).ok, false, String(bad));
+    }
+  });
+});
+
+describe("apiKeyExpiryStatus", () => {
+  const now = 1_700_000_000_000;
+  const day = 86_400_000;
+
+  it("never-expiring keys are active", () => {
+    assert.equal(apiKeyExpiryStatus(null, now), "active");
+  });
+
+  it("flags the 14-day warning window, boundaries included", () => {
+    assert.equal(apiKeyExpiryStatus(now + 15 * day, now), "active");
+    assert.equal(apiKeyExpiryStatus(now + 14 * day, now), "expiring-soon");
+    assert.equal(apiKeyExpiryStatus(now + 1, now), "expiring-soon");
+  });
+
+  it("expiry is exclusive at the instant: <= now is expired", () => {
+    assert.equal(apiKeyExpiryStatus(now, now), "expired");
+    assert.equal(apiKeyExpiryStatus(now - 1, now), "expired");
   });
 });
 

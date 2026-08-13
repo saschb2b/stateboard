@@ -60,7 +60,7 @@ export async function requireApiMember(
     const principal = await findMemberByApiKeyHash(hashApiKey(key));
     if (!principal) {
       return NextResponse.json(
-        { error: "Invalid or revoked API key" },
+        { error: "Invalid, expired, or revoked API key" },
         { status: 401 },
       );
     }
