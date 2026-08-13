@@ -50,5 +50,6 @@ export const config = {
     "/api/regions/:path*",
     "/api/share-links/:path*",
     "/api/workspace/:path*",
+    "/api/api-keys/:path*",
   ],
 };
