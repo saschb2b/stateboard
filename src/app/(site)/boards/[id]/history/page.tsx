@@ -4,8 +4,6 @@ import { getBoard, listAuditActors, listAuditLog } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { AuditLog } from "@/components/audit-log";
 
-export const dynamic = "force-dynamic";
-
 /** Rows per page / "Load more" step. */
 const PAGE_SIZE = 50;
 

@@ -3,8 +3,6 @@ import { listAuditActors, listAuditLog } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { AuditLog } from "@/components/audit-log";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = { title: "Audit log" };
 
 /** Rows per page / "Load more" step. */

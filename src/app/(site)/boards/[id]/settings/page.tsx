@@ -4,8 +4,6 @@ import { getBoard, getBoardWithScreens, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardSettings } from "@/components/board-settings";
 
-export const dynamic = "force-dynamic";
-
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ section?: string }>;

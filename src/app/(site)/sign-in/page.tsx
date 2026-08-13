@@ -4,8 +4,6 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { SignInPanel } from "@/components/sign-in-panel";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Sign in",
   description: "Sign in to StateBoard with your Keycloak account.",

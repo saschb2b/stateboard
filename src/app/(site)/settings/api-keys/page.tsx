@@ -3,8 +3,6 @@ import { requirePageMember } from "@/lib/auth-helpers";
 import { listApiKeys, listWorkspaceApiKeys } from "@/lib/db";
 import { ApiKeysSettings } from "@/components/api-keys-settings";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = { title: "API keys" };
 
 export default async function ApiKeysPage() {
@@ -22,7 +20,7 @@ export default async function ApiKeysPage() {
       initialWorkspaceKeys={workspaceKeys}
       // Captured once per request so SSR and client hydration render the
       // same expiry labels. The purity rule targets re-renderable client
-      // components; this is a force-dynamic server component where a
+      // components; this is a request-rendered server component where a
       // request-scoped timestamp is the *fix* for the instability the rule
       // guards against, not an instance of it.
       // eslint-disable-next-line react-hooks/purity

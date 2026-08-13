@@ -9,8 +9,6 @@ import {
 import { requirePageMember } from "@/lib/auth-helpers";
 import { BoardEditor } from "@/components/board-editor";
 
-export const dynamic = "force-dynamic";
-
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -44,7 +42,7 @@ export default async function BoardEditorPage({ params }: PageProps) {
     ...result.screens.flatMap((s) => s.regions.map((r) => r.updatedBy)),
   ]);
   const authors = Object.fromEntries(refs.map((r) => [r.id, r]));
-  // A force-dynamic server component renders once per request, so reading the
+  // A dynamic server component renders once per request, so reading the
   // wall clock here is correct and stable — not the impure-render hazard the
   // purity rule guards against (which targets unpredictable client re-renders).
   // eslint-disable-next-line react-hooks/purity
