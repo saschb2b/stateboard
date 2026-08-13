@@ -29,11 +29,30 @@ This is `v1`, the cut you can deploy in a company.
 - **Multi-user via Keycloak / OIDC** (any OIDC-compliant IdP works; Keycloak is the documented default)
 - **Roles**: owner / editor / viewer
 - **Append-only audit log** of mutations (read directly from Postgres for now)
-- **Agent access**: per-member API keys unlock the REST API and a built-in zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp`, so agents can read boards and flip region states — every edit audited. `npx skills@latest add saschb2b/stateboard` installs the [agent skill](./skills/stateboard/SKILL.md) that teaches the workflow
+- **Agent access**: per-member API keys + a built-in MCP server, so agents can read boards and flip region states — see [Agent access](#agent-access-api-keys--mcp) below
 - Postgres-backed, multi-replica safe (with `ReadWriteMany` for uploads)
 - One container + one Postgres. Zero outbound calls except to your IdP.
 
 What's not here yet (by design, see [the build plan](#roadmap)): headless capture, Jira sync, scheduled re-capture, diffs, journeys.
+
+## Agent access (API keys + MCP)
+
+Agents, scripts, and CI can't complete an OIDC sign-in — they authenticate with **API keys** instead (avatar menu → **API keys**). Keys are hash-only server-side, role-capped, expire after 90 days by default, and every edit they make lands in the audit log. Owners can inventory and revoke every key in the workspace. A key unlocks two surfaces:
+
+- **REST** — every `/api/*` route accepts `Authorization: Bearer sbk_…` with the same role rules as the editor.
+- **MCP** — a built-in, zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp` with tools to list and read boards, create and update regions, and mint share links. No SDK, no extra process, works airgapped.
+
+```bash
+# Connect Claude Code to your instance
+claude mcp add --transport http stateboard https://your-instance/api/mcp \
+  --header "Authorization: Bearer sbk_your_key"
+
+# Teach any coding agent the StateBoard workflow
+# (three states, normalized coordinates, verify-before-shipped)
+npx skills@latest add saschb2b/stateboard
+```
+
+The typical agent session: read the board, verify what actually shipped, flip regions, hand back the share link. Full guide: [Agents & API](https://saschb2b.github.io/stateboard/docs/agents); skill source: [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md).
 
 ## Quick start (local dev)
 

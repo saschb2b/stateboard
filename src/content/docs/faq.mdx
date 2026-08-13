@@ -41,9 +41,13 @@ No. There's no analytics, no telemetry, no license server, no remote font fetchi
 
 Roadmap tools answer "when will it ship." StateBoard answers "what state is it in right now, screen by screen." Different question, different unit, different audience. Roadmap incumbents (Productboard, Aha!, Tempo) have already claimed the planning surface; StateBoard sits next to them, not on top.
 
+## Can agents, scripts, or CI update boards?
+
+Yes. Members mint API keys (they expire after 90 days by default and are fully audited) that unlock the whole REST API plus a built-in MCP server at `/api/mcp` — so a coding agent can read a board, flip region states after verifying what shipped, and hand back the share link. There's also an installable agent skill that teaches the workflow. See [Agents & API](/docs/agents).
+
 ## Can I integrate Jira / Linear / Slack?
 
-Not yet. Jira issue linking on regions is slated for v1.x; two-way Jira sync and Slack notifications for v2. Integrations are staged deliberately so the core — screens, regions, states — stays solid first. See the [roadmap](/docs/roadmap) for where each one sits.
+Not as turnkey integrations yet. Jira issue linking on regions is slated for v1.x; two-way Jira sync and Slack notifications for v2. Integrations are staged deliberately so the core — screens, regions, states — stays solid first. See the [roadmap](/docs/roadmap) for where each one sits. (If you need something today, the [API](/docs/agents) can already drive boards from your own automation.)
 
 ## Why MIT and not something more protective?
 
