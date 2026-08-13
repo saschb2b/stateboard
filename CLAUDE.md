@@ -161,6 +161,15 @@ npx skills add vercel/next.js --skill next-dev-loop
 
 After a Cache Components validation error or insight, prefer the labeled fixes Next.js prints (`stream` / `cache` / `block`) and the per-error page it links under nextjs.org/docs/messages — they're written for agents.
 
+### Component work happens in Storybook first
+
+For component-level UI work, prefer the Storybook loop over the full app — no Postgres or Keycloak needed. `pnpm storybook` serves it at `localhost:6006`, and its MCP server (`@storybook/addon-mcp`, wired in `.mcp.json` at `http://localhost:6006/mcp`) gives you story URLs, story authoring guidance, and test hooks. Verify with `pnpm exec vitest --project storybook run` — every story renders in a real Chromium via Playwright, and `play` functions run as interaction tests.
+
+- Stories are colocated `*.stories.tsx` next to their component; the preview (`.storybook/preview.tsx`) already provides the MUI theme (dark-first) and App Router mocks — fix the preview, not individual stories, when many fail the same way.
+- When you add or substantially change a component, add or update its story in the same change. Variant-only stories need no `play`; write one only when it proves an interaction, async arrival, or a computed style.
+- Stories are prop-driven by design — no MSW, no network. Components whose buttons hit the real API (revoke, role change, sign-in) get render-only stories; note that in the story file's doc comment.
+- Keep the demo board (`getDemoBoard()`) as the fixture for anything that renders screens + regions; it's the same example the app ships at `/share/demo`.
+
 For Helm changes, run `helm dependency build deploy/helm/stateboard`, then `helm lint deploy/helm/stateboard --set auth.secret=test` and `helm template stateboard deploy/helm/stateboard --set auth.secret=test ... | kubectl apply --dry-run=client -f -`. The chart fails closed if `auth.secret` is empty. That's deliberate, don't disable it.
 
 ## API conventions
