@@ -27,6 +27,11 @@ export function proxy(request: NextRequest) {
   if (sessionCookie) return NextResponse.next();
 
   if (pathname.startsWith("/api/")) {
+    // Agent/script requests authenticate with `Authorization: Bearer sbk_…`
+    // instead of a cookie. Let them through to the handler, where
+    // requireApiMember validates the key against the database — this gate
+    // stays optimistic and DB-free either way.
+    if (request.headers.has("authorization")) return NextResponse.next();
     return NextResponse.json({ error: "Sign-in required" }, { status: 401 });
   }
 

@@ -965,7 +965,7 @@ export interface ApiKeyPrincipal {
   /** The user's current workspace role — may have changed since key creation. */
   memberRole: WorkspaceRole;
   workspaceId: string;
-  user: { id: string; email: string; name: string; image: string | null };
+  user: { id: string; email: string; name: string | null; image: string | null };
 }
 
 /**
@@ -984,7 +984,7 @@ export async function findMemberByApiKeyHash(
     workspace_id: string;
     user_id: string;
     email: string;
-    name: string;
+    name: string | null;
     image: string | null;
   }>(
     `UPDATE api_keys ak
