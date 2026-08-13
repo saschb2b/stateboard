@@ -7,17 +7,14 @@ import {
   writeAudit,
 } from "@/lib/db";
 import { requireApiMember } from "@/lib/auth-helpers";
-import {
-  bearerApiKey,
-  generateApiKey,
-  parseExpiresInDays,
-} from "@/lib/api-keys";
+import { bearerApiKey, generateApiKey } from "@/lib/api-keys";
 import { newId } from "@/lib/ids";
 import {
   TEXT_LIMITS,
   checkTextLength,
   isWorkspaceRole,
   minRole,
+  parseExpiresInDays,
   type WorkspaceRole,
 } from "@/lib/types";
 import { badRequest, created, ok, payloadTooLarge } from "@/lib/http";

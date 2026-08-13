@@ -24,7 +24,7 @@ These are deliberately blunt. Do not soften `missing` to "planned", do not add "
 You need two things from the user (or the repo's env/config — check `.env*`, CI secrets docs, or `CLAUDE.md`/`AGENTS.md` first before asking):
 
 - **Instance URL** — e.g. `https://stateboard.internal.example.com`
-- **API key** — a member mints one at `{instance}/settings/api-keys` (avatar menu → API keys). Keys look like `sbk_…`, act as their creator, and carry a role: `viewer` reads, `editor` writes. Ask for an `editor` key if the task updates regions.
+- **API key** — a member mints one at `{instance}/settings/api-keys` (avatar menu → API keys). Keys look like `sbk_…`, act as their creator, and carry a role: `viewer` reads, `editor` writes. Ask for an `editor` key if the task updates regions. Keys expire (90 days by default), so a long-dormant key failing with 401 is likely expired, not misconfigured.
 
 Never commit the key. Prefer an env var like `STATEBOARD_API_KEY`.
 
@@ -77,6 +77,6 @@ PNG / JPEG / WebP / GIF, max 25 MB.
 
 ## Errors
 
-- `401 Invalid or revoked API key` — the key is dead; ask the user for a fresh one. Do not retry.
+- `401 Invalid, expired, or revoked API key` — the key is dead (keys expire after 90 days by default); ask the user for a fresh one. Do not retry.
 - `403 Requires editor role` — the key is `viewer`-scoped; ask for an editor key rather than working around it.
 - `403 API keys can't manage API keys` — by design; key management needs a browser session.

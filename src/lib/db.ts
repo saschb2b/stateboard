@@ -953,7 +953,9 @@ export async function listApiKeys(
 export async function listWorkspaceApiKeys(
   workspaceId: string,
 ): Promise<WorkspaceApiKey[]> {
-  const rows = await query<ApiKeyRow & { user_name: string | null; user_email: string | null }>(
+  const rows = await query<
+    ApiKeyRow & { user_name: string | null; user_email: string | null }
+  >(
     `SELECT ak.id, ak.workspace_id, ak.user_id, ak.name, ak.key_prefix, ak.role,
             ak.created_at, ak.expires_at, ak.last_used_at, ak.revoked_at,
             u.name AS user_name, u.email AS user_email

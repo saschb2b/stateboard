@@ -16,7 +16,9 @@ Open your avatar menu → **API keys** (`/settings/api-keys`), name the key, pic
 
 - A key **acts as you**, capped at the role you give it. Give an agent that only reads status a `viewer` key; give one that flips regions an `editor` key.
 - The effective role is the _lower_ of the key's role and your current role — if you're demoted or removed, your keys demote or die with you.
+- **Keys expire after 90 days by default.** Pick 30/60/90 days, a year, or — as an explicit choice — no expiration. An expired key simply stops resolving; the list warns "expires in N days" during the last two weeks. (Via the API, pass `expiresInDays` as a number or `null`.)
 - Revoke from the same page. Creation and revocation are written to the audit log, and every edit an agent makes is attributed to you with a `via: "mcp"` marker where applicable.
+- **Owners see every key in the workspace** (with its owner) on the same page and can revoke any of them — a credential nobody can inventory is a liability.
 - Keys can't manage keys: minting and revoking requires a browser session, so a leaked key can't multiply itself.
 
 ## Teach your agent the workflow
