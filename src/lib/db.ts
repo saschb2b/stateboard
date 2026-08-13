@@ -1,6 +1,7 @@
 import "server-only";
 import { Pool, type QueryResultRow } from "pg";
 import type {
+  ApiKey,
   Board,
   Region,
   RegionState,
@@ -9,6 +10,7 @@ import type {
   ShareLink,
   UserRef,
   WorkspaceMember,
+  WorkspaceRole,
   WorkspaceScreen,
 } from "./types";
 import type {
@@ -151,6 +153,18 @@ interface WorkspaceMemberRow {
   image: string | null;
 }
 
+interface ApiKeyRow {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  name: string;
+  key_prefix: string;
+  role: WorkspaceRole;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
 // pg returns BIGINT as a string to avoid JS precision loss. Convert to number;
 // our timestamps are millis since epoch, well within Number.MAX_SAFE_INTEGER
 // for the next ~285,000 years.
@@ -221,6 +235,22 @@ function mapMember(row: WorkspaceMemberRow): WorkspaceMember {
     name: row.name,
     email: row.email,
     image: row.image,
+  };
+}
+
+// The hash column is deliberately absent: nothing outside the auth lookup
+// should ever see it, and the lookup matches on it rather than returning it.
+function mapApiKey(row: ApiKeyRow): ApiKey {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    userId: row.user_id,
+    name: row.name,
+    keyPrefix: row.key_prefix,
+    role: row.role,
+    createdAt: num(row.created_at),
+    lastUsedAt: row.last_used_at === null ? null : num(row.last_used_at),
+    revokedAt: row.revoked_at === null ? null : num(row.revoked_at),
   };
 }
 
@@ -862,4 +892,124 @@ export async function revokeShareLink(token: string): Promise<boolean> {
     [Date.now(), token],
   );
   return result.rowCount! > 0;
+}
+
+// ----- api keys -------------------------------------------------------------
+
+export async function listApiKeys(
+  workspaceId: string,
+  userId: string,
+): Promise<ApiKey[]> {
+  const rows = await query<ApiKeyRow>(
+    `SELECT id, workspace_id, user_id, name, key_prefix, role,
+            created_at, last_used_at, revoked_at
+     FROM api_keys
+     WHERE workspace_id = $1 AND user_id = $2
+     ORDER BY created_at DESC`,
+    [workspaceId, userId],
+  );
+  return rows.map(mapApiKey);
+}
+
+export async function getApiKey(id: string): Promise<ApiKey | null> {
+  const row = await queryOne<ApiKeyRow>(
+    `SELECT id, workspace_id, user_id, name, key_prefix, role,
+            created_at, last_used_at, revoked_at
+     FROM api_keys WHERE id = $1`,
+    [id],
+  );
+  return row ? mapApiKey(row) : null;
+}
+
+export async function createApiKey(input: {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  name: string;
+  keyHash: string;
+  keyPrefix: string;
+  role: WorkspaceRole;
+}): Promise<ApiKey> {
+  const row = await queryOne<ApiKeyRow>(
+    `INSERT INTO api_keys (id, workspace_id, user_id, name, key_hash, key_prefix, role, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, workspace_id, user_id, name, key_prefix, role,
+               created_at, last_used_at, revoked_at`,
+    [
+      input.id,
+      input.workspaceId,
+      input.userId,
+      input.name,
+      input.keyHash,
+      input.keyPrefix,
+      input.role,
+      Date.now(),
+    ],
+  );
+  return mapApiKey(row!);
+}
+
+export async function revokeApiKey(id: string): Promise<boolean> {
+  const result = await getPool().query(
+    `UPDATE api_keys SET revoked_at = $1 WHERE id = $2 AND revoked_at IS NULL`,
+    [Date.now(), id],
+  );
+  return result.rowCount! > 0;
+}
+
+/** What a valid API key resolves to at request time. */
+export interface ApiKeyPrincipal {
+  apiKeyId: string;
+  /** The ceiling stored on the key itself. */
+  keyRole: WorkspaceRole;
+  /** The user's current workspace role — may have changed since key creation. */
+  memberRole: WorkspaceRole;
+  workspaceId: string;
+  user: { id: string; email: string; name: string; image: string | null };
+}
+
+/**
+ * Resolve a key hash to its principal in one round-trip, stamping
+ * last_used_at as a side effect. Joining through workspace_members means a
+ * removed member's keys stop resolving the moment their membership row is
+ * gone — no separate cleanup needed.
+ */
+export async function findMemberByApiKeyHash(
+  keyHash: string,
+): Promise<ApiKeyPrincipal | null> {
+  const row = await queryOne<{
+    api_key_id: string;
+    key_role: WorkspaceRole;
+    member_role: WorkspaceRole;
+    workspace_id: string;
+    user_id: string;
+    email: string;
+    name: string;
+    image: string | null;
+  }>(
+    `UPDATE api_keys ak
+     SET last_used_at = $2
+     FROM workspace_members wm, "user" u
+     WHERE ak.key_hash = $1
+       AND ak.revoked_at IS NULL
+       AND wm.workspace_id = ak.workspace_id
+       AND wm.user_id = ak.user_id
+       AND u.id = ak.user_id
+     RETURNING ak.id AS api_key_id, ak.role AS key_role, wm.role AS member_role,
+               ak.workspace_id, u.id AS user_id, u.email, u.name, u.image`,
+    [keyHash, Date.now()],
+  );
+  if (!row) return null;
+  return {
+    apiKeyId: row.api_key_id,
+    keyRole: row.key_role,
+    memberRole: row.member_role,
+    workspaceId: row.workspace_id,
+    user: {
+      id: row.user_id,
+      email: row.email,
+      name: row.name,
+      image: row.image,
+    },
+  };
 }

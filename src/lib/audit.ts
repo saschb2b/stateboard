@@ -26,6 +26,8 @@ export const AUDIT_ACTIONS = [
   "region.delete",
   "share_link.create",
   "share_link.revoke",
+  "api_key.create",
+  "api_key.revoke",
   "member.add",
   "member.remove",
   "member.role_change",
@@ -39,6 +41,7 @@ export const AUDIT_TARGET_TYPES = [
   "screen",
   "region",
   "share_link",
+  "api_key",
   "user",
 ] as const;
 
@@ -59,6 +62,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   "region.delete": "Deleted region",
   "share_link.create": "Created share link",
   "share_link.revoke": "Revoked share link",
+  "api_key.create": "Created API key",
+  "api_key.revoke": "Revoked API key",
   "member.add": "Added member",
   "member.remove": "Removed member",
   "member.role_change": "Changed member role",

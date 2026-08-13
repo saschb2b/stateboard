@@ -108,6 +108,25 @@ export interface ShareLink {
   revokedAt: number | null;
 }
 
+/**
+ * A long-lived credential for non-interactive access (agents, scripts, CI).
+ * The secret itself is never stored or returned after creation — only its
+ * hash lives in the DB, and `keyPrefix` exists so the UI can say which key
+ * is which ("sbk_a1b2c3…").
+ */
+export interface ApiKey {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  name: string;
+  keyPrefix: string;
+  /** Ceiling on what the key may do; effective role is min(this, member role). */
+  role: WorkspaceRole;
+  createdAt: number;
+  lastUsedAt: number | null;
+  revokedAt: number | null;
+}
+
 export interface WorkspaceMember {
   userId: string;
   role: WorkspaceRole;
