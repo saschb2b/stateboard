@@ -32,7 +32,7 @@ const config = [
       "next-env.d.ts",
     ],
   },
-  ...storybook.configs["flat/recommended"]
+  ...storybook.configs["flat/recommended"],
 ];
 
 export default config;
