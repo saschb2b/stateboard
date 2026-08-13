@@ -508,6 +508,33 @@ export async function listBoards(workspaceId: string): Promise<Board[]> {
   return rows.map(mapBoard);
 }
 
+/**
+ * Per-board region-state tallies for a whole workspace in one query.
+ * Powers the MCP `list_boards` tool, where an agent wants the status
+ * shape of everything without fetching each board. Boards with no
+ * regions simply don't appear.
+ */
+export async function listBoardStateCounts(
+  workspaceId: string,
+): Promise<Map<string, Record<RegionState, number>>> {
+  const rows = await query<{ board_id: string; state: RegionState; n: string }>(
+    `SELECT s.board_id, r.state, COUNT(*) AS n
+     FROM regions r
+     JOIN screens s ON s.id = r.screen_id
+     JOIN boards b ON b.id = s.board_id
+     WHERE b.workspace_id = $1
+     GROUP BY s.board_id, r.state`,
+    [workspaceId],
+  );
+  const counts = new Map<string, Record<RegionState, number>>();
+  for (const row of rows) {
+    const entry = counts.get(row.board_id) ?? { shipped: 0, mock: 0, missing: 0 };
+    entry[row.state] = num(row.n);
+    counts.set(row.board_id, entry);
+  }
+  return counts;
+}
+
 export async function getBoard(id: string): Promise<Board | null> {
   const row = await queryOne<BoardRow>(`SELECT * FROM boards WHERE id = $1`, [
     id,
