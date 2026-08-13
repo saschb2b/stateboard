@@ -40,3 +40,6 @@ Thumbs.db
 .claude/
 .agents/
 skills-lock.json
+
+*storybook.log
+storybook-static
