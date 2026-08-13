@@ -15,7 +15,7 @@ Nothing here phones home. The MCP server is implemented in-repo with no SDK depe
 Open your avatar menu → **API keys** (`/settings/api-keys`), name the key, pick a role, and copy the secret — it's shown exactly once. Keys look like `sbk_…`; only a hash is stored server-side.
 
 - A key **acts as you**, capped at the role you give it. Give an agent that only reads status a `viewer` key; give one that flips regions an `editor` key.
-- The effective role is the *lower* of the key's role and your current role — if you're demoted or removed, your keys demote or die with you.
+- The effective role is the _lower_ of the key's role and your current role — if you're demoted or removed, your keys demote or die with you.
 - Revoke from the same page. Creation and revocation are written to the audit log, and every edit an agent makes is attributed to you with a `via: "mcp"` marker where applicable.
 - Keys can't manage keys: minting and revoking requires a browser session, so a leaked key can't multiply itself.
 
@@ -30,21 +30,21 @@ claude mcp add --transport http stateboard https://your-instance/api/mcp \
 
 The server is a stateless Streamable HTTP endpoint (single JSON response per call — no SSE, no sessions) and exposes these tools:
 
-| Tool                | Role   | What it does                                                     |
-| ------------------- | ------ | ---------------------------------------------------------------- |
-| `list_boards`       | viewer | Every board with shipped / mock / missing region counts          |
-| `get_board`         | viewer | One board in full: screens, regions, rectangles, states, notes   |
-| `create_board`      | editor | New board (a share link is minted automatically)                 |
-| `update_board`      | editor | Rename / re-describe a board                                     |
-| `create_region`     | editor | Draw a status rectangle on a screen (normalized `[0,1]` coords)  |
-| `update_region`     | editor | Change state, rectangle, label, or notes                         |
-| `delete_region`     | editor | Remove a region                                                  |
-| `list_share_links`  | editor | A board's share links                                            |
-| `create_share_link` | editor | Mint the read-only link stakeholders view                        |
+| Tool                | Role   | What it does                                                    |
+| ------------------- | ------ | --------------------------------------------------------------- |
+| `list_boards`       | viewer | Every board with shipped / mock / missing region counts         |
+| `get_board`         | viewer | One board in full: screens, regions, rectangles, states, notes  |
+| `create_board`      | editor | New board (a share link is minted automatically)                |
+| `update_board`      | editor | Rename / re-describe a board                                    |
+| `create_region`     | editor | Draw a status rectangle on a screen (normalized `[0,1]` coords) |
+| `update_region`     | editor | Change state, rectangle, label, or notes                        |
+| `delete_region`     | editor | Remove a region                                                 |
+| `list_share_links`  | editor | A board's share links                                           |
+| `create_share_link` | editor | Mint the read-only link stakeholders view                       |
 
 The archetypal agent session: `list_boards` → `get_board` → a few `update_region` calls as it verifies what actually shipped → `create_share_link` → post the link where stakeholders will see it.
 
-Adding a *screen* needs image bytes, which MCP tools don't carry — use the REST API below for that.
+Adding a _screen_ needs image bytes, which MCP tools don't carry — use the REST API below for that.
 
 ## REST
 

@@ -22,9 +22,7 @@ import packageJson from "../../../../package.json";
 
 export async function POST(req: NextRequest) {
   const key = bearerApiKey(req.headers.get("authorization"));
-  const principal = key
-    ? await findMemberByApiKeyHash(hashApiKey(key))
-    : null;
+  const principal = key ? await findMemberByApiKeyHash(hashApiKey(key)) : null;
   if (!principal) {
     return NextResponse.json(
       { error: "A valid API key is required: Authorization: Bearer sbk_…" },

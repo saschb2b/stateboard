@@ -146,7 +146,10 @@ describe("MCP_TOOLS definitions", () => {
     const names = new Set(MCP_TOOLS.map((t) => t.name));
     assert.equal(names.size, MCP_TOOLS.length);
     for (const t of MCP_TOOLS) {
-      assert.equal(["viewer", "editor", "owner"].includes(t.requiredRole), true);
+      assert.equal(
+        ["viewer", "editor", "owner"].includes(t.requiredRole),
+        true,
+      );
       assert.equal(t.inputSchema.type, "object");
     }
   });

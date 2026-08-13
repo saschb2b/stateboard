@@ -155,7 +155,8 @@ const impls: Record<string, ToolImpl> = {
       if (args.description !== null && typeof args.description !== "string") {
         return fail("description must be a string or null");
       }
-      const description = args.description === null ? null : str(args.description);
+      const description =
+        args.description === null ? null : str(args.description);
       const descErr = checkTextLength(
         description,
         "description",

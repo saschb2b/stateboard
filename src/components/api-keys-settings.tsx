@@ -14,6 +14,7 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import Link from "next/link";
 import { AppHeader } from "./app-header";
 import { UserMenu } from "./user-menu";
 import { formatAuditTime } from "@/lib/audit";
@@ -123,10 +124,10 @@ export function ApiKeysSettings({ viewer, initialKeys }: ApiKeysSettingsProps) {
               API keys
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Let agents and scripts read and update boards without a
-              browser sign-in — over the REST API or the MCP endpoint at{" "}
+              Let agents and scripts read and update boards without a browser
+              sign-in — over the REST API or the MCP endpoint at{" "}
               <code>/api/mcp</code>. Keys act as you, capped at the role you
-              give them. See <a href="/docs/agents">the agent docs</a> for
+              give them. See <Link href="/docs/agents">the agent docs</Link> for
               wiring one up.
             </Typography>
           </Box>
@@ -181,8 +182,8 @@ export function ApiKeysSettings({ viewer, initialKeys }: ApiKeysSettingsProps) {
               color="text.secondary"
               sx={{ display: "block", mt: 1 }}
             >
-              Viewer keys can read boards; editor keys can also change
-              regions, screens, and share links.
+              Viewer keys can read boards; editor keys can also change regions,
+              screens, and share links.
             </Typography>
           </Paper>
 

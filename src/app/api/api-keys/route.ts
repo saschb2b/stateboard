@@ -43,7 +43,10 @@ export async function POST(req: NextRequest) {
   if (member instanceof NextResponse) return member;
 
   const parsed = await readJsonBody(req);
-  if (!parsed.ok) return parsed.tooLarge ? payloadTooLarge() : badRequest("invalid JSON body");
+  if (!parsed.ok)
+    return parsed.tooLarge
+      ? payloadTooLarge()
+      : badRequest("invalid JSON body");
   const body = parsed.value as { name?: unknown; role?: unknown };
 
   if (typeof body.name !== "string" || !body.name.trim()) {

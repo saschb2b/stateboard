@@ -528,7 +528,11 @@ export async function listBoardStateCounts(
   );
   const counts = new Map<string, Record<RegionState, number>>();
   for (const row of rows) {
-    const entry = counts.get(row.board_id) ?? { shipped: 0, mock: 0, missing: 0 };
+    const entry = counts.get(row.board_id) ?? {
+      shipped: 0,
+      mock: 0,
+      missing: 0,
+    };
     entry[row.state] = num(row.n);
     counts.set(row.board_id, entry);
   }
@@ -992,7 +996,12 @@ export interface ApiKeyPrincipal {
   /** The user's current workspace role — may have changed since key creation. */
   memberRole: WorkspaceRole;
   workspaceId: string;
-  user: { id: string; email: string; name: string | null; image: string | null };
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    image: string | null;
+  };
 }
 
 /**

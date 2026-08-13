@@ -63,7 +63,11 @@ export const MCP_TOOLS: McpToolDef[] = [
     description:
       "List every board in the workspace with per-state region counts (shipped / mock / missing). Start here to see what exists.",
     requiredRole: "viewer",
-    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
   },
   {
     name: "get_board",
@@ -85,7 +89,10 @@ export const MCP_TOOLS: McpToolDef[] = [
     inputSchema: {
       type: "object",
       properties: {
-        name: { type: "string", description: "e.g. 'Acme Dashboard / Q3 2026'" },
+        name: {
+          type: "string",
+          description: "e.g. 'Acme Dashboard / Q3 2026'",
+        },
         description: {
           type: "string",
           description: "Appears beneath the name on the share link.",
@@ -122,7 +129,10 @@ export const MCP_TOOLS: McpToolDef[] = [
         ...REGION_BOX_PROPS,
         state: STATE_PROP,
         label: { type: "string" },
-        notes: { type: "string", description: "Plaintext; shown on the share view." },
+        notes: {
+          type: "string",
+          description: "Plaintext; shown on the share view.",
+        },
       },
       required: ["screen_id", "x", "y", "w", "h", "state"],
       additionalProperties: false,
@@ -295,10 +305,7 @@ export async function handleMcpMessage(
       };
     case "tools/call": {
       const name = params.name;
-      if (
-        typeof name !== "string" ||
-        !MCP_TOOLS.some((t) => t.name === name)
-      ) {
+      if (typeof name !== "string" || !MCP_TOOLS.some((t) => t.name === name)) {
         return {
           kind: "json",
           body: rpcError(id, -32602, `unknown tool: ${String(name)}`),
@@ -309,7 +316,10 @@ export async function handleMcpMessage(
           ? (params.arguments as Record<string, unknown>)
           : {};
       try {
-        return { kind: "json", body: rpcResult(id, await ctx.callTool(name, args)) };
+        return {
+          kind: "json",
+          body: rpcResult(id, await ctx.callTool(name, args)),
+        };
       } catch {
         // Tool implementations report expected failures via isError results;
         // anything thrown is a genuine server fault. Don't leak internals.
