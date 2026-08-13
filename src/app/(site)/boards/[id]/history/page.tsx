@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBoard, listAuditActors, listAuditLog } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
-import { AuditLog } from "@/components/audit-log";
+import { AuditLog } from "@/components/workspace/audit-log";
 
 /** Rows per page / "Load more" step. */
 const PAGE_SIZE = 50;

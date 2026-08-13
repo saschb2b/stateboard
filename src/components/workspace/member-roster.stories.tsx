@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { MembersAdmin } from "./members-admin";
+import { MemberRoster } from "./member-roster";
 import type { WorkspaceMember } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
@@ -35,11 +35,11 @@ const member = (
  * stories are render-only; the last-owner guard lives server-side.
  */
 const meta = {
-  component: MembersAdmin,
+  component: MemberRoster,
   tags: ["ai-generated"],
   parameters: { layout: "fullscreen" },
   args: { viewer },
-} satisfies Meta<typeof MembersAdmin>;
+} satisfies Meta<typeof MemberRoster>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

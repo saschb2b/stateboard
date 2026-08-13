@@ -12,7 +12,7 @@ import Typography from "@mui/material/Typography";
 import SearchIcon from "@mui/icons-material/Search";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
-import { StateChip } from "./state-chip";
+import { StateChip } from "@/components/region/state-chip";
 import {
   fuzzyScore,
   screenName,

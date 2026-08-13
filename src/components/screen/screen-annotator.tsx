@@ -21,7 +21,7 @@ import {
   type UserRef,
 } from "@/lib/types";
 import { timeAgo } from "@/lib/time";
-import { RegionOverlay } from "./region-overlay";
+import { RegionOverlay } from "@/components/region/region-overlay";
 import {
   MIN_REGION_SIZE,
   moveBox,
@@ -30,7 +30,7 @@ import {
   type Box as RegionBox,
   type ResizeCorner,
 } from "@/lib/region-geometry";
-import { StateChip } from "./state-chip";
+import { StateChip } from "@/components/region/state-chip";
 
 interface ScreenAnnotatorProps {
   screen: ScreenWithRegions;

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getBoardWithScreens, listBoards, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { timeAgo } from "@/lib/time";
-import { BoardList, type BoardListItem } from "@/components/board-list";
+import { BoardList, type BoardListItem } from "@/components/board/board-list";
 
 export const metadata: Metadata = { title: "Boards" };
 

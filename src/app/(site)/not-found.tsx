@@ -3,7 +3,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader } from "@/components/app/app-header";
 
 export default function NotFound() {
   return (

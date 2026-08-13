@@ -3,7 +3,7 @@ import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader } from "@/components/app/app-header";
 
 /** Shell for a board's settings while the board record streams in. */
 export default function BoardSettingsLoading() {

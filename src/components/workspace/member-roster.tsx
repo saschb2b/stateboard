@@ -12,8 +12,8 @@ import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-import { AppHeader } from "./app-header";
-import { UserMenu } from "./user-menu";
+import { AppHeader } from "@/components/app/app-header";
+import { UserMenu } from "@/components/app/user-menu";
 import {
   WORKSPACE_ROLES,
   type WorkspaceMember,
@@ -21,7 +21,7 @@ import {
 } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
-interface MembersAdminProps {
+interface MemberRosterProps {
   viewer: CurrentMember;
   initialMembers: WorkspaceMember[];
 }
@@ -34,7 +34,7 @@ interface MembersAdminProps {
  * last owner, so the UI doesn't need to special-case it — it just
  * surfaces the API error.
  */
-export function MembersAdmin({ viewer, initialMembers }: MembersAdminProps) {
+export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
   const [members, setMembers] = useState<WorkspaceMember[]>(initialMembers);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);

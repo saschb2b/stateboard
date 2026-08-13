@@ -11,9 +11,9 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import CloudOffOutlinedIcon from "@mui/icons-material/CloudOffOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
-import { AppHeader } from "@/components/app-header";
-import { LandingMockup } from "@/components/landing-mockup";
-import { StateChip } from "@/components/state-chip";
+import { AppHeader } from "@/components/app/app-header";
+import { LandingMockup } from "@/components/site/landing-mockup";
+import { StateChip } from "@/components/region/state-chip";
 import { version } from "../../../package.json";
 
 const PROBLEMS = [

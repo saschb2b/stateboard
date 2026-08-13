@@ -7,7 +7,7 @@ import {
   listShareLinks,
 } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
-import { BoardEditor } from "@/components/board-editor";
+import { BoardEditor } from "@/components/board/board-editor";
 
 interface PageProps {
   params: Promise<{ id: string }>;

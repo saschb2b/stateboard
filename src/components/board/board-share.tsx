@@ -11,10 +11,10 @@ import Tabs from "@mui/material/Tabs";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
-import { AppHeader } from "./app-header";
-import { BoardPresenter } from "./board-presenter";
-import { RegionOverlay } from "./region-overlay";
-import { StateChip } from "./state-chip";
+import { AppHeader } from "@/components/app/app-header";
+import { PresentMode } from "./present-mode";
+import { RegionOverlay } from "@/components/region/region-overlay";
+import { StateChip } from "@/components/region/state-chip";
 import { STATE_META } from "@/lib/state-meta";
 import type { Board, ScreenWithRegions } from "@/lib/types";
 import { REGION_STATES } from "@/lib/types";
@@ -209,7 +209,7 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
         )}
       </Container>
       {presenting ? (
-        <BoardPresenter
+        <PresentMode
           boardName={board.name}
           screens={screens}
           initialIndex={Math.max(

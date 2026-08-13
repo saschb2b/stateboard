@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { listApiKeys, listWorkspaceApiKeys } from "@/lib/db";
-import { ApiKeysSettings } from "@/components/api-keys-settings";
+import { ApiKeyManager } from "@/components/workspace/api-key-manager";
 
 export const metadata: Metadata = { title: "API keys" };
 
@@ -14,7 +14,7 @@ export default async function ApiKeysPage() {
   const workspaceKeys =
     me.role === "owner" ? await listWorkspaceApiKeys(me.workspaceId) : null;
   return (
-    <ApiKeysSettings
+    <ApiKeyManager
       viewer={me}
       initialKeys={keys}
       initialWorkspaceKeys={workspaceKeys}

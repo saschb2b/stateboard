@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { ApiKeysSettings } from "./api-keys-settings";
+import { ApiKeyManager } from "./api-key-manager";
 import type { ApiKey, WorkspaceApiKey, WorkspaceRole } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
@@ -74,11 +74,11 @@ const WORKSPACE_KEYS: WorkspaceApiKey[] = [
  * no-expiration. Mutations hit the real API, so stories are render-only.
  */
 const meta = {
-  component: ApiKeysSettings,
+  component: ApiKeyManager,
   tags: ["ai-generated"],
   parameters: { layout: "fullscreen" },
   args: { now: NOW },
-} satisfies Meta<typeof ApiKeysSettings>;
+} satisfies Meta<typeof ApiKeyManager>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

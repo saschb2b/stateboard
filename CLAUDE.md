@@ -97,7 +97,16 @@ src/
 │   │   └── {boards,screens,regions,uploads,search}/   REST + search
 │   ├── layout.tsx                             Minimal root: html + body + fonts
 │   └── proxy.ts                               Next 16 "proxy" auth gate (renamed from middleware)
-├── components/                                React + MUI; client where needed
+├── components/                                React + MUI; client where needed. Sliced by domain,
+│   │                                          mirroring the thesis primitives (board → screen → region):
+│   ├── app/                                   Shell + chrome: client-shell, app-header, user-menu
+│   ├── auth/                                  sign-in-panel
+│   ├── board/                                 board-list, board-editor, board-settings, board-share,
+│   │                                          present-mode, command-palette
+│   ├── screen/                                screen-annotator, screen-sidebar, screen-uploader, add-screen-dialog
+│   ├── region/                                region-overlay, state-chip (the domain primitives)
+│   ├── workspace/                             member-roster, api-key-* (manager + create-form + list + reveal), audit-log
+│   └── site/                                  landing-mockup (marketing only)
 ├── content/docs/                              MDX docs source (do not import outside /docs)
 └── lib/                                       db, paths, image, http, ids, auth, auth-client, auth-helpers, source (Fumadocs)
 ```
@@ -107,7 +116,7 @@ Server-only modules import `"server-only"` at the top so they fail loud if pulle
 ### Naming
 
 - Files: `kebab-case.tsx` / `kebab-case.ts`.
-- Components: `PascalCase` exports, named (no default exports for components).
+- Components: `PascalCase` exports, named (no default exports for components). New components go in the matching domain folder under `src/components/` (see layout above); name them after what they _are_, not the page they appear on. A component whose file passes ~300 lines and does several jobs (form + list + panel) should be sliced into composed parts, like `workspace/api-key-*`.
 - DB columns: `snake_case`. Mapped to `camelCase` at the boundary in `src/lib/db.ts`.
 - API routes: REST nouns, plural (`/api/boards`, `/api/screens/:id/regions`). No RPC-style verbs.
 

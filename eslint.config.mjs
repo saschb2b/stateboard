@@ -30,6 +30,7 @@ const config = [
       "data/**",
       ".source/**",
       "next-env.d.ts",
+      "storybook-static/**",
     ],
   },
   ...storybook.configs["flat/recommended"],

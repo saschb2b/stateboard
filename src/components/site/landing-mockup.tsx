@@ -1,7 +1,7 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { StateChip } from "./state-chip";
+import { StateChip } from "@/components/region/state-chip";
 import { STATE_META } from "@/lib/state-meta";
 
 /**

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { SignInPanel } from "@/components/sign-in-panel";
+import { SignInPanel } from "@/components/auth/sign-in-panel";
 
 export const metadata: Metadata = {
   title: "Sign in",

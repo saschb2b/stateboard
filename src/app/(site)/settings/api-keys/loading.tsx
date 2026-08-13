@@ -3,7 +3,7 @@ import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader } from "@/components/app/app-header";
 
 /** Shell for /settings/api-keys while the key list streams in. */
 export default function ApiKeysLoading() {

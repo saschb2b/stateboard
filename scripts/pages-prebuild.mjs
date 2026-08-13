@@ -59,7 +59,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import GitHubIcon from "@mui/icons-material/GitHub";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader } from "@/components/app/app-header";
 
 export const metadata: Metadata = { title: "Demo mode" };
 

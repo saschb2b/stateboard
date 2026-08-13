@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect } from "storybook/test";
 import { fn } from "storybook/test";
-import { BoardPresenter } from "./board-presenter";
+import { PresentMode } from "./present-mode";
 import { getDemoBoard } from "@/lib/demo-data";
 
 const demo = getDemoBoard();
@@ -12,7 +12,7 @@ const firstLabel = demo.screens[0]?.regions[0]?.label ?? "";
  * /share/demo). Fullscreen, keyboard-driven: ← / → to move, Esc to exit.
  */
 const meta = {
-  component: BoardPresenter,
+  component: PresentMode,
   tags: ["ai-generated"],
   parameters: { layout: "fullscreen" },
   args: {
@@ -20,7 +20,7 @@ const meta = {
     screens: demo.screens,
     onClose: fn(),
   },
-} satisfies Meta<typeof BoardPresenter>;
+} satisfies Meta<typeof PresentMode>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;

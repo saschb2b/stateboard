@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBoard, getBoardWithScreens, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
-import { BoardSettings } from "@/components/board-settings";
+import { BoardSettings } from "@/components/board/board-settings";
 
 interface PageProps {
   params: Promise<{ id: string }>;

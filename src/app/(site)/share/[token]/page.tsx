@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBoardWithScreens, getShareLink } from "@/lib/db";
 import { timeAgo } from "@/lib/time";
-import { BoardShare } from "@/components/board-share";
+import { BoardShare } from "@/components/board/board-share";
 
 interface PageProps {
   params: Promise<{ token: string }>;

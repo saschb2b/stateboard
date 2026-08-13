@@ -21,14 +21,14 @@ import MoreVertIcon from "@mui/icons-material/MoreVert";
 import SearchIcon from "@mui/icons-material/Search";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AppHeader } from "./app-header";
-import { AddScreenDialog } from "./add-screen-dialog";
-import { BoardPresenter } from "./board-presenter";
+import { AppHeader } from "@/components/app/app-header";
+import { AddScreenDialog } from "@/components/screen/add-screen-dialog";
+import { PresentMode } from "./present-mode";
 import { CommandPalette, type PaletteAction } from "./command-palette";
-import { ScreenAnnotator } from "./screen-annotator";
-import { ScreenSidebar } from "./screen-sidebar";
-import { ScreenUploader } from "./screen-uploader";
-import { UserMenu } from "./user-menu";
+import { ScreenAnnotator } from "@/components/screen/screen-annotator";
+import { ScreenSidebar } from "@/components/screen/screen-sidebar";
+import { ScreenUploader } from "@/components/screen/screen-uploader";
+import { UserMenu } from "@/components/app/user-menu";
 import type {
   Board,
   RegionState,
@@ -650,7 +650,7 @@ export function BoardEditor({
       )}
 
       {presenting ? (
-        <BoardPresenter
+        <PresentMode
           boardName={boardName}
           screens={screens}
           initialIndex={Math.max(

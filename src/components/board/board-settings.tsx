@@ -21,8 +21,8 @@ import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { AppHeader } from "./app-header";
-import { UserMenu } from "./user-menu";
+import { AppHeader } from "@/components/app/app-header";
+import { UserMenu } from "@/components/app/user-menu";
 import type { Board, ShareLink } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 

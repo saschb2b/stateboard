@@ -10,11 +10,11 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import CloseIcon from "@mui/icons-material/Close";
 import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
-import { RegionOverlay } from "./region-overlay";
-import { StateChip } from "./state-chip";
+import { RegionOverlay } from "@/components/region/region-overlay";
+import { StateChip } from "@/components/region/state-chip";
 import { REGION_STATES, type ScreenWithRegions } from "@/lib/types";
 
-interface BoardPresenterProps {
+interface PresentModeProps {
   boardName: string;
   screens: ScreenWithRegions[];
   initialIndex?: number;
@@ -31,12 +31,12 @@ interface BoardPresenterProps {
  *   Esc    exit
  *   F      toggle browser fullscreen
  */
-export function BoardPresenter({
+export function PresentMode({
   boardName,
   screens,
   initialIndex = 0,
   onClose,
-}: BoardPresenterProps) {
+}: PresentModeProps) {
   const safeInitial = Math.min(
     Math.max(0, initialIndex),
     Math.max(0, screens.length - 1),
