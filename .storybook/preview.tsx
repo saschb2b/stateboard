@@ -2,6 +2,19 @@ import type { Preview } from "@storybook/nextjs-vite";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "../src/lib/theme";
+import { geist, geistMono } from "../src/lib/fonts";
+
+/**
+ * Put the font variables on <html>, exactly where the root layout puts
+ * them. Without this the theme's `var(--font-geist)` resolves to nothing,
+ * which invalidates the whole font-family declaration and drops every
+ * story to the browser's default serif. Setting them on the documentElement
+ * rather than a wrapper also covers portalled UI (tooltips, menus, dialogs),
+ * which renders outside the story canvas.
+ */
+if (typeof document !== "undefined") {
+  document.documentElement.classList.add(geist.variable, geistMono.variable);
+}
 
 /**
  * Mirrors the app's real provider tree (ClientShell) minus the SSR-only

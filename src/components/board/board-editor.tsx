@@ -36,6 +36,7 @@ import type {
   ShareLink,
   UserRef,
 } from "@/lib/types";
+import { MONO_FONT } from "@/lib/theme";
 import { REGION_STATES, attributionName } from "@/lib/types";
 import { STATE_META } from "@/lib/state-meta";
 import { timeAgo } from "@/lib/time";
@@ -744,7 +745,7 @@ function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
         component="span"
         sx={{
           display: { xs: "none", sm: "inline" },
-          fontFamily: "monospace",
+          fontFamily: MONO_FONT,
           fontSize: 11,
           px: 0.5,
           py: 0.125,

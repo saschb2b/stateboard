@@ -12,6 +12,7 @@ import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { RegionOverlay } from "@/components/region/region-overlay";
 import { StateChip } from "@/components/region/state-chip";
+import { MONO_FONT } from "@/lib/theme";
 import { REGION_STATES, type ScreenWithRegions } from "@/lib/types";
 
 interface PresentModeProps {
@@ -358,7 +359,7 @@ export function PresentMode({
           variant="caption"
           sx={{
             color: "rgba(255,255,255,0.45)",
-            fontFamily: "monospace",
+            fontFamily: MONO_FONT,
             mx: 2,
           }}
         >

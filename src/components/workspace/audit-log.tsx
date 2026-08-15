@@ -29,6 +29,7 @@ import {
   type AuditCursor,
   type AuditEntry,
 } from "@/lib/audit";
+import { MONO_FONT } from "@/lib/theme";
 import type { UserRef } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
@@ -318,7 +319,7 @@ export function AuditLog({
                       <TableRow key={e.id} hover>
                         <TableCell
                           sx={{
-                            fontFamily: "monospace",
+                            fontFamily: MONO_FONT,
                             color: "text.secondary",
                           }}
                         >
@@ -345,7 +346,7 @@ export function AuditLog({
                                 <Box
                                   component="span"
                                   sx={{
-                                    fontFamily: "monospace",
+                                    fontFamily: MONO_FONT,
                                     fontSize: 12,
                                     color: "text.secondary",
                                   }}
@@ -368,7 +369,7 @@ export function AuditLog({
                             <Tooltip title={details}>
                               <Box
                                 component="span"
-                                sx={{ fontFamily: "monospace", fontSize: 12 }}
+                                sx={{ fontFamily: MONO_FONT, fontSize: 12 }}
                               >
                                 {details}
                               </Box>
