@@ -159,8 +159,7 @@ export const DEFAULT_API_KEY_EXPIRY_DAYS = 90;
 export const MAX_API_KEY_EXPIRY_DAYS = 3650;
 
 export type ExpiryParse =
-  | { ok: true; expiresAt: number | null }
-  | { ok: false; error: string };
+  { ok: true; expiresAt: number | null } | { ok: false; error: string };
 
 /**
  * Turn a request's `expiresInDays` field into an absolute expiry.
