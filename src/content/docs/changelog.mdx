@@ -9,6 +9,40 @@ The canonical source is [`CHANGELOG.md`](https://github.com/saschb2b/stateboard/
 
 ---
 
+## 2026.8.0
+
+Agents get a way in. Per-member API keys unlock the whole REST API and a built-in MCP server, so a coding agent can read a board, flip regions once it has verified what actually shipped, and hand back the share link — with every edit landing in the audit log under the key owner's name. Navigation across the app is now instant, and component work moves into Storybook. **One new migration (`0007`) — run `pnpm migrate` on upgrade.**
+
+### Agents & API
+
+- **API keys.** Sign-in is OIDC, which only a human in a browser can complete, so scripts and agents authenticate with keys instead (avatar menu → **API keys**). Keys are stored as a sha256 hash — the secret is shown once and never again — carry a role ceiling, and **expire after 90 days by default** (30/60/90 days, a year, or an explicit no-expiration). Expiry is enforced in the same query that resolves the key, so there is no cleanup job to run or forget.
+- **Keys can't outlive their owner's access.** The effective role is the _lower_ of the key's role and the member's current role, resolved through the membership row on every request. Demote someone and their keys demote with them; remove them and their keys stop resolving. Keys also can't mint or list keys — that needs a browser session, so a leaked key can't multiply itself.
+- **Owners can inventory the workspace.** `/settings/api-keys` shows owners every key in the workspace with its owner, last use, and expiry, and lets them revoke any of it. A credential nobody can inventory is a liability.
+- **A built-in MCP server** at `/api/mcp`, with nine tools covering boards, regions, and share links. It's a stateless Streamable HTTP endpoint written against the protocol directly — no SDK, no extra process, no outbound calls — so it works airgapped like everything else here, and the whole protocol surface is two files you can audit.
+- **An installable agent skill.** `npx skills@latest add saschb2b/stateboard` teaches a coding agent the parts a tool description can't: the three-state semantics, normalized `[0,1]` coordinates, and the discipline of verifying a feature works before flipping its region to `shipped`.
+- **Docs.** A new [Agents & API](https://saschb2b.github.io/stateboard/docs/agents) guide covers minting a key, wiring an MCP client, the tool table, and the REST calls.
+
+### Instant navigation
+
+- **Every page renders its shell immediately.** Cache Components and Partial Prefetching are enabled, so Next.js prefetches a reusable loading shell per route and paints it the moment you click, streaming the real content in behind it. The board list, editor, share view, history, and settings pages all partial-prerender now.
+- **Loading shells for the routes that lacked them** — sign-in, the three settings pages, and board history/settings — so no navigation falls back to a blank wait.
+- **Next.js 16.3**, which also brings a large dev-server memory reduction and faster rebuilds.
+
+### Under the hood
+
+- **Storybook**, with stories for the components that carry the product's visual language: the state chips, the region overlay, Present mode over the example board, the header, sign-in, and both workspace admin surfaces. Every story renders in a real browser as a test, and CI runs them as their own job.
+- **Components are sliced by domain** — `app/`, `auth/`, `board/`, `screen/`, `region/`, `workspace/`, `site/` — mirroring the primitive the product is built on, and components named after what they are rather than the page they happen to sit on.
+- **The repo is set up for coding agents.** A committed `.mcp.json` wires the Next.js devtools and Storybook MCP servers, and `AGENTS.md` points agents at the version-matched Next.js docs bundled in `node_modules`.
+
+### Fixed
+
+- **The product typeface actually loads everywhere.** Geist is now shared from one module by the app and Storybook; previously a missing font variable invalidated the whole `font-family` declaration and dropped affected surfaces to the browser's default serif. Geist Mono — shipped but never used — now renders every id, token, and coordinate readout instead of the system `monospace` keyword, which is Courier New on Windows.
+- **Sharing docs described v0.** They called the share URL an unchangeable "slug"; share links have been revocable tokens, several per board, since v1. Corrected, along with the release version the README and docs landing page advertised.
+
+### Dependencies
+
+- Next.js 16.3.1, React 19.2.8, better-auth 1.6.30, and routine patch/minor upkeep across `pg`, `prettier`, `typescript-eslint`, `fumadocs-mdx`, `@types/node` 26, and the GitHub Actions used in CI.
+
 ## 2026.7.0
 
 The audit log grows a UI and a per-board history, every board and region shows who last touched it, and the editor is reworked into a three-pane workspace with a `Ctrl` / `Cmd` + `K` command palette. **One new migration (`0006`) — run `pnpm migrate` on upgrade.**
