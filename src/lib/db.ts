@@ -1,6 +1,7 @@
 import "server-only";
 import { Pool, type QueryResultRow } from "pg";
 import type {
+  ApiKey,
   Board,
   Region,
   RegionState,
@@ -8,7 +9,9 @@ import type {
   ScreenWithRegions,
   ShareLink,
   UserRef,
+  WorkspaceApiKey,
   WorkspaceMember,
+  WorkspaceRole,
   WorkspaceScreen,
 } from "./types";
 import type {
@@ -151,6 +154,19 @@ interface WorkspaceMemberRow {
   image: string | null;
 }
 
+interface ApiKeyRow {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  name: string;
+  key_prefix: string;
+  role: WorkspaceRole;
+  created_at: string;
+  expires_at: string | null;
+  last_used_at: string | null;
+  revoked_at: string | null;
+}
+
 // pg returns BIGINT as a string to avoid JS precision loss. Convert to number;
 // our timestamps are millis since epoch, well within Number.MAX_SAFE_INTEGER
 // for the next ~285,000 years.
@@ -221,6 +237,23 @@ function mapMember(row: WorkspaceMemberRow): WorkspaceMember {
     name: row.name,
     email: row.email,
     image: row.image,
+  };
+}
+
+// The hash column is deliberately absent: nothing outside the auth lookup
+// should ever see it, and the lookup matches on it rather than returning it.
+function mapApiKey(row: ApiKeyRow): ApiKey {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    userId: row.user_id,
+    name: row.name,
+    keyPrefix: row.key_prefix,
+    role: row.role,
+    createdAt: num(row.created_at),
+    expiresAt: row.expires_at === null ? null : num(row.expires_at),
+    lastUsedAt: row.last_used_at === null ? null : num(row.last_used_at),
+    revokedAt: row.revoked_at === null ? null : num(row.revoked_at),
   };
 }
 
@@ -476,6 +509,37 @@ export async function listBoards(workspaceId: string): Promise<Board[]> {
     [workspaceId],
   );
   return rows.map(mapBoard);
+}
+
+/**
+ * Per-board region-state tallies for a whole workspace in one query.
+ * Powers the MCP `list_boards` tool, where an agent wants the status
+ * shape of everything without fetching each board. Boards with no
+ * regions simply don't appear.
+ */
+export async function listBoardStateCounts(
+  workspaceId: string,
+): Promise<Map<string, Record<RegionState, number>>> {
+  const rows = await query<{ board_id: string; state: RegionState; n: string }>(
+    `SELECT s.board_id, r.state, COUNT(*) AS n
+     FROM regions r
+     JOIN screens s ON s.id = r.screen_id
+     JOIN boards b ON b.id = s.board_id
+     WHERE b.workspace_id = $1
+     GROUP BY s.board_id, r.state`,
+    [workspaceId],
+  );
+  const counts = new Map<string, Record<RegionState, number>>();
+  for (const row of rows) {
+    const entry = counts.get(row.board_id) ?? {
+      shipped: 0,
+      mock: 0,
+      missing: 0,
+    };
+    entry[row.state] = num(row.n);
+    counts.set(row.board_id, entry);
+  }
+  return counts;
 }
 
 export async function getBoard(id: string): Promise<Board | null> {
@@ -862,4 +926,160 @@ export async function revokeShareLink(token: string): Promise<boolean> {
     [Date.now(), token],
   );
   return result.rowCount! > 0;
+}
+
+// ----- api keys -------------------------------------------------------------
+
+export async function listApiKeys(
+  workspaceId: string,
+  userId: string,
+): Promise<ApiKey[]> {
+  const rows = await query<ApiKeyRow>(
+    `SELECT id, workspace_id, user_id, name, key_prefix, role,
+            created_at, expires_at, last_used_at, revoked_at
+     FROM api_keys
+     WHERE workspace_id = $1 AND user_id = $2
+     ORDER BY created_at DESC`,
+    [workspaceId, userId],
+  );
+  return rows.map(mapApiKey);
+}
+
+/**
+ * Every key in the workspace with its owner's identity — the owner-only
+ * governance view. Owners need to see (and be able to revoke) keys they
+ * didn't create; a credential nobody can inventory is a liability.
+ */
+export async function listWorkspaceApiKeys(
+  workspaceId: string,
+): Promise<WorkspaceApiKey[]> {
+  const rows = await query<
+    ApiKeyRow & { user_name: string | null; user_email: string | null }
+  >(
+    `SELECT ak.id, ak.workspace_id, ak.user_id, ak.name, ak.key_prefix, ak.role,
+            ak.created_at, ak.expires_at, ak.last_used_at, ak.revoked_at,
+            u.name AS user_name, u.email AS user_email
+     FROM api_keys ak
+     LEFT JOIN "user" u ON u.id = ak.user_id
+     WHERE ak.workspace_id = $1
+     ORDER BY ak.created_at DESC`,
+    [workspaceId],
+  );
+  return rows.map((row) => ({
+    ...mapApiKey(row),
+    userName: row.user_name,
+    userEmail: row.user_email,
+  }));
+}
+
+export async function getApiKey(id: string): Promise<ApiKey | null> {
+  const row = await queryOne<ApiKeyRow>(
+    `SELECT id, workspace_id, user_id, name, key_prefix, role,
+            created_at, expires_at, last_used_at, revoked_at
+     FROM api_keys WHERE id = $1`,
+    [id],
+  );
+  return row ? mapApiKey(row) : null;
+}
+
+export async function createApiKey(input: {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  name: string;
+  keyHash: string;
+  keyPrefix: string;
+  role: WorkspaceRole;
+  expiresAt: number | null;
+}): Promise<ApiKey> {
+  const row = await queryOne<ApiKeyRow>(
+    `INSERT INTO api_keys (id, workspace_id, user_id, name, key_hash, key_prefix, role, created_at, expires_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING id, workspace_id, user_id, name, key_prefix, role,
+               created_at, expires_at, last_used_at, revoked_at`,
+    [
+      input.id,
+      input.workspaceId,
+      input.userId,
+      input.name,
+      input.keyHash,
+      input.keyPrefix,
+      input.role,
+      Date.now(),
+      input.expiresAt,
+    ],
+  );
+  return mapApiKey(row!);
+}
+
+export async function revokeApiKey(id: string): Promise<boolean> {
+  const result = await getPool().query(
+    `UPDATE api_keys SET revoked_at = $1 WHERE id = $2 AND revoked_at IS NULL`,
+    [Date.now(), id],
+  );
+  return result.rowCount! > 0;
+}
+
+/** What a valid API key resolves to at request time. */
+export interface ApiKeyPrincipal {
+  apiKeyId: string;
+  /** The ceiling stored on the key itself. */
+  keyRole: WorkspaceRole;
+  /** The user's current workspace role — may have changed since key creation. */
+  memberRole: WorkspaceRole;
+  workspaceId: string;
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    image: string | null;
+  };
+}
+
+/**
+ * Resolve a key hash to its principal in one round-trip, stamping
+ * last_used_at as a side effect. Joining through workspace_members means a
+ * removed member's keys stop resolving the moment their membership row is
+ * gone, and the expires_at guard makes expiry pure lookup-time enforcement —
+ * no separate cleanup needed for either.
+ */
+export async function findMemberByApiKeyHash(
+  keyHash: string,
+): Promise<ApiKeyPrincipal | null> {
+  const row = await queryOne<{
+    api_key_id: string;
+    key_role: WorkspaceRole;
+    member_role: WorkspaceRole;
+    workspace_id: string;
+    user_id: string;
+    email: string;
+    name: string | null;
+    image: string | null;
+  }>(
+    `UPDATE api_keys ak
+     SET last_used_at = $2
+     FROM workspace_members wm, "user" u
+     WHERE ak.key_hash = $1
+       AND ak.revoked_at IS NULL
+       AND (ak.expires_at IS NULL OR ak.expires_at > $2)
+       AND wm.workspace_id = ak.workspace_id
+       AND wm.user_id = ak.user_id
+       AND u.id = ak.user_id
+     RETURNING ak.id AS api_key_id, ak.role AS key_role, wm.role AS member_role,
+               ak.workspace_id, u.id AS user_id, u.email, u.name, u.image`,
+    [keyHash, Date.now()],
+  );
+  if (!row) return null;
+  return {
+    apiKeyId: row.api_key_id,
+    keyRole: row.key_role,
+    memberRole: row.member_role,
+    workspaceId: row.workspace_id,
+    user: {
+      id: row.user_id,
+      email: row.email,
+      name: row.name,
+      image: row.image,
+    },
+  };
 }

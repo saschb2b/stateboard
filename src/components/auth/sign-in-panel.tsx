@@ -10,7 +10,7 @@ import Typography from "@mui/material/Typography";
 import Link from "next/link";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LoginIcon from "@mui/icons-material/Login";
-import { AppHeader } from "./app-header";
+import { AppHeader } from "@/components/app/app-header";
 import { authClient } from "@/lib/auth-client";
 
 interface SignInPanelProps {

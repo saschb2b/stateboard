@@ -3,7 +3,7 @@ import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
-import { AppHeader } from "@/components/app-header";
+import { AppHeader } from "@/components/app/app-header";
 
 /**
  * Shown while the editor loads a board and its screens. Mirrors the

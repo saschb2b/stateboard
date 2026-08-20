@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BoardShare } from "@/components/board-share";
+import { BoardShare } from "@/components/board/board-share";
 import { getDemoBoard } from "@/lib/demo-data";
 
 /**

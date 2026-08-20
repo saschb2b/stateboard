@@ -1,7 +1,8 @@
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { StateChip } from "./state-chip";
+import { StateChip } from "@/components/region/state-chip";
+import { MONO_FONT } from "@/lib/theme";
 import { STATE_META } from "@/lib/state-meta";
 
 /**
@@ -56,7 +57,7 @@ export function LandingMockup() {
             bgcolor: "var(--mui-palette-background-default)",
             color: "var(--mui-palette-text-secondary)",
             fontSize: 12,
-            fontFamily: "monospace",
+            fontFamily: MONO_FONT,
           }}
         >
           stateboard.app / acme-dashboard / overview

@@ -12,7 +12,7 @@ import Typography from "@mui/material/Typography";
 import SearchIcon from "@mui/icons-material/Search";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
-import { StateChip } from "./state-chip";
+import { StateChip } from "@/components/region/state-chip";
 import {
   fuzzyScore,
   screenName,
@@ -20,6 +20,7 @@ import {
   type RegionHit,
   type SnippetPart,
 } from "@/lib/search";
+import { MONO_FONT } from "@/lib/theme";
 import type { RegionState, ScreenWithRegions } from "@/lib/types";
 
 export interface PaletteAction {
@@ -389,7 +390,7 @@ function Hint({ keys, label }: { keys: string; label: string }) {
       <Box
         component="span"
         sx={{
-          fontFamily: "monospace",
+          fontFamily: MONO_FONT,
           fontSize: 11,
           px: 0.5,
           py: 0.125,

@@ -1,4 +1,4 @@
-import { ClientShell } from "@/components/client-shell";
+import { ClientShell } from "@/components/app/client-shell";
 
 /**
  * App layout — wraps the marketing + product routes in the MUI ClientShell

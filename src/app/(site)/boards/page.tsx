@@ -2,16 +2,14 @@ import type { Metadata } from "next";
 import { getBoardWithScreens, listBoards, listShareLinks } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { timeAgo } from "@/lib/time";
-import { BoardList, type BoardListItem } from "@/components/board-list";
-
-export const dynamic = "force-dynamic";
+import { BoardList, type BoardListItem } from "@/components/board/board-list";
 
 export const metadata: Metadata = { title: "Boards" };
 
 export default async function BoardsPage() {
   const member = await requirePageMember("viewer");
   const boards = await listBoards(member.workspaceId);
-  // A force-dynamic server component renders once per request, so reading the
+  // A dynamic server component renders once per request, so reading the
   // wall clock here is correct and stable — not the impure-render hazard the
   // purity rule guards against (which targets unpredictable client re-renders).
   // eslint-disable-next-line react-hooks/purity

@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { listAuditActors, listAuditLog } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
-import { AuditLog } from "@/components/audit-log";
-
-export const dynamic = "force-dynamic";
+import { AuditLog } from "@/components/workspace/audit-log";
 
 export const metadata: Metadata = { title: "Audit log" };
 

@@ -24,9 +24,10 @@ import LibraryAddOutlinedIcon from "@mui/icons-material/LibraryAddOutlined";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
-import { AppHeader } from "./app-header";
-import { UserMenu } from "./user-menu";
-import { StateChip } from "./state-chip";
+import { AppHeader } from "@/components/app/app-header";
+import { UserMenu } from "@/components/app/user-menu";
+import { StateChip } from "@/components/region/state-chip";
+import { MONO_FONT } from "@/lib/theme";
 import { STATE_META } from "@/lib/state-meta";
 import { REGION_STATES } from "@/lib/types";
 import type { Board, ScreenWithRegions } from "@/lib/types";
@@ -212,7 +213,7 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
                   link. Common pattern:{" "}
                   <Box
                     component="span"
-                    sx={{ fontFamily: "monospace", color: "text.primary" }}
+                    sx={{ fontFamily: MONO_FONT, color: "text.primary" }}
                   >
                     Product / Quarter
                   </Box>
@@ -538,7 +539,7 @@ function BoardCard({
               variant="caption"
               color="text.secondary"
               sx={{
-                fontFamily: "monospace",
+                fontFamily: MONO_FONT,
                 minWidth: 0,
                 overflow: "hidden",
                 textOverflow: "ellipsis",

@@ -32,6 +32,12 @@ const nextConfig = isPagesExport
     }
   : {
       output: "standalone",
+      // Instant Navigations (Next 16.3): explicit caching via "use cache",
+      // per-route loading shells prefetched to the client, SPA-feel
+      // navigations. Deliberately absent from the Pages-export branch above —
+      // the static demo has no server to stream from.
+      cacheComponents: true,
+      partialPrefetching: true,
       // Better Auth's kysely adapter ships dialect modules for every backend
       // it supports (bun:sqlite, D1, better-sqlite3, …). We only use Postgres,
       // but the bundler eagerly resolves all of them and Turbopack (Next 16.2.7+)

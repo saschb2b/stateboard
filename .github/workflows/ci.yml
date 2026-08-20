@@ -54,6 +54,49 @@ jobs:
       - name: Build
         run: pnpm build
 
+  stories:
+    name: storybook · component tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Every story renders in a real Chromium via Playwright, so the browser
+      # binary is a build input. Cache it against the resolved Playwright
+      # version — a ~130 MB download on every run otherwise.
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # Only Chromium: vitest.config.ts declares a single chromium instance.
+      # --with-deps is a no-op for libraries the runner image already has.
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Renders every story and runs its play functions as interaction tests.
+      - name: Story tests
+        run: pnpm test:stories
+
   helm:
     name: helm lint · kubeconform
     runs-on: ubuntu-latest

@@ -11,6 +11,7 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import CloseIcon from "@mui/icons-material/Close";
+import { MONO_FONT } from "@/lib/theme";
 import { STATE_META } from "@/lib/state-meta";
 import {
   REGION_STATES,
@@ -21,7 +22,7 @@ import {
   type UserRef,
 } from "@/lib/types";
 import { timeAgo } from "@/lib/time";
-import { RegionOverlay } from "./region-overlay";
+import { RegionOverlay } from "@/components/region/region-overlay";
 import {
   MIN_REGION_SIZE,
   moveBox,
@@ -30,7 +31,7 @@ import {
   type Box as RegionBox,
   type ResizeCorner,
 } from "@/lib/region-geometry";
-import { StateChip } from "./state-chip";
+import { StateChip } from "@/components/region/state-chip";
 
 interface ScreenAnnotatorProps {
   screen: ScreenWithRegions;
@@ -710,7 +711,7 @@ export function ScreenAnnotator({
             mt: 0.75,
             textAlign: "center",
             color: "text.secondary",
-            fontFamily: "monospace",
+            fontFamily: MONO_FONT,
             opacity: hintVisible ? 1 : 0,
             transition: "opacity 160ms ease",
             minHeight: "1.4em",

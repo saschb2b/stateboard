@@ -33,6 +33,16 @@ export function meetsRole(
   return ROLE_RANK[actual] >= ROLE_RANK[required];
 }
 
+/**
+ * The lower of two roles. Used to cap an API key's stored role by its
+ * owner's *current* membership role, so a demoted member's keys demote
+ * with them. Same privilege-boundary reasoning as meetsRole: pure and
+ * tested here.
+ */
+export function minRole(a: WorkspaceRole, b: WorkspaceRole): WorkspaceRole {
+  return ROLE_RANK[a] <= ROLE_RANK[b] ? a : b;
+}
+
 /** Narrows an unknown to a valid WorkspaceRole (e.g. a role from a request body). */
 export function isWorkspaceRole(v: unknown): v is WorkspaceRole {
   return (
@@ -106,6 +116,87 @@ export interface ShareLink {
   createdBy: string | null;
   createdAt: number;
   revokedAt: number | null;
+}
+
+/**
+ * A long-lived credential for non-interactive access (agents, scripts, CI).
+ * The secret itself is never stored or returned after creation — only its
+ * hash lives in the DB, and `keyPrefix` exists so the UI can say which key
+ * is which ("sbk_a1b2c3…").
+ */
+export interface ApiKey {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  name: string;
+  keyPrefix: string;
+  /** Ceiling on what the key may do; effective role is min(this, member role). */
+  role: WorkspaceRole;
+  createdAt: number;
+  /** Epoch ms after which the key stops resolving; null = never expires. */
+  expiresAt: number | null;
+  lastUsedAt: number | null;
+  revokedAt: number | null;
+}
+
+/** An API key plus its owner's identity, for the owner-only governance list. */
+export interface WorkspaceApiKey extends ApiKey {
+  userName: string | null;
+  userEmail: string | null;
+}
+
+const DAY_MS = 86_400_000;
+
+/**
+ * Creation-time expiry presets for API keys, in days. 90 is the default
+ * (GitHub's fine-grained-token posture: keys should rot unless someone
+ * decides otherwise); "no expiration" is an explicit choice, never the
+ * default. Lives here — not api-keys.ts — because the settings UI needs
+ * these and api-keys.ts pulls in node:crypto.
+ */
+export const API_KEY_EXPIRY_PRESETS = [30, 60, 90, 365] as const;
+export const DEFAULT_API_KEY_EXPIRY_DAYS = 90;
+export const MAX_API_KEY_EXPIRY_DAYS = 3650;
+
+export type ExpiryParse =
+  | { ok: true; expiresAt: number | null }
+  | { ok: false; error: string };
+
+/**
+ * Turn a request's `expiresInDays` field into an absolute expiry.
+ * Absent → the 90-day default. Explicit `null` → never expires.
+ * Anything else must be a whole number of days in [1, 3650].
+ */
+export function parseExpiresInDays(value: unknown, now: number): ExpiryParse {
+  if (value === undefined) {
+    return { ok: true, expiresAt: now + DEFAULT_API_KEY_EXPIRY_DAYS * DAY_MS };
+  }
+  if (value === null) return { ok: true, expiresAt: null };
+  if (
+    typeof value !== "number" ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > MAX_API_KEY_EXPIRY_DAYS
+  ) {
+    return {
+      ok: false,
+      error: `expiresInDays must be a whole number of days between 1 and ${MAX_API_KEY_EXPIRY_DAYS}, or null for no expiration`,
+    };
+  }
+  return { ok: true, expiresAt: now + value * DAY_MS };
+}
+
+export type ApiKeyExpiryStatus = "active" | "expiring-soon" | "expired";
+
+/** UI-facing expiry status; "expiring-soon" inside a 14-day warning window. */
+export function apiKeyExpiryStatus(
+  expiresAt: number | null,
+  now: number,
+  soonWindowMs = 14 * DAY_MS,
+): ApiKeyExpiryStatus {
+  if (expiresAt === null) return "active";
+  if (expiresAt <= now) return "expired";
+  return expiresAt - now <= soonWindowMs ? "expiring-soon" : "active";
 }
 
 export interface WorkspaceMember {

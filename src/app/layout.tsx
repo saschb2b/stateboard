@@ -1,11 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
-});
+import { geist, geistMono } from "@/lib/fonts";
 
 // metadata.icons does NOT auto-prepend basePath, so we do it ourselves.
 // Inlined at build time. Empty on the runtime/standalone build.

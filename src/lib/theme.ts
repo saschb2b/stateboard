@@ -3,6 +3,27 @@
 import { createTheme } from "@mui/material/styles";
 
 /**
+ * Type stacks. Geist (sans + mono) is loaded once in the root layout via
+ * next/font and exposed as CSS variables on <html> — see src/lib/fonts.ts.
+ *
+ * The fallbacks matter more than they look: if `--font-geist` is ever
+ * undefined (a surface that forgot to load the fonts), CSS treats the whole
+ * `font-family` declaration as invalid and drops to the browser default —
+ * Times. Naming real system faces after the variable keeps that failure
+ * mode at "slightly different grotesque" instead of "newspaper".
+ */
+export const SANS_FONT =
+  'var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+
+/**
+ * Use this instead of the bare `monospace` keyword, which resolves to
+ * Courier New on Windows. Every ID, token, and coordinate readout in the
+ * app should render in Geist Mono, the companion face we already ship.
+ */
+export const MONO_FONT =
+  'var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+
+/**
  * StateBoard's product theme.
  *
  * The pitch is dark-first with a warm-orange accent (the "show, don't tell"
@@ -38,21 +59,54 @@ const theme = createTheme({
       },
     },
   },
+  /**
+   * Sizes are left at MUI's defaults on purpose — call sites already tune
+   * them per surface. What's set here is the part that reads as "designed":
+   * optical tracking that tightens as type grows, leading that's roomy for
+   * prose and tight for headlines, and one weight step between levels.
+   */
   typography: {
-    fontFamily:
-      'var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    h1: { fontWeight: 700, letterSpacing: "-0.02em" },
-    h2: { fontWeight: 700, letterSpacing: "-0.02em" },
-    h3: { fontWeight: 700, letterSpacing: "-0.01em" },
-    h4: { fontWeight: 700, letterSpacing: "-0.01em" },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
-    button: { fontWeight: 600, textTransform: "none" },
+    fontFamily: SANS_FONT,
+    h1: { fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.08 },
+    h2: { fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.12 },
+    h3: { fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.18 },
+    h4: { fontWeight: 700, letterSpacing: "-0.022em", lineHeight: 1.22 },
+    h5: { fontWeight: 600, letterSpacing: "-0.018em", lineHeight: 1.3 },
+    h6: { fontWeight: 600, letterSpacing: "-0.014em", lineHeight: 1.4 },
+    subtitle1: { fontWeight: 600, letterSpacing: "-0.011em" },
+    subtitle2: { fontWeight: 600, letterSpacing: "-0.006em" },
+    body1: { letterSpacing: "-0.011em", lineHeight: 1.6 },
+    body2: { letterSpacing: "-0.006em", lineHeight: 1.6 },
+    // Small text needs the opposite treatment: a hair of positive tracking
+    // keeps 11–12px legible instead of clotting together.
+    caption: { letterSpacing: "0.01em", lineHeight: 1.5 },
+    overline: { fontWeight: 600, letterSpacing: "0.08em" },
+    button: {
+      fontWeight: 600,
+      textTransform: "none",
+      letterSpacing: "-0.006em",
+    },
   },
   shape: { borderRadius: 8 },
   components: {
     MuiCssBaseline: {
-      styleOverrides: { body: { minHeight: "100vh" } },
+      styleOverrides: {
+        body: {
+          minHeight: "100vh",
+          // Geist is drawn for screens; grayscale antialiasing is what keeps
+          // it from looking chunky against the dark-first background. Without
+          // this, subpixel rendering fattens light-on-dark text noticeably.
+          WebkitFontSmoothing: "antialiased",
+          MozOsxFontSmoothing: "grayscale",
+          textRendering: "optimizeLegibility",
+        },
+        // Anything genuinely tabular — ids, tokens, counts, coordinates —
+        // in the mono face with fixed-width figures so columns line up.
+        "code, kbd, samp, pre": {
+          fontFamily: MONO_FONT,
+          fontVariantNumeric: "tabular-nums",
+        },
+      },
     },
     MuiButton: {
       defaultProps: { disableElevation: true },

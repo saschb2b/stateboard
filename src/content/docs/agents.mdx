@@ -1,0 +1,91 @@
+---
+title: Agents & API
+description: API keys, the REST API, and the built-in MCP server — let agents read and update boards without a browser.
+---
+
+StateBoard's sign-in is OIDC, which only a human in a browser can complete. Agents, scripts, and CI get in with **API keys** instead. A key unlocks two surfaces, both served by your own instance with zero extra infrastructure:
+
+- the **REST API** — the same endpoints the editor itself uses, and
+- the **MCP server** at `/api/mcp` — so tools like Claude Code can work with boards natively.
+
+Nothing here phones home. The MCP server is implemented in-repo with no SDK dependency, and both surfaces work fully airgapped.
+
+## Create a key
+
+Open your avatar menu → **API keys** (`/settings/api-keys`), name the key, pick a role, and copy the secret — it's shown exactly once. Keys look like `sbk_…`; only a hash is stored server-side.
+
+- A key **acts as you**, capped at the role you give it. Give an agent that only reads status a `viewer` key; give one that flips regions an `editor` key.
+- The effective role is the _lower_ of the key's role and your current role — if you're demoted or removed, your keys demote or die with you.
+- **Keys expire after 90 days by default.** Pick 30/60/90 days, a year, or — as an explicit choice — no expiration. An expired key simply stops resolving; the list warns "expires in N days" during the last two weeks. (Via the API, pass `expiresInDays` as a number or `null`.)
+- Revoke from the same page. Creation and revocation are written to the audit log, and every edit an agent makes is attributed to you with a `via: "mcp"` marker where applicable.
+- **Owners see every key in the workspace** (with its owner) on the same page and can revoke any of them — a credential nobody can inventory is a liability.
+- Keys can't manage keys: minting and revoking requires a browser session, so a leaked key can't multiply itself.
+
+## Teach your agent the workflow
+
+The repo ships an installable [agent skill](https://skills.sh) that carries the working knowledge an agent needs in the repos where it does the shipping — how to connect, the three-state semantics, normalized coordinates, and the "verify before you flip to shipped" discipline:
+
+```bash
+npx skills@latest add saschb2b/stateboard
+```
+
+The MCP server also self-describes (tool descriptions plus server instructions), so a connected client gets the mechanics automatically; the skill adds the setup steps and the judgment.
+
+## MCP
+
+Point any MCP client at `https://your-instance/api/mcp` with the key as a bearer token. Claude Code, for example:
+
+```bash
+claude mcp add --transport http stateboard https://your-instance/api/mcp \
+  --header "Authorization: Bearer sbk_your_key_here"
+```
+
+The server is a stateless Streamable HTTP endpoint (single JSON response per call — no SSE, no sessions) and exposes these tools:
+
+| Tool                | Role   | What it does                                                    |
+| ------------------- | ------ | --------------------------------------------------------------- |
+| `list_boards`       | viewer | Every board with shipped / mock / missing region counts         |
+| `get_board`         | viewer | One board in full: screens, regions, rectangles, states, notes  |
+| `create_board`      | editor | New board (a share link is minted automatically)                |
+| `update_board`      | editor | Rename / re-describe a board                                    |
+| `create_region`     | editor | Draw a status rectangle on a screen (normalized `[0,1]` coords) |
+| `update_region`     | editor | Change state, rectangle, label, or notes                        |
+| `delete_region`     | editor | Remove a region                                                 |
+| `list_share_links`  | editor | A board's share links                                           |
+| `create_share_link` | editor | Mint the read-only link stakeholders view                       |
+
+The archetypal agent session: `list_boards` → `get_board` → a few `update_region` calls as it verifies what actually shipped → `create_share_link` → post the link where stakeholders will see it.
+
+Adding a _screen_ needs image bytes, which MCP tools don't carry — use the REST API below for that.
+
+## REST
+
+Every API route accepts `Authorization: Bearer sbk_…` in place of a session cookie, with the same role rules as the editor. The API speaks plain REST nouns; errors are always `{ "error": "…" }`.
+
+```bash
+BASE=https://your-instance
+KEY="sbk_your_key_here"
+
+# What exists?
+curl -H "Authorization: Bearer $KEY" $BASE/api/boards
+
+# The deep view of one board (screens + regions)
+curl -H "Authorization: Bearer $KEY" $BASE/api/boards/BOARD_ID
+
+# Flip a region to shipped
+curl -X PATCH -H "Authorization: Bearer $KEY" -H "content-type: application/json" \
+  -d '{"state":"shipped"}' $BASE/api/regions/REGION_ID
+
+# Add a screenshot to a board as a new screen (multipart, ≤ 25 MB)
+curl -X POST -H "Authorization: Bearer $KEY" \
+  -F "file=@dashboard.png" -F "label=Dashboard" \
+  $BASE/api/boards/BOARD_ID/screens
+```
+
+Region coordinates are **normalized to `[0, 1]`** — `{"x":0.1,"y":0.2,"w":0.3,"h":0.15}` is a box at 10% from the left, 20% from the top. Never send pixels.
+
+<Callout>
+  A `viewer` key can read every board in the workspace, including boards you
+  might consider sensitive — same as a viewer member in the app. Scope by
+  deploying separate instances, not by hoping.
+</Callout>

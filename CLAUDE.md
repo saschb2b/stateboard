@@ -22,7 +22,7 @@ Three things follow from this and you must protect them:
 
 The roadmap is staged. The narrative version lives in [`src/content/docs/roadmap.mdx`](./src/content/docs/roadmap.mdx) (rendered at `/docs/roadmap`); the machine-readable version is in [GitHub milestones](https://github.com/saschb2b/stateboard/milestones), and every open issue is assigned to one.
 
-The current stage is **v1 (team-ready)**, released as `2026.6.0`. **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
+The current stage is **v1 (team-ready)**, released as `2026.7.0`. **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
 
 The three v0 states are **load-bearing**. Don't add a fourth state, don't rename them, don't make them configurable, don't soften "missing" to "planned". Their force comes from being three blunt categories that match how stakeholders actually think. The `v1.x` "custom states" ticket allows _additional_ states alongside the three defaults, never replacing them.
 
@@ -34,7 +34,7 @@ The product's thesis is "show, don't tell." Our own interface has to honor it. *
 
 When you're filling in a screen, in this order, prefer:
 
-1. **A permanent built-in example.** The app ships a fully-populated example board served from memory at `/v/demo` (source: `src/lib/demo-data.ts`). It is _not_ in the user's database. Never seed user-visible sample data, because the moment they delete it the reference is gone. From any empty state where a user might wonder "what is this?", link to the example with a small affordance like "View example ↗". The example is also the right thing for docs callouts and marketing CTAs to deep-link into.
+1. **A permanent built-in example.** The app ships a fully-populated example board served from memory at `/share/demo` (source: `src/lib/demo-data.ts`). It is _not_ in the user's database. Never seed user-visible sample data, because the moment they delete it the reference is gone. From any empty state where a user might wonder "what is this?", link to the example with a small affordance like "View example ↗". The example is also the right thing for docs callouts and marketing CTAs to deep-link into.
 2. **Concrete examples in placeholders.** "e.g. Acme Dashboard / Q2 2026" inside the input shows the pattern at the moment of typing, without an extra UI element.
 3. **One-line subtitle stating the _grain_.** "One board per product or per quarterly review. Most teams keep 3 to 8." That answers "how many do I need?" without lecturing.
 4. **Tell the user what each field does + where it appears.** Helper text on a "Description" field shouldn't say "(optional)" alone. Say "Appears beneath the name on the share link." So the user knows what filling it in _does_, not just whether it's required.
@@ -52,7 +52,8 @@ When in doubt, ask: _would I rather show this user one real example, or explain 
 
 ## Stack & conventions
 
-- **Framework**: Next.js 16 App Router (`output: "standalone"`).
+- **Framework**: Next.js 16 App Router (`output: "standalone"`), with **Cache Components + Partial Prefetching enabled** (`cacheComponents: true`, `partialPrefetching: true` in `next.config.mjs`). Consequences: never add `export const dynamic` / `revalidate` / `fetchCache` route segment configs (they error); every route that reads request data or the DB needs a `loading.tsx` (or `<Suspense>`) shell above the access, or the build fails with a `blocking-prerender` error; caching is opt-in via `"use cache"` only. The Pages-export config branch keeps these flags off.
+- **Next.js docs for agents**: version-matched Next.js docs ship inside the installed package at `node_modules/next/dist/docs/` (mirroring nextjs.org/docs). Read the relevant guide there before writing Next-specific code — Next 16.3 conventions (Cache Components, `use cache`, instant navigation) postdate most training data. The managed block in [`AGENTS.md`](./AGENTS.md) is written by `next dev`; when it updates, commit the change rather than stripping it from diffs.
 - **UI**: React 19 + MUI 7 + Emotion in the marketing + product app (everything outside `/docs`). No Tailwind, no styled-components, no CSS modules in app code. Use MUI's `sx` prop and the theme in `src/lib/theme.ts`. The exception is `/docs`, which uses Fumadocs (Tailwind v4 internally) with its own scoped stylesheet at `src/app/docs/docs.css`. Don't import Tailwind utilities into `src/components/` or `src/app/(site)/`.
 - **Persistence**: Postgres via `pg`, accessed from `src/lib/db.ts`. **All DB access goes through `src/lib/db.ts`**. Don't open new pools or run raw SQL outside it. Schema lives as plain SQL files under `migrations/`. Never inline `CREATE TABLE IF NOT EXISTS` in app code; add a numbered file and `scripts/migrate.mjs` applies it on the next `pnpm migrate` (the runner auto-discovers `migrations/*.sql`, so you don't edit it, and it never runs on app startup).
 - **Auth**: Better Auth in `src/lib/auth.ts` (server) and `src/lib/auth-client.ts` (browser). OIDC-only, no email/password. Keycloak is the documented default but any OIDC provider works (the `genericOAuth` plugin doesn't care). Sessions are DB-backed in the same Postgres. Server components use `requirePageMember(role?)`; route handlers use `requireApiMember(role?)` from `src/lib/auth-helpers.ts`.
@@ -96,7 +97,16 @@ src/
 │   │   └── {boards,screens,regions,uploads,search}/   REST + search
 │   ├── layout.tsx                             Minimal root: html + body + fonts
 │   └── proxy.ts                               Next 16 "proxy" auth gate (renamed from middleware)
-├── components/                                React + MUI; client where needed
+├── components/                                React + MUI; client where needed. Sliced by domain,
+│   │                                          mirroring the thesis primitives (board → screen → region):
+│   ├── app/                                   Shell + chrome: client-shell, app-header, user-menu
+│   ├── auth/                                  sign-in-panel
+│   ├── board/                                 board-list, board-editor, board-settings, board-share,
+│   │                                          present-mode, command-palette
+│   ├── screen/                                screen-annotator, screen-sidebar, screen-uploader, add-screen-dialog
+│   ├── region/                                region-overlay, state-chip (the domain primitives)
+│   ├── workspace/                             member-roster, api-key-* (manager + create-form + list + reveal), audit-log
+│   └── site/                                  landing-mockup (marketing only)
 ├── content/docs/                              MDX docs source (do not import outside /docs)
 └── lib/                                       db, paths, image, http, ids, auth, auth-client, auth-helpers, source (Fumadocs)
 ```
@@ -106,7 +116,7 @@ Server-only modules import `"server-only"` at the top so they fail loud if pulle
 ### Naming
 
 - Files: `kebab-case.tsx` / `kebab-case.ts`.
-- Components: `PascalCase` exports, named (no default exports for components).
+- Components: `PascalCase` exports, named (no default exports for components). New components go in the matching domain folder under `src/components/` (see layout above); name them after what they _are_, not the page they appear on. A component whose file passes ~300 lines and does several jobs (form + list + panel) should be sliced into composed parts, like `workspace/api-key-*`.
 - DB columns: `snake_case`. Mapped to `camelCase` at the boundary in `src/lib/db.ts`.
 - API routes: REST nouns, plural (`/api/boards`, `/api/screens/:id/regions`). No RPC-style verbs.
 
@@ -125,12 +135,13 @@ pnpm typecheck
 pnpm lint
 pnpm format:check
 pnpm test
+pnpm test:stories
 pnpm build
 ```
 
-All five must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue**. Don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case. `pnpm test` runs the `node:test` suites (`src/**/*.test.ts`) on Node's built-in runner, with no test-framework dependency. Colocate a new unit test next to the module it covers, and prefer covering pure logic (validation, coordinate math, state mapping) over wiring that needs a live DB.
+All six must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue**. Don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case. `pnpm test` runs the `node:test` suites (`src/**/*.test.ts`) on Node's built-in runner, with no test-framework dependency. `pnpm test:stories` renders every story in a real Chromium via Playwright and runs its `play` functions as interaction tests; it needs the browser binary once (`pnpm exec playwright install chromium`). Colocate a new unit test next to the module it covers, and prefer covering pure logic (validation, coordinate math, state mapping) over wiring that needs a live DB.
 
-These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts that `auth.secret` is required. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main`. See "Pages demo" below. **Don't merge red CI**. If the workflow fails, fix the underlying issue rather than disabling the check.
+These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR — story tests as their own `storybook · component tests` job, which caches the Playwright browser — plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts that `auth.secret` is required. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main`. See "Pages demo" below. **Don't merge red CI**. If the workflow fails, fix the underlying issue rather than disabling the check.
 
 ### Pages demo
 
@@ -143,6 +154,31 @@ A static export of the marketing + docs + example-board surface is published at 
 When you change anything in `src/app/(site)/boards`, `src/app/(site)/share`, `src/app/(site)/sign-in`, `src/app/(site)/settings`, or `src/app/api`, also think about whether the Pages stub still makes sense. It's the visitor's only signpost from those URLs.
 
 For UI changes, also run `pnpm dev` (against the docker-compose Postgres + Keycloak) and exercise the change in a browser. Type checks verify code, not features.
+
+### Agent dev loop (Next.js runtime visibility)
+
+The repo ships a project-scoped [`.mcp.json`](./.mcp.json) that starts `next-devtools-mcp`, which auto-discovers the running dev server via its built-in `/_next/mcp` endpoint. With `pnpm dev` running, use those tools instead of guessing from static code:
+
+- **`get_errors`** — current build, runtime, and type errors, including browser-side errors forwarded to the terminal.
+- **`get_compilation_issues`** / **`compile_route`** — check whether the project or one route compiles without running a full `pnpm build`.
+- **`get_routes`** / **`get_page_metadata`** / **`get_project_metadata`** — the live route table and dev-server URL.
+
+`next dev` writes its PID/port to `.next/dev/lock`; if a server is already running, connect to it rather than starting a second one. For a full inspect-edit-verify cycle (including browser-side verification via `agent-browser`), install the first-party skill — it's a per-developer install (`.claude/` and `skills-lock.json` are gitignored here):
+
+```bash
+npx skills add vercel/next.js --skill next-dev-loop
+```
+
+After a Cache Components validation error or insight, prefer the labeled fixes Next.js prints (`stream` / `cache` / `block`) and the per-error page it links under nextjs.org/docs/messages — they're written for agents.
+
+### Component work happens in Storybook first
+
+For component-level UI work, prefer the Storybook loop over the full app — no Postgres or Keycloak needed. `pnpm storybook` serves it at `localhost:6006`, and its MCP server (`@storybook/addon-mcp`, wired in `.mcp.json` at `http://localhost:6006/mcp`) gives you story URLs, story authoring guidance, and test hooks. Verify with `pnpm test:stories` — every story renders in a real Chromium via Playwright, and `play` functions run as interaction tests.
+
+- Stories are colocated `*.stories.tsx` next to their component; the preview (`.storybook/preview.tsx`) already provides the MUI theme (dark-first) and App Router mocks — fix the preview, not individual stories, when many fail the same way.
+- When you add or substantially change a component, add or update its story in the same change. Variant-only stories need no `play`; write one only when it proves an interaction, async arrival, or a computed style.
+- Stories are prop-driven by design — no MSW, no network. Components whose buttons hit the real API (revoke, role change, sign-in) get render-only stories; note that in the story file's doc comment.
+- Keep the demo board (`getDemoBoard()`) as the fixture for anything that renders screens + regions; it's the same example the app ships at `/share/demo`.
 
 For Helm changes, run `helm dependency build deploy/helm/stateboard`, then `helm lint deploy/helm/stateboard --set auth.secret=test` and `helm template stateboard deploy/helm/stateboard --set auth.secret=test ... | kubectl apply --dry-run=client -f -`. The chart fails closed if `auth.secret` is empty. That's deliberate, don't disable it.
 
