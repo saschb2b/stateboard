@@ -22,7 +22,7 @@ Three things follow from this and you must protect them:
 
 The roadmap is staged. The narrative version lives in [`src/content/docs/roadmap.mdx`](./src/content/docs/roadmap.mdx) (rendered at `/docs/roadmap`); the machine-readable version is in [GitHub milestones](https://github.com/saschb2b/stateboard/milestones), and every open issue is assigned to one.
 
-The current stage is **v1 (team-ready)**, released as `2026.6.0`. **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
+The current stage is **v1 (team-ready)**, released as `2026.7.0`. **Do not implement features from a later milestone unless explicitly asked.** If the user requests something that smells like a v2+ feature, confirm before building and cite the milestone it belongs to.
 
 The three v0 states are **load-bearing**. Don't add a fourth state, don't rename them, don't make them configurable, don't soften "missing" to "planned". Their force comes from being three blunt categories that match how stakeholders actually think. The `v1.x` "custom states" ticket allows _additional_ states alongside the three defaults, never replacing them.
 
@@ -34,7 +34,7 @@ The product's thesis is "show, don't tell." Our own interface has to honor it. *
 
 When you're filling in a screen, in this order, prefer:
 
-1. **A permanent built-in example.** The app ships a fully-populated example board served from memory at `/v/demo` (source: `src/lib/demo-data.ts`). It is _not_ in the user's database. Never seed user-visible sample data, because the moment they delete it the reference is gone. From any empty state where a user might wonder "what is this?", link to the example with a small affordance like "View example ↗". The example is also the right thing for docs callouts and marketing CTAs to deep-link into.
+1. **A permanent built-in example.** The app ships a fully-populated example board served from memory at `/share/demo` (source: `src/lib/demo-data.ts`). It is _not_ in the user's database. Never seed user-visible sample data, because the moment they delete it the reference is gone. From any empty state where a user might wonder "what is this?", link to the example with a small affordance like "View example ↗". The example is also the right thing for docs callouts and marketing CTAs to deep-link into.
 2. **Concrete examples in placeholders.** "e.g. Acme Dashboard / Q2 2026" inside the input shows the pattern at the moment of typing, without an extra UI element.
 3. **One-line subtitle stating the _grain_.** "One board per product or per quarterly review. Most teams keep 3 to 8." That answers "how many do I need?" without lecturing.
 4. **Tell the user what each field does + where it appears.** Helper text on a "Description" field shouldn't say "(optional)" alone. Say "Appears beneath the name on the share link." So the user knows what filling it in _does_, not just whether it's required.
@@ -135,12 +135,13 @@ pnpm typecheck
 pnpm lint
 pnpm format:check
 pnpm test
+pnpm test:stories
 pnpm build
 ```
 
-All five must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue**. Don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case. `pnpm test` runs the `node:test` suites (`src/**/*.test.ts`) on Node's built-in runner, with no test-framework dependency. Colocate a new unit test next to the module it covers, and prefer covering pure logic (validation, coordinate math, state mapping) over wiring that needs a live DB.
+All six must pass. If `pnpm format:check` fails, run `pnpm format` to fix. If `pnpm lint` flags something, **fix the underlying issue**. Don't add `eslint-disable` to silence it unless the rule is genuinely wrong for this case. `pnpm test` runs the `node:test` suites (`src/**/*.test.ts`) on Node's built-in runner, with no test-framework dependency. `pnpm test:stories` renders every story in a real Chromium via Playwright and runs its `play` functions as interaction tests; it needs the browser binary once (`pnpm exec playwright install chromium`). Colocate a new unit test next to the module it covers, and prefer covering pure logic (validation, coordinate math, state mapping) over wiring that needs a live DB.
 
-These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR, plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts that `auth.secret` is required. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main`. See "Pages demo" below. **Don't merge red CI**. If the workflow fails, fix the underlying issue rather than disabling the check.
+These same gates run in CI (`.github/workflows/ci.yml`) on every push and PR — story tests as their own `storybook · component tests` job, which caches the Playwright browser — plus a Helm-chart job that lints the chart, server-side dry-runs the manifests, and re-asserts that `auth.secret` is required. A second workflow (`.github/workflows/docker.yml`) builds the container image on every PR and pushes to GHCR on `main` and on version tags. A third workflow (`.github/workflows/pages.yml`) deploys a read-only static demo (landing + docs + the example board) to GitHub Pages on every push to `main`. See "Pages demo" below. **Don't merge red CI**. If the workflow fails, fix the underlying issue rather than disabling the check.
 
 ### Pages demo
 
@@ -172,7 +173,7 @@ After a Cache Components validation error or insight, prefer the labeled fixes N
 
 ### Component work happens in Storybook first
 
-For component-level UI work, prefer the Storybook loop over the full app — no Postgres or Keycloak needed. `pnpm storybook` serves it at `localhost:6006`, and its MCP server (`@storybook/addon-mcp`, wired in `.mcp.json` at `http://localhost:6006/mcp`) gives you story URLs, story authoring guidance, and test hooks. Verify with `pnpm exec vitest --project storybook run` — every story renders in a real Chromium via Playwright, and `play` functions run as interaction tests.
+For component-level UI work, prefer the Storybook loop over the full app — no Postgres or Keycloak needed. `pnpm storybook` serves it at `localhost:6006`, and its MCP server (`@storybook/addon-mcp`, wired in `.mcp.json` at `http://localhost:6006/mcp`) gives you story URLs, story authoring guidance, and test hooks. Verify with `pnpm test:stories` — every story renders in a real Chromium via Playwright, and `play` functions run as interaction tests.
 
 - Stories are colocated `*.stories.tsx` next to their component; the preview (`.storybook/preview.tsx`) already provides the MUI theme (dark-first) and App Router mocks — fix the preview, not individual stories, when many fail the same way.
 - When you add or substantially change a component, add or update its story in the same change. Variant-only stories need no `play`; write one only when it proves an interaction, async arrival, or a computed style.

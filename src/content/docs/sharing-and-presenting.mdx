@@ -7,13 +7,14 @@ Once a board has a screen and a few regions, you have two ways to get it in fron
 
 ## The share link
 
-Every board has a public read-only URL of the form `/share/{slug}`.
+Every board has one or more public read-only URLs of the form `/share/{token}`.
 
-- The slug is generated when you create the board and never changes.
+- The token is a random 24-character string, not the board's name — renaming a board never changes or breaks a link you've already sent.
+- **Links are revocable, and you can mint as many as you like.** A board gets its first link automatically when you create it. Add more from **Board settings → Share links**, each with an optional label ("Exec review", "QA") so you can tell them apart later, and revoke any one of them the moment it's been forwarded somewhere it shouldn't be. Revoking is immediate and doesn't touch the other links.
 - Anyone with the link can read the board — public and login-free by design, so a stakeholder reads it in seconds. Keep this in mind when uploading sensitive screenshots.
 - The share view strips every editor affordance: no upload, no draw, no delete. Tooltips on hover still show labels and notes.
 
-Copy the link from the **Share** button in the editor header (it lives next to **Present**).
+Copy the link from the **Share** button in the editor header. Its dropdown (the arrow beside it) opens the public view in a new tab or jumps to link management.
 
 <Callout type="warn">
   Treat the share URL like a Google Drive "anyone with the link" share. The
