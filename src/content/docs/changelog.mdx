@@ -9,6 +9,13 @@ The canonical source is [`CHANGELOG.md`](https://github.com/saschb2b/stateboard/
 
 ---
 
+## Unreleased
+
+### Breaking: OIDC redirect URI changed
+
+- **Better Auth 1.7** serves generic OAuth providers through its core social endpoints, so the Keycloak callback moved from `/api/auth/oauth2/callback/keycloak` to **`/api/auth/callback/keycloak`**. On upgrade, update the client's **Valid redirect URIs** in Keycloak (or your OIDC provider) to the new path, or sign-in fails with a redirect-URI error. The bundled realm import, Helm values, env examples, and the self-hosting guide already use the new path.
+- **Dependency refresh.** Next.js 16.3.5, Storybook 10.6, nanoid 6, fumadocs-mdx 15.4, and the usual patch bumps.
+
 ## 2026.8.0
 
 Agents get a way in. Per-member API keys unlock the whole REST API and a built-in MCP server, so a coding agent can read a board, flip regions once it has verified what actually shipped, and hand back the share link — with every edit landing in the audit log under the key owner's name. Navigation across the app is now instant, and component work moves into Storybook. **One new migration (`0007`) — run `pnpm migrate` on upgrade.**
