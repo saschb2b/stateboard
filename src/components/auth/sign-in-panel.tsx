@@ -33,8 +33,8 @@ export function SignInPanel({ callback }: SignInPanelProps) {
     setBusy(true);
     setError(null);
     try {
-      await authClient.signIn.oauth2({
-        providerId: "keycloak",
+      await authClient.signIn.social({
+        provider: "keycloak",
         callbackURL: callback,
       });
     } catch (err) {
