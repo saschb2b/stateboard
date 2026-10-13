@@ -7,6 +7,10 @@ Six simulated personas used the actual StateBoard UI on 13 October 2026 to revie
 
 This case assesses StateBoard delivery operated through Codex. The Codex task and tool harness is an external component describing observed local work; its internal architecture, overall security and release readiness remain unverified. See the [usage guide](./release-readiness) and [MVP implementation contract](./release-readiness-mvp).
 
+## Owner feedback and interface redo
+
+The owner rejected the first refinement as bloated and lacking visual and UX focus. The simulated reviews below did not predict that response. The interface was subsequently rebuilt around one latest release, compact history, early view navigation, and expandable capability, dependency, check and decision rows. Repeated context and instruction paragraphs moved out of the main reading surface. Narrow-panel verification also exposed and fixed header overflow and cramped status columns. These changes have been exercised in the real local case; visual acceptance by the owner remains a separate judgment.
+
 ## Case and probe boundaries
 
 The assessment pins StateBoard candidate `git:60d0a3a611c3e59f0e55675d52ee3b7198158021`, with local-development validation, a self-hosted-production target and local Postgres/Keycloak configuration without integrated evidence providers. Its reviewers span product, backend, QA, frontend, operations and release ownership.
