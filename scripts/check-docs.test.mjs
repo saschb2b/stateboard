@@ -153,6 +153,35 @@ test("knowledge checks reject documentation drift in an isolated copy", async (t
     ),
   );
 
+  await t.test("rejects changed markup in a wireframe", () =>
+    withEdit(
+      "docs/design-system/patterns/review-workspace.wireframe.html",
+      (text) => text.replace("</body>", "<p>Unmatched content</p></body>"),
+      rejects(
+        /review-workspace\.wireframe\.html: wireframe must use the example's exact body/,
+      ),
+    ),
+  );
+
+  await t.test(
+    "checks new wireframes without a hardcoded file list",
+    async () => {
+      const filename = path.join(
+        fixture,
+        "docs/design-system/patterns/unpaired.wireframe.html",
+      );
+      try {
+        await fs.writeFile(
+          filename,
+          "<!doctype html><html><body>Example</body></html>",
+        );
+        rejects(/unpaired\.wireframe\.html: missing matching example/)(check());
+      } finally {
+        await fs.rm(filename);
+      }
+    },
+  );
+
   await t.test("passes again after every temporary edit is restored", () => {
     const result = check();
     assert.equal(result.status, 0, result.output);

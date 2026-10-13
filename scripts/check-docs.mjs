@@ -151,20 +151,26 @@ for (const skill of sources.skills) {
       );
   }
 }
-const tokenExample = await fs.readFile(
-  path.join(root, "docs/design-system/patterns/review-workspace.example.html"),
-  "utf8",
-);
-const wireframe = await fs.readFile(
-  path.join(
-    root,
-    "docs/design-system/patterns/review-workspace.wireframe.html",
-  ),
-  "utf8",
-);
 const bodyOf = (text) => text.match(/<body[^>]*>([\s\S]*?)<\/body>/)?.[1];
-if (!bodyOf(tokenExample) || bodyOf(tokenExample) !== bodyOf(wireframe))
-  errors.push("The review wireframe must use the example's exact body.");
+for (const wireframePath of (
+  await walk(path.join(root, "docs/design-system"))
+).filter((file) => file.endsWith(".wireframe.html"))) {
+  const relative = path.relative(root, wireframePath);
+  const examplePath = wireframePath.replace(
+    /\.wireframe\.html$/,
+    ".example.html",
+  );
+  if (!(await exists(examplePath))) {
+    errors.push(`${relative}: missing matching example.`);
+    continue;
+  }
+  const [example, wireframe] = await Promise.all([
+    fs.readFile(examplePath, "utf8"),
+    fs.readFile(wireframePath, "utf8"),
+  ]);
+  if (!bodyOf(example) || bodyOf(example) !== bodyOf(wireframe))
+    errors.push(`${relative}: wireframe must use the example's exact body.`);
+}
 if (errors.length) {
   console.error(errors.join("\n\n"));
   process.exitCode = 1;
