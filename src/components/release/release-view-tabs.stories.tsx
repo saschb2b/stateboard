@@ -16,3 +16,18 @@ export const Perspectives: Story = {
     await expect(args.onChange).toHaveBeenCalledWith("backend");
   },
 };
+
+export const KeyboardPerspective: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await expect(canvas.getByRole("tab", { name: "Overview" })).toHaveFocus();
+    const vertical =
+      canvas.getByRole("tablist").getAttribute("aria-orientation") ===
+      "vertical";
+    await userEvent.keyboard(vertical ? "{ArrowDown}" : "{ArrowRight}");
+    await expect(canvas.getByRole("tab", { name: "Screens" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onChange).toHaveBeenCalledWith("visual");
+  },
+};

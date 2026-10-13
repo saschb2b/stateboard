@@ -75,15 +75,15 @@ export function AppHeader({
             <Typography
               variant="subtitle1"
               sx={{
-                fontWeight: 700,
-                letterSpacing: "0.08em",
+                fontWeight: 650,
+                letterSpacing: "-0.02em",
                 display: {
                   xs: crumb || actions ? "none" : "block",
                   sm: "block",
                 },
               }}
             >
-              STATEBOARD
+              StateBoard
             </Typography>
           </Stack>
         </Link>
@@ -105,7 +105,7 @@ export function AppHeader({
                 sx={{
                   color: "text.secondary",
                   fontWeight: 500,
-                  maxWidth: { xs: 120, sm: 260 },
+                  maxWidth: { xs: 140, sm: 360 },
                   minWidth: 0,
                 }}
               >
@@ -178,6 +178,7 @@ function EditableCrumb({
     return (
       <InputBase
         inputRef={inputRef}
+        inputProps={{ "aria-label": "Board name" }}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -208,13 +209,20 @@ function EditableCrumb({
     <Typography
       variant="subtitle1"
       noWrap
+      component="button"
+      type="button"
       onClick={startEditing}
-      title="Click to rename"
+      aria-label={`Rename ${value}`}
+      title="Rename board"
       sx={{
         color: "text.secondary",
         fontWeight: 500,
         maxWidth: { xs: 140, sm: 260 },
         cursor: "text",
+        border: 0,
+        background: "none",
+        textAlign: "left",
+        fontFamily: "inherit",
         px: 0.5,
         borderRadius: 0.5,
         "&:hover": { color: "text.primary", bgcolor: "action.hover" },

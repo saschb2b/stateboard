@@ -44,10 +44,33 @@ export const EditableCrumb: Story = {
   },
   // Clicking the crumb swaps it for an input; Enter commits the new name.
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(canvas.getByTitle("Click to rename"));
+    await userEvent.click(
+      canvas.getByRole("button", { name: `Rename ${args.crumb}` }),
+    );
     const input = canvas.getByRole("textbox");
     await userEvent.clear(input);
     await userEvent.type(input, "Renamed board{Enter}");
     await expect(args.onCrumbChange).toHaveBeenCalledWith("Renamed board");
+  },
+};
+
+export const KeyboardRename: Story = {
+  args: {
+    homeHref: "/boards",
+    crumb: "StateBoard release review",
+    onCrumbChange: fn(),
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.tab();
+    await userEvent.tab();
+    await expect(
+      canvas.getByRole("button", { name: "Rename StateBoard release review" }),
+    ).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    const input = canvas.getByRole("textbox");
+    await expect(input).toHaveFocus();
+    await userEvent.clear(input);
+    await userEvent.type(input, "Review candidate{Enter}");
+    await expect(args.onCrumbChange).toHaveBeenCalledWith("Review candidate");
   },
 };

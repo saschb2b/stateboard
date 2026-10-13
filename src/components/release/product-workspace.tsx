@@ -6,16 +6,19 @@ import { useRouter } from "next/navigation";
 import {
   Alert,
   Button,
-  Container,
   Dialog,
   DialogContent,
   DialogTitle,
   Stack,
-  Tab,
-  Tabs,
   Typography,
 } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
+import { WorkspaceFrame } from "./workspace-frame";
+import { WorkspaceNavigation } from "./workspace-navigation";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
+import WidgetsOutlinedIcon from "@mui/icons-material/WidgetsOutlined";
+import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import { UserMenu } from "@/components/app/user-menu";
 import { CapabilityManager } from "@/components/capability/capability-manager";
 import { ComponentManager } from "@/components/dependency/component-manager";
@@ -71,6 +74,7 @@ export function ProductWorkspace({
             <Button
               component={Link}
               href={`/boards/${product.board.id}`}
+              color="inherit"
               size="small"
             >
               Screens
@@ -79,29 +83,65 @@ export function ProductWorkspace({
           </>
         }
       />
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
-        <Stack spacing={3}>
-          <Typography variant="h5" component="h1" sx={{ maxWidth: 720 }}>
-            {product.board.name}
-          </Typography>
-          <Tabs
+      <WorkspaceFrame
+        header={
+          <Stack spacing={0.5}>
+            <Typography variant="caption" color="text.secondary">
+              Product workspace
+            </Typography>
+            <Typography
+              variant="h5"
+              component="h1"
+              sx={{
+                maxWidth: 900,
+                fontSize: { xs: "1.4rem", sm: "1.75rem" },
+                overflowWrap: "anywhere",
+              }}
+            >
+              {product.board.name}
+            </Typography>
+            {product.board.description && (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ maxWidth: 760 }}
+              >
+                {product.board.description}
+              </Typography>
+            )}
+          </Stack>
+        }
+        navigation={
+          <WorkspaceNavigation
+            label="Product sections"
             value={tab}
-            onChange={(_, value: string) => setTab(value)}
-            variant="scrollable"
-            allowScrollButtonsMobile
-            aria-label="Product sections"
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              minHeight: 44,
-              "& .MuiTab-root": { minHeight: 44, px: 2, minWidth: 0 },
-            }}
-          >
-            <Tab value="releases" label="Releases" />
-            <Tab value="capabilities" label="Capabilities" />
-            <Tab value="dependencies" label="Components" />
-            <Tab value="connections" label="Connections" />
-          </Tabs>
+            onChange={setTab}
+            sections={[
+              {
+                value: "releases",
+                label: "Releases",
+                icon: <LayersOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "capabilities",
+                label: "Capabilities",
+                icon: <ViewQuiltOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "dependencies",
+                label: "Components",
+                icon: <WidgetsOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "connections",
+                label: "Connections",
+                icon: <AccountTreeOutlinedIcon fontSize="small" />,
+              },
+            ]}
+          />
+        }
+      >
+        <Stack spacing={3}>
           {error && (
             <Alert
               severity="error"
@@ -162,7 +202,7 @@ export function ProductWorkspace({
             />
           )}
         </Stack>
-      </Container>
+      </WorkspaceFrame>
       <Dialog
         open={creating}
         onClose={() => setCreating(false)}

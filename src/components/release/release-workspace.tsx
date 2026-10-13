@@ -6,7 +6,6 @@ import {
   Alert,
   Button,
   Box,
-  Container,
   IconButton,
   Stack,
   Tooltip,
@@ -19,6 +18,7 @@ import type { CheckSubjectScope } from "@/components/evidence/check-scope";
 import { evaluateRelease } from "@/lib/readiness";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { ReadinessSummary, ReadinessChip } from "./readiness-summary";
+import { WorkspaceFrame } from "./workspace-frame";
 import { ReleaseViewTabs } from "./release-view-tabs";
 import { releaseRequest } from "./release-request";
 import { ReleaseContext } from "./release-context";
@@ -195,6 +195,7 @@ export function ReleaseWorkspace({
           ) : (
             <>
               <Button
+                color="inherit"
                 component={Link}
                 href={`/boards/${product.board.id}/releases`}
                 size="small"
@@ -206,65 +207,84 @@ export function ReleaseWorkspace({
           )
         }
       />
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
-        <Stack spacing={3}>
-          {demo && <Alert severity="info">Example release · Read-only</Alert>}
-          <Stack direction="row" justifyContent="space-between" gap={2}>
-            <Stack spacing={0.5}>
-              <Typography variant="h5" component="h1">
-                {assessment.candidateLabel}
-              </Typography>
-              <Stack
-                direction="row"
-                alignItems="center"
-                gap={1.5}
-                flexWrap="wrap"
-              >
-                {view !== "release" && (
-                  <ReadinessChip state={readiness.state} />
-                )}
-                <Typography variant="caption" color="text.secondary">
-                  Target · {assessment.targetEnvironment} · Revision{" "}
-                  {assessment.revision}
+      <WorkspaceFrame
+        header={
+          <Stack spacing={1.5}>
+            {demo && <Alert severity="info">Example release · Read-only</Alert>}
+            <Stack direction="row" justifyContent="space-between" gap={2}>
+              <Stack spacing={0.5}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 0.5 }}
+                >
+                  Release assessment
                 </Typography>
-              </Stack>
-            </Stack>
-            {!demo && (
-              <Tooltip title="Refresh assessment">
-                <IconButton
-                  aria-label="Refresh assessment"
-                  sx={{ alignSelf: "flex-start" }}
-                  size="small"
-                  disabled={reloading}
-                  onClick={async () => {
-                    setReloading(true);
-                    setError(null);
-                    try {
-                      await reload();
-                    } catch (cause) {
-                      setError(
-                        cause instanceof Error
-                          ? cause.message
-                          : "Unable to reload.",
-                      );
-                    } finally {
-                      setReloading(false);
-                    }
+                <Typography
+                  variant="h5"
+                  component="h1"
+                  sx={{
+                    fontSize: { xs: "1.4rem", sm: "1.75rem" },
+                    overflowWrap: "anywhere",
                   }}
                 >
-                  <RefreshIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
+                  {assessment.candidateLabel}
+                </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  gap={1.5}
+                  flexWrap="wrap"
+                >
+                  {view !== "release" && (
+                    <ReadinessChip state={readiness.state} />
+                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Target · {assessment.targetEnvironment} · Revision{" "}
+                    {assessment.revision}
+                  </Typography>
+                </Stack>
+              </Stack>
+              {!demo && (
+                <Tooltip title="Refresh assessment">
+                  <IconButton
+                    aria-label="Refresh assessment"
+                    sx={{ alignSelf: "flex-start" }}
+                    size="small"
+                    disabled={reloading}
+                    onClick={async () => {
+                      setReloading(true);
+                      setError(null);
+                      try {
+                        await reload();
+                      } catch (cause) {
+                        setError(
+                          cause instanceof Error
+                            ? cause.message
+                            : "Unable to reload.",
+                        );
+                      } finally {
+                        setReloading(false);
+                      }
+                    }}
+                  >
+                    <RefreshIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Stack>
+            <ReleaseContext assessment={assessment} collapsible />
           </Stack>
-          <ReleaseContext assessment={assessment} collapsible />
+        }
+        navigation={<ReleaseViewTabs view={view} onChange={selectView} />}
+      >
+        <Stack spacing={3}>
           {error && (
             <Alert severity="error">
               {error} Reload the assessment before retrying if another person
               changed it.
             </Alert>
           )}
-          <ReleaseViewTabs view={view} onChange={selectView} />
           {checkId && !focusedCheckId && (
             <Alert
               severity="warning"
@@ -283,10 +303,10 @@ export function ReleaseWorkspace({
                 view === "release"
                   ? {
                       xs: "minmax(0, 1fr)",
-                      md: "minmax(0, 0.85fr) minmax(0, 1.4fr)",
+                      md: "minmax(0, 0.9fr) minmax(0, 1.35fr)",
                     }
                   : "minmax(0, 1fr)",
-              gap: { xs: 4, md: 5 },
+              gap: 3,
               alignItems: "start",
             }}
           >
@@ -340,7 +360,7 @@ export function ReleaseWorkspace({
             />
           </Box>
         </Stack>
-      </Container>
+      </WorkspaceFrame>
     </>
   );
 }

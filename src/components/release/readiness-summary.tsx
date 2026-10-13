@@ -14,6 +14,11 @@ export const READINESS_LABELS: Record<ReadinessState, string> = {
   blocked: "Blocked",
   needs_evidence: "Needs evidence",
 };
+const READINESS_COLORS = {
+  ready: "success",
+  blocked: "error",
+  needs_evidence: "warning",
+} as const;
 export function ReadinessChip({
   state,
   verification = false,
@@ -25,13 +30,7 @@ export function ReadinessChip({
     <Chip
       size="small"
       label={`${READINESS_LABELS[state]}${verification ? " · checks" : ""}`}
-      color={
-        state === "ready"
-          ? "success"
-          : state === "blocked"
-            ? "error"
-            : "warning"
-      }
+      color={READINESS_COLORS[state]}
       variant="outlined"
       sx={{
         height: 23,
@@ -95,15 +94,26 @@ export function ReadinessSummary({
         decision.expiresAt > readiness.evaluatedAt),
   );
   return (
-    <Stack spacing={2.5}>
-      <Stack
-        direction="column"
-        gap={1}
-        justifyContent="space-between"
-        alignItems="flex-start"
-      >
-        <Stack spacing={0.5}>
-          <Typography variant="h6" component="h2">
+    <Stack spacing={3}>
+      <Stack gap={1.5} justifyContent="space-between" alignItems="flex-start">
+        <Stack spacing={1}>
+          <Typography
+            variant="h6"
+            component="h2"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.25,
+              "&::before": {
+                content: '""',
+                width: 8,
+                height: 8,
+                flexShrink: 0,
+                borderRadius: "50%",
+                bgcolor: `${READINESS_COLORS[readiness.state]}.main`,
+              },
+            }}
+          >
             {READINESS_LABELS[readiness.state]}
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -115,7 +125,11 @@ export function ReadinessSummary({
           </Typography>
         </Stack>
         {detail && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ overflowWrap: "anywhere" }}
+          >
             Validation · {detail.assessment.validationEnvironment}
           </Typography>
         )}
@@ -124,7 +138,7 @@ export function ReadinessSummary({
             color="inherit"
             size="small"
             endIcon={<ArrowForwardIcon fontSize="small" />}
-            sx={{ p: 0, mt: 0.5 }}
+            sx={{ px: 0, minHeight: 32 }}
             onClick={onReviewDecision}
           >
             {currentDecision

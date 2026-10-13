@@ -25,7 +25,7 @@ export function ProductReleaseList({
     product.releaseOverviews?.find((item) => item.assessment.id === id);
   const href = (id: string) => `/boards/${product.board.id}/releases/${id}`;
   return (
-    <Stack spacing={4}>
+    <Stack spacing={3.5}>
       <Stack spacing={1.5}>
         <Stack
           direction="row"
@@ -48,23 +48,50 @@ export function ProductReleaseList({
           )}
         </Stack>
         {latest ? (
-          <Paper sx={{ p: { xs: 2.5, sm: 3 } }}>
-            <Typography variant="h6" component="h2" sx={{ maxWidth: 760 }}>
-              {latest.candidateLabel}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Target · {latest.targetEnvironment}
-            </Typography>
-            <ReleaseOverviewSummary overview={overview(latest.id)} />
-            <Button
-              component={Link}
-              href={href(latest.id)}
-              variant="contained"
-              endIcon={<ArrowForwardIcon />}
-              sx={{ mt: 1 }}
+          <Paper sx={{ p: { xs: 2, sm: 2.5 } }}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              alignItems={{ xs: "flex-start", sm: "center" }}
+              gap={2}
             >
-              Review release
-            </Button>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography
+                  variant="h6"
+                  component="h2"
+                  sx={{ maxWidth: 760, overflowWrap: "anywhere" }}
+                >
+                  {latest.candidateLabel}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 0.5 }}
+                >
+                  Target · {latest.targetEnvironment}
+                </Typography>
+              </Box>
+              <Button
+                component={Link}
+                href={href(latest.id)}
+                variant="contained"
+                endIcon={<ArrowForwardIcon />}
+                sx={{ flexShrink: 0 }}
+              >
+                Review release
+              </Button>
+            </Stack>
+            <Box
+              sx={{
+                mt: 2,
+                pt: 0.25,
+                borderTop: 1,
+                borderColor: "divider",
+                "& > .MuiStack-root": { mb: 0 },
+              }}
+            >
+              <ReleaseOverviewSummary overview={overview(latest.id)} />
+            </Box>
           </Paper>
         ) : (
           <Box sx={{ py: 5 }}>
@@ -101,11 +128,25 @@ export function ProductReleaseList({
           <Typography variant="subtitle2" color="text.secondary">
             Earlier releases
           </Typography>
-          <Box sx={{ borderTop: 1, borderColor: "divider" }}>
+          <Box
+            sx={{
+              border: 1,
+              borderColor: "divider",
+              borderRadius: 1.5,
+              bgcolor: "background.paper",
+              overflow: "hidden",
+            }}
+          >
             {history.map((release) => (
               <Box
                 key={release.id}
-                sx={{ py: 2, borderBottom: 1, borderColor: "divider" }}
+                sx={{
+                  px: 2,
+                  py: 1.75,
+                  borderBottom: 1,
+                  borderColor: "divider",
+                  "&:last-child": { borderBottom: 0 },
+                }}
               >
                 <Typography
                   component={Link}

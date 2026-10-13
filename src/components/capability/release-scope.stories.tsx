@@ -26,13 +26,22 @@ export const CapabilityReadiness: Story = {
     const row = canvas.getByRole("button", {
       name: "Details for Export an invoice",
     });
+    await expect(row.closest(".MuiAccordion-root")).toHaveStyle({
+      borderRadius: "0px",
+    });
     await expect(row).toHaveAccessibleDescription("Blocked · checks");
     await expect(row).toHaveAttribute("aria-expanded", "false");
+    await expect(within(row).getByText("Frontend + billing")).toBeVisible();
+    const outcome = example.detail.scope.find(
+      (item) => item.capabilityId === "cap-export",
+    )!.outcome;
+    await expect(canvas.queryByText(outcome)).not.toBeInTheDocument();
     await expect(
       canvas.queryByText("Included because"),
     ).not.toBeInTheDocument();
     await userEvent.click(row);
     await expect(row).toHaveAttribute("aria-expanded", "true");
+    await expect(canvas.getByText(outcome)).toBeVisible();
     await expect(
       canvas.getByText("Frontend + billing · Definition 1"),
     ).toBeVisible();

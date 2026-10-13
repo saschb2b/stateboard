@@ -71,9 +71,16 @@ export function ReleaseScope({
           </Button>
         )}
       </Stack>
-      <Box sx={{ borderTop: 1, borderColor: "divider" }}>
+      <Box
+        sx={{
+          border: 1,
+          borderColor: "divider",
+          borderRadius: 1.5,
+          overflow: "hidden",
+        }}
+      >
         {detail.scope.length === 0 && (
-          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ p: 2.5 }}>
             No capabilities in this assessment.
           </Typography>
         )}
@@ -101,11 +108,13 @@ export function ReleaseScope({
               square
               slotProps={{ transition: { unmountOnExit: true } }}
               sx={{
-                bgcolor: "background.default",
+                bgcolor: "background.paper",
                 border: 0,
+                borderRadius: 0,
                 borderBottom: 1,
                 borderColor: "divider",
                 "&::before": { display: "none" },
+                "&:last-child": { borderBottom: 0 },
               }}
             >
               <AccordionSummary
@@ -113,8 +122,8 @@ export function ReleaseScope({
                 aria-label={`Details for ${item.name}`}
                 aria-describedby={`capability-status-${item.capabilityId}`}
                 sx={{
-                  px: 0,
-                  py: 0.25,
+                  px: 2,
+                  py: 0.5,
                   gap: 1.5,
                   "& .MuiAccordionSummary-content": { minWidth: 0 },
                 }}
@@ -131,6 +140,7 @@ export function ReleaseScope({
                       variant="body2"
                       sx={{
                         fontWeight: 600,
+                        overflowWrap: "anywhere",
                         color: item.included
                           ? "text.primary"
                           : "text.secondary",
@@ -138,8 +148,8 @@ export function ReleaseScope({
                     >
                       {item.name}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" noWrap>
-                      {item.outcome}
+                    <Typography variant="caption" color="text.secondary">
+                      {item.ownerLabel}
                     </Typography>
                     {newerDefinition && (
                       <Typography variant="caption" color="warning.main">
@@ -163,7 +173,7 @@ export function ReleaseScope({
                   </Box>
                 </Stack>
               </AccordionSummary>
-              <AccordionDetails sx={{ px: 0, pt: 0.5, pb: 2.5 }}>
+              <AccordionDetails sx={{ px: 2, pt: 0.5, pb: 2.5 }}>
                 <Stack spacing={1.5} sx={{ maxWidth: 760 }}>
                   <Typography variant="body2">{item.outcome}</Typography>
                   <Typography variant="caption" color="text.secondary">
