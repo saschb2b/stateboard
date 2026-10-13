@@ -32,6 +32,9 @@ import {
   type ResizeCorner,
 } from "@/lib/region-geometry";
 import { StateChip } from "@/components/region/state-chip";
+import { createMutationQueue } from "@/lib/mutation-queue";
+import { mergeSavedRegion, type RegionPatch } from "@/lib/region-update";
+import { clientRequest } from "@/lib/client-request";
 
 interface ScreenAnnotatorProps {
   screen: ScreenWithRegions;
@@ -66,15 +69,6 @@ interface ScreenAnnotatorProps {
   onFocusConsumed?: () => void;
 }
 
-/** Pull the API's `{ error }` message off a failed response, else a fallback. */
-async function failureMessage(
-  res: Response,
-  fallback: string,
-): Promise<string> {
-  const body = (await res.json().catch(() => ({}))) as { error?: string };
-  return body.error ?? fallback;
-}
-
 interface DraftRect {
   x: number;
   y: number;
@@ -104,7 +98,32 @@ function applyDrag(drag: DragState, dx: number, dy: number): RegionBox {
   );
 }
 
-export function ScreenAnnotator({
+export function ScreenAnnotator(props: ScreenAnnotatorProps) {
+  return (
+    <ScreenAnnotatorView
+      {...props}
+      createRegion={(data) =>
+        clientRequest<Region>(`/api/screens/${props.screen.id}/regions`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(data),
+        })
+      }
+      updateRegion={(id, patch) =>
+        clientRequest<Region>(`/api/regions/${id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(patch),
+        })
+      }
+      deleteRegion={async (id) => {
+        await clientRequest(`/api/regions/${id}`, { method: "DELETE" });
+      }}
+    />
+  );
+}
+
+export function ScreenAnnotatorView({
   screen,
   onScreenUpdated,
   onError,
@@ -115,13 +134,41 @@ export function ScreenAnnotator({
   onWorkStart,
   focusRegionId,
   onFocusConsumed,
-}: ScreenAnnotatorProps) {
+  createRegion,
+  updateRegion,
+  deleteRegion,
+}: ScreenAnnotatorProps & {
+  createRegion: (data: RegionPatch) => Promise<Region>;
+  updateRegion: (id: string, patch: RegionPatch) => Promise<Region>;
+  deleteRegion: (id: string) => Promise<void>;
+}) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftRect | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [enqueueMutation] = useState(createMutationQueue);
+  const [creating, setCreating] = useState(false);
+  const createInFlight = useRef(false);
+  const deleting = useRef(new Set<string>());
+  const savedGeometry = useRef(
+    new Map(
+      screen.regions.map((region) => [
+        region.id,
+        {
+          x: region.x,
+          y: region.y,
+          w: region.w,
+          h: region.h,
+        },
+      ]),
+    ),
+  );
+  const screenRef = useRef(screen);
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
   // Always-fresh handle to regions for callbacks that outlive the render that
   // created them (the debounced geometry persist and keyboard nudging). Kept
   // current via an effect — callbacks only fire after commit, never mid-render.
@@ -129,6 +176,14 @@ export function ScreenAnnotator({
   useEffect(() => {
     regionsRef.current = regions;
   }, [regions]);
+  const publishRegions = useCallback(
+    (next: Region[]) => {
+      regionsRef.current = next;
+      setRegions(next);
+      onScreenUpdated({ ...screenRef.current, regions: next });
+    },
+    [onScreenUpdated],
+  );
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nudgePending = useRef<{
     id: string;
@@ -285,37 +340,46 @@ export function ScreenAnnotator({
     });
   };
 
-  // Persist a moved/resized box. The optimistic geometry is already in local
-  // state from the drag/nudge; on failure we roll back to the pre-change box.
-  // Reads regions through the ref so a debounced call sees the latest state.
+  // Each region has one write queue. Geometry stays responsive while a save runs.
   const persistGeometry = useCallback(
-    async (
-      id: string,
-      box: { x: number; y: number; w: number; h: number },
-      orig: { x: number; y: number; w: number; h: number },
-    ) => {
-      const res = await fetch(`/api/regions/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(box),
-      });
-      if (!res.ok) {
-        const reverted = regionsRef.current.map((r) =>
-          r.id === id ? { ...r, ...orig } : r,
+    async (id: string, box: RegionBox, orig: RegionBox) => {
+      if (deleting.current.has(id)) return;
+      const stillMatches = (region: Region) =>
+        region.x === box.x &&
+        region.y === box.y &&
+        region.w === box.w &&
+        region.h === box.h;
+      try {
+        const updated = await enqueueMutation(id, () => updateRegion(id, box));
+        savedGeometry.current.set(id, {
+          x: updated.x,
+          y: updated.y,
+          w: updated.w,
+          h: updated.h,
+        });
+        publishRegions(
+          regionsRef.current.map((region) =>
+            region.id === id && stillMatches(region)
+              ? mergeSavedRegion(region, updated, box)
+              : region,
+          ),
         );
-        setRegions(reverted);
-        onScreenUpdated({ ...screen, regions: reverted });
-        onError?.(await failureMessage(res, "Couldn't update the region."));
-        return;
+      } catch (cause) {
+        publishRegions(
+          regionsRef.current.map((region) =>
+            region.id === id && stillMatches(region)
+              ? { ...region, ...(savedGeometry.current.get(id) ?? orig) }
+              : region,
+          ),
+        );
+        onError?.(
+          cause instanceof Error
+            ? cause.message
+            : "Could not save the region position.",
+        );
       }
-      const updated: Region = await res.json();
-      const next = regionsRef.current.map((r) =>
-        r.id === updated.id ? updated : r,
-      );
-      setRegions(next);
-      onScreenUpdated({ ...screen, regions: next });
     },
-    [screen, onScreenUpdated, onError],
+    [enqueueMutation, updateRegion, publishRegions, onError],
   );
 
   // Persist a pending keyboard nudge. Fired on a short idle, and also when the
@@ -347,56 +411,59 @@ export function ScreenAnnotator({
   // --- API actions -------------------------------------------------------
 
   const persistDraft = async () => {
-    if (!draft) return;
-    const res = await fetch(`/api/screens/${screen.id}/regions`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    if (!draft || createInFlight.current) return;
+    createInFlight.current = true;
+    setCreating(true);
+    try {
+      const created = await createRegion({
         ...draft,
         state: draftDefaults.state,
         label: draftDefaults.label || null,
         notes: draftDefaults.notes || null,
-      }),
-    });
-    if (!res.ok) {
-      onError?.(await failureMessage(res, "Couldn't save the region."));
-      return;
+      });
+      savedGeometry.current.set(created.id, {
+        x: created.x,
+        y: created.y,
+        w: created.w,
+        h: created.h,
+      });
+      publishRegions([...regionsRef.current, created]);
+      setDraft(null);
+      setDraftDefaults({ state: "shipped", label: "", notes: "" });
+      setSelectedId(created.id);
+    } catch (cause) {
+      onError?.(
+        cause instanceof Error ? cause.message : "Could not save the region.",
+      );
+    } finally {
+      createInFlight.current = false;
+      setCreating(false);
     }
-    const created: Region = await res.json();
-    const next = [...regions, created];
-    setRegions(next);
-    onScreenUpdated({ ...screen, regions: next });
-    setDraft(null);
-    setDraftDefaults({ state: "shipped", label: "", notes: "" });
-    setSelectedId(created.id);
   };
 
-  // Persist a region's label/notes. Called on a short idle after typing stops
-  // and on blur — never per keystroke — so a burst of typing becomes one PATCH
-  // (and one audit row). Merges through the always-fresh regionsRef so a slow
-  // response can't clobber newer local state.
   const persistText = useCallback(
-    async (
-      id: string,
-      patch: { label?: string | null; notes?: string | null },
-    ) => {
-      const res = await fetch(`/api/regions/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        onError?.(await failureMessage(res, "Couldn't save the region."));
-        return;
+    async (id: string, patch: Pick<RegionPatch, "label" | "notes">) => {
+      if (deleting.current.has(id)) return;
+      try {
+        const updated = await enqueueMutation(id, () =>
+          updateRegion(id, patch),
+        );
+        publishRegions(
+          regionsRef.current.map((region) =>
+            region.id === id
+              ? mergeSavedRegion(region, updated, patch)
+              : region,
+          ),
+        );
+      } catch (cause) {
+        onError?.(
+          cause instanceof Error
+            ? cause.message
+            : "Could not save the region text.",
+        );
       }
-      const updated: Region = await res.json();
-      const next = regionsRef.current.map((r) =>
-        r.id === updated.id ? updated : r,
-      );
-      setRegions(next);
-      onScreenUpdated({ ...screen, regions: next });
     },
-    [screen, onScreenUpdated, onError],
+    [enqueueMutation, updateRegion, publishRegions, onError],
   );
 
   // Flush a pending text edit now, sending only the fields that actually
@@ -462,56 +529,54 @@ export function ScreenAnnotator({
   const updateSelected = useCallback(
     async (patch: Partial<Pick<Region, "state">>) => {
       const id = selectedId;
-      if (!id) return;
-      // Serialize any pending text edit ahead of this discrete change.
+      if (!id || deleting.current.has(id)) return;
       flushTextRef.current();
-      const before = regionsRef.current;
-      const optimistic = before.map((r) =>
-        r.id === id ? { ...r, ...patch } : r,
-      );
-      setRegions(optimistic);
-      const res = await fetch(`/api/regions/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(patch),
-      });
-      if (!res.ok) {
-        // revert on failure
-        setRegions(before);
-        onError?.(await failureMessage(res, "Couldn't update the region."));
-        return;
+      try {
+        const updated = await enqueueMutation(id, () =>
+          updateRegion(id, patch),
+        );
+        publishRegions(
+          regionsRef.current.map((region) =>
+            region.id === id
+              ? mergeSavedRegion(region, updated, patch)
+              : region,
+          ),
+        );
+      } catch (cause) {
+        onError?.(
+          cause instanceof Error
+            ? cause.message
+            : "Could not save the region state.",
+        );
       }
-      const updated: Region = await res.json();
-      const next = regionsRef.current.map((r) =>
-        r.id === updated.id ? updated : r,
-      );
-      setRegions(next);
-      onScreenUpdated({ ...screen, regions: next });
     },
-    [selectedId, screen, onScreenUpdated, onError],
+    [selectedId, enqueueMutation, updateRegion, publishRegions, onError],
   );
 
   const deleteSelected = useCallback(async () => {
-    if (!selected) return;
-    // Drop any pending text save for this region so it can't PATCH a row that's
-    // about to be deleted.
+    if (!selected || deleting.current.has(selected.id)) return;
+    const id = selected.id;
+    flushTextRef.current();
+    deleting.current.add(id);
     if (textTimer.current) {
       clearTimeout(textTimer.current);
       textTimer.current = null;
     }
     pendingTextId.current = null;
-    const res = await fetch(`/api/regions/${selected.id}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) {
-      onError?.(await failureMessage(res, "Couldn't delete the region."));
-      return;
+    if (nudgePending.current?.id === id) nudgePending.current = null;
+    try {
+      await enqueueMutation(id, () => deleteRegion(id));
+      savedGeometry.current.delete(id);
+      publishRegions(regionsRef.current.filter((region) => region.id !== id));
+      setSelectedId((current) => (current === id ? null : current));
+    } catch (cause) {
+      onError?.(
+        cause instanceof Error ? cause.message : "Could not delete the region.",
+      );
+    } finally {
+      deleting.current.delete(id);
     }
-    const next = regions.filter((r) => r.id !== selected.id);
-    setRegions(next);
-    setSelectedId(null);
-    onScreenUpdated({ ...screen, regions: next });
-  }, [selected, regions, screen, onScreenUpdated, onError]);
+  }, [selected, enqueueMutation, deleteRegion, publishRegions, onError]);
 
   // --- keyboard ----------------------------------------------------------
 
@@ -840,10 +905,13 @@ export function ScreenAnnotator({
                   variant="contained"
                   color="primary"
                   onClick={persistDraft}
+                  disabled={creating}
                 >
-                  Add region
+                  {creating ? "Saving…" : "Add region"}
                 </Button>
-                <Button onClick={() => setDraft(null)}>Cancel</Button>
+                <Button disabled={creating} onClick={() => setDraft(null)}>
+                  Cancel
+                </Button>
               </Stack>
             </Stack>
           ) : selected ? (

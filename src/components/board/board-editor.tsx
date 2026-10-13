@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -41,6 +41,9 @@ import { REGION_STATES, attributionName } from "@/lib/types";
 import { STATE_META } from "@/lib/state-meta";
 import { timeAgo } from "@/lib/time";
 import type { CurrentMember } from "@/lib/auth";
+import { clientRequest } from "@/lib/client-request";
+import { createMutationQueue } from "@/lib/mutation-queue";
+import { applySavedOrder } from "@/lib/screen-order";
 
 interface BoardEditorProps {
   board: Board;
@@ -65,6 +68,12 @@ export function BoardEditor({
   now,
 }: BoardEditorProps) {
   const [boardName, setBoardName] = useState(board.name);
+  const [enqueueMutation] = useState(createMutationQueue);
+  const savedBoardName = useRef(board.name);
+  const nameVersion = useRef(0);
+  const orderVersion = useRef(0);
+  const savedScreenOrder = useRef(initialScreens.map((screen) => screen.id));
+  const shareCreation = useRef<Promise<ShareLink | null> | null>(null);
   const [screens, setScreens] = useState<ScreenWithRegions[]>(initialScreens);
   const [shareLinks, setShareLinks] = useState<ShareLink[]>(initialShareLinks);
   const [activeId, setActiveId] = useState<string | null>(
@@ -126,11 +135,8 @@ export function BoardEditor({
     setAddOpen(true);
   };
 
-  // Surface a failed mutation instead of silently swallowing it. Reads the
-  // API's `{ error }` body when present, falling back to a plain-language line.
-  const reportFailure = async (res: Response, fallback: string) => {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    setActionError(body.error ?? fallback);
+  const reportFailure = (cause: unknown, fallback: string) => {
+    setActionError(cause instanceof Error ? cause.message : fallback);
   };
 
   const active = useMemo(
@@ -177,44 +183,56 @@ export function BoardEditor({
     ) {
       return;
     }
-    const res = await fetch(`/api/screens/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      await reportFailure(res, "Couldn't delete the screen.");
-      return;
+    try {
+      await enqueueMutation(`screen:${id}`, () =>
+        clientRequest(`/api/screens/${id}`, { method: "DELETE" }),
+      );
+      handleScreenDeleted(id);
+    } catch (cause) {
+      reportFailure(cause, "Could not delete the screen.");
     }
-    handleScreenDeleted(id);
   };
 
   const renameScreen = async (id: string, label: string) => {
     const trimmed = label.trim();
     const screen = screens.find((s) => s.id === id);
-    if (!screen) return;
-    if ((screen.label ?? "") === trimmed) return;
-    const res = await fetch(`/api/screens/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label: trimmed || null }),
-    });
-    if (!res.ok) {
-      await reportFailure(res, "Couldn't rename the screen.");
-      return;
+    if (!screen || (screen.label ?? "") === trimmed) return;
+    try {
+      await enqueueMutation(`screen:${id}`, () =>
+        clientRequest(`/api/screens/${id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ label: trimmed || null }),
+        }),
+      );
+      setScreens((current) =>
+        current.map((screen) =>
+          screen.id === id ? { ...screen, label: trimmed || null } : screen,
+        ),
+      );
+    } catch (cause) {
+      reportFailure(cause, "Could not rename the screen.");
     }
-    handleScreenUpdated({ ...screen, label: trimmed || null });
   };
 
-  // Persist a new screen order; roll back the optimistic move on failure.
-  const persistScreenOrder = async (
-    next: ScreenWithRegions[],
-    prev: ScreenWithRegions[],
-  ) => {
-    const res = await fetch(`/api/boards/${board.id}/screens`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ order: next.map((s) => s.id) }),
-    });
-    if (!res.ok) {
-      setScreens(prev);
-      await reportFailure(res, "Couldn't reorder the screens.");
+  const persistScreenOrder = async (next: ScreenWithRegions[]) => {
+    const version = ++orderVersion.current;
+    const order = next.map((screen) => screen.id);
+    try {
+      await enqueueMutation("screen-order", () =>
+        clientRequest(`/api/boards/${board.id}/screens`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ order }),
+        }),
+      );
+      savedScreenOrder.current = order;
+    } catch (cause) {
+      if (version === orderVersion.current)
+        setScreens((current) =>
+          applySavedOrder(current, savedScreenOrder.current),
+        );
+      reportFailure(cause, "Could not reorder the screens.");
     }
   };
 
@@ -232,36 +250,54 @@ export function BoardEditor({
       ...without.slice(targetIdx),
     ];
     setScreens(next);
-    void persistScreenOrder(next, prev);
+    void persistScreenOrder(next);
   };
 
   const renameBoard = async (next: string) => {
-    setBoardName(next); // optimistic so the input doesn't snap back
-    const res = await fetch(`/api/boards/${board.id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: next }),
-    });
-    if (!res.ok) {
-      setBoardName(board.name); // revert on failure
-      await reportFailure(res, "Couldn't rename the board.");
+    const version = ++nameVersion.current;
+    setBoardName(next);
+    try {
+      const updated = await enqueueMutation("board-name", () =>
+        clientRequest<Board>(`/api/boards/${board.id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ name: next }),
+        }),
+      );
+      savedBoardName.current = updated.name;
+      if (version === nameVersion.current) setBoardName(updated.name);
+    } catch (cause) {
+      if (version === nameVersion.current) setBoardName(savedBoardName.current);
+      reportFailure(cause, "Could not rename the board.");
     }
   };
 
   const ensureShareLink = async (): Promise<ShareLink | null> => {
     if (activeShareLink) return activeShareLink;
-    const res = await fetch(`/api/boards/${board.id}/share-links`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    if (!res.ok) {
-      await reportFailure(res, "Couldn't create a share link.");
-      return null;
+    if (shareCreation.current) return shareCreation.current;
+    const create = async () => {
+      try {
+        const link = await clientRequest<ShareLink>(
+          `/api/boards/${board.id}/share-links`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({}),
+          },
+        );
+        setShareLinks((prev) => [link, ...prev]);
+        return link;
+      } catch (cause) {
+        reportFailure(cause, "Could not create a share link.");
+        return null;
+      }
+    };
+    shareCreation.current = create();
+    try {
+      return await shareCreation.current;
+    } finally {
+      shareCreation.current = null;
     }
-    const link: ShareLink = await res.json();
-    setShareLinks((prev) => [link, ...prev]);
-    return link;
   };
 
   const copyShare = async () => {
@@ -273,7 +309,9 @@ export function BoardEditor({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // ignore — clipboard not available
+      setActionError(
+        "Could not copy the link. Open sharing settings to copy it manually.",
+      );
     }
   };
 

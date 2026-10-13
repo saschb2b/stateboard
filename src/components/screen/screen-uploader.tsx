@@ -8,6 +8,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import type { Screen, ScreenWithRegions } from "@/lib/types";
+import { clientRequest } from "@/lib/client-request";
 
 interface ScreenUploaderProps {
   boardId: string;
@@ -28,34 +29,50 @@ export function ScreenUploader({
   compact = false,
   replaceScreenId,
 }: ScreenUploaderProps) {
+  const upload = async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const data = await clientRequest<Screen | ScreenWithRegions>(
+      replaceScreenId
+        ? `/api/screens/${replaceScreenId}/image`
+        : `/api/boards/${boardId}/screens`,
+      { method: replaceScreenId ? "PUT" : "POST", body: form },
+    );
+    const screen: ScreenWithRegions = replaceScreenId
+      ? (data as ScreenWithRegions)
+      : { ...(data as Screen), regions: [] };
+    onUploaded(screen);
+  };
+
+  return <ScreenUploadControl compact={compact} onUpload={upload} />;
+}
+
+export function ScreenUploadControl({
+  compact = false,
+  onUpload,
+}: {
+  compact?: boolean;
+  onUpload: (file: File) => Promise<void>;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadInFlight = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const upload = async (file: File) => {
+    if (uploadInFlight.current) return;
+    uploadInFlight.current = true;
     setError(null);
     setUploading(true);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(
-        replaceScreenId
-          ? `/api/screens/${replaceScreenId}/image`
-          : `/api/boards/${boardId}/screens`,
-        { method: replaceScreenId ? "PUT" : "POST", body: form },
+      await onUpload(file);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Unable to upload. Try again.",
       );
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `upload failed (${res.status})`);
-        return;
-      }
-      const data = await res.json();
-      const screen: ScreenWithRegions = replaceScreenId
-        ? (data as ScreenWithRegions)
-        : { ...(data as Screen), regions: [] };
-      onUploaded(screen);
     } finally {
+      uploadInFlight.current = false;
       setUploading(false);
     }
   };
@@ -96,10 +113,17 @@ export function ScreenUploader({
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           onChange={onPick}
+          aria-label="Screenshot file"
+          disabled={uploading}
           hidden
         />
         {error ? (
-          <Typography variant="caption" color="error" sx={{ ml: 1 }}>
+          <Typography
+            role="alert"
+            variant="caption"
+            color="error"
+            sx={{ ml: 1 }}
+          >
             {error}
           </Typography>
         ) : null}
@@ -111,11 +135,10 @@ export function ScreenUploader({
     <Box
       onDragOver={(e) => {
         e.preventDefault();
-        setDragOver(true);
+        if (!uploading) setDragOver(true);
       }}
       onDragLeave={() => setDragOver(false)}
       onDrop={onDrop}
-      onClick={() => inputRef.current?.click()}
       sx={{
         position: "relative",
         p: 6,
@@ -124,15 +147,21 @@ export function ScreenUploader({
         borderColor: dragOver ? "primary.main" : "divider",
         borderRadius: 2,
         bgcolor: dragOver ? "action.hover" : "background.paper",
-        cursor: "pointer",
         transition: "all 120ms ease",
       }}
     >
       <Stack spacing={1.5} alignItems="center">
         <UploadFileIcon sx={{ fontSize: 36, color: "primary.main" }} />
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          Drop a screenshot here, or click to browse
+          Drop a screenshot here
         </Typography>
+        <Button
+          variant="outlined"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          Choose screenshot
+        </Button>
         <Typography variant="caption" color="text.secondary">
           PNG, JPEG, WebP, or GIF, up to 25 MB
         </Typography>
@@ -143,7 +172,7 @@ export function ScreenUploader({
           </Stack>
         ) : null}
         {error ? (
-          <Typography variant="caption" color="error">
+          <Typography role="alert" variant="caption" color="error">
             {error}
           </Typography>
         ) : null}
@@ -153,6 +182,8 @@ export function ScreenUploader({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         onChange={onPick}
+        aria-label="Screenshot file"
+        disabled={uploading}
         hidden
       />
     </Box>
