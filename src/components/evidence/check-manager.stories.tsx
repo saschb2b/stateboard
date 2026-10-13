@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import type { ComponentProps } from "react";
 import { getReleaseDemo } from "@/lib/release-demo";
 import { evaluateRelease } from "@/lib/readiness";
@@ -71,11 +71,14 @@ export const OptionalWarning: Story = {
     await expect(
       canvas.getByText("Partner signatures are checked before ingest."),
     ).toBeVisible();
+    await expect(canvas.getByText(/1 optional$/)).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Partner signatures are checked before ingest.",
+      }),
+    );
     await expect(
-      canvas.getByText(/1 optional warnings need attention/),
-    ).toBeVisible();
-    await expect(
-      canvas.getByText(/Optional warnings do not block readiness/),
+      canvas.getByText(/Optional · does not block release/),
     ).toBeVisible();
   },
 };
@@ -120,8 +123,11 @@ export const FocusedFinding: Story = {
       canvas.queryByText(example.detail.checks[5]!.claim),
     ).not.toBeInTheDocument();
     await expect(
-      canvas.getByLabelText("Search claims or owners"),
-    ).toBeDisabled();
+      canvas.queryByLabelText("Search claims or owners"),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.method),
+    ).toBeVisible();
     await userEvent.click(
       canvas.getByRole("button", { name: "Clear check focus" }),
     );
@@ -156,5 +162,30 @@ export const SubjectScope: Story = {
     await expect(
       canvas.queryByText(example.detail.checks[0]!.claim),
     ).not.toBeInTheDocument();
+  },
+};
+
+export const ExpandCheckDetails: Story = {
+  args: { editable: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const check = example.detail.checks[0]!;
+    await expect(canvas.queryByText(check.method)).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: "Record evidence" }),
+    ).not.toBeInTheDocument();
+    const row = canvas.getByRole("button", { name: check.claim });
+    row.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(row).toHaveAttribute("aria-expanded", "true");
+    await expect(canvas.getByText(check.method)).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: "Record evidence" }),
+    ).toBeVisible();
+    await userEvent.click(row);
+    await expect(row).toHaveAttribute("aria-expanded", "false");
+    await waitFor(() =>
+      expect(canvas.queryByText(check.method)).not.toBeInTheDocument(),
+    );
   },
 };

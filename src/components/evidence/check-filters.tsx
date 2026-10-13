@@ -143,11 +143,6 @@ export function CheckFilters({
               />
             }
           />
-          <Typography variant="caption" color="text.secondary">
-            This view shows operational, security and data categories.
-            Functional outcomes can also cover these concerns; include them to
-            inspect their actual claims.
-          </Typography>
         </Stack>
       )}
       <Stack
@@ -157,10 +152,9 @@ export function CheckFilters({
         alignItems="center"
       >
         <Typography variant="caption" color="text.secondary">
-          Showing {shown} checks. View filters leave overall readiness
-          unchanged. Optional warnings do not block readiness.
+          {shown} {shown === 1 ? "check" : "checks"}
           {filters.needsAttention &&
-            ` ${requiredAttention} required checks and ${optionalWarnings} optional warnings need attention.`}
+            ` · ${requiredAttention} required · ${optionalWarnings} optional`}
         </Typography>
         {!disabled && changed && (
           <Button size="small" onClick={onReset}>
