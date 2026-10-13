@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
     user: principal.user,
     workspaceId: principal.workspaceId,
     role: minRole(principal.keyRole, principal.memberRole),
+    credentialKind: "api_key" as const,
+    credentialId: principal.apiKeyId,
   };
 
   const parsed = await readJsonBody(req);
@@ -57,7 +59,9 @@ export async function POST(req: NextRequest) {
 
   switch (outcome.kind) {
     case "json":
-      return NextResponse.json(outcome.body);
+      return NextResponse.json(outcome.body, {
+        headers: { "Cache-Control": "no-store" },
+      });
     case "accepted":
       return new NextResponse(null, { status: 202 });
     case "invalid":

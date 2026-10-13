@@ -82,6 +82,65 @@ describe("handleMcpMessage: lifecycle", () => {
 });
 
 describe("handleMcpMessage: tools", () => {
+  it("rejects malformed or incomplete release arguments before dispatch", async () => {
+    let calls = 0;
+    const executor = ctx(async () => {
+      calls++;
+      return { content: [] };
+    });
+    for (const [name, args] of [
+      ["get_release", []],
+      ["list_boards", null],
+      ["get_release", { release_id: "../other" }],
+      [
+        "create_check",
+        {
+          release_id: "r1",
+          expected_revision: "1",
+          data: { subjectType: "release", claim: "Backup restores" },
+        },
+      ],
+      [
+        "create_check",
+        {
+          release_id: "r1",
+          expected_revision: 1,
+          data: {
+            subjectType: "release",
+            claim: "Backup restores",
+            actorId: "someone-else",
+          },
+        },
+      ],
+      [
+        "submit_evidence",
+        { release_id: "r1", expected_revision: 1, data: { result: "pass" } },
+      ],
+      [
+        "revise_check",
+        {
+          release_id: "r1",
+          expected_revision: 1,
+          check_id: "c1",
+          data: { subjectId: "new-claim" },
+        },
+      ],
+    ]) {
+      const out = await handleMcpMessage(
+        request("tools/call", { name, arguments: args }),
+        executor,
+      );
+      if (out.kind !== "json") return assert.fail("Expected JSON tool error");
+      const result = out.body.result as ToolOutcome;
+      assert.equal(result.isError, true, String(name));
+      assert.equal(
+        (result.structuredContent?.error as { code: string }).code,
+        "validation_error",
+      );
+    }
+    assert.equal(calls, 0);
+  });
+
   it("lists every tool without leaking requiredRole", async () => {
     const out = await handleMcpMessage(request("tools/list"), ctx());
     if (out.kind !== "json") return assert.fail("expected json");
@@ -156,7 +215,9 @@ describe("MCP_TOOLS definitions", () => {
 
   it("write tools all require editor; read tools stay viewer", () => {
     const writers = MCP_TOOLS.filter((t) =>
-      /^(create|update|delete)_/.test(t.name),
+      /^(create|update|delete|archive|link|unlink|set|revise|submit)_/.test(
+        t.name,
+      ),
     );
     for (const t of writers) assert.equal(t.requiredRole, "editor");
     const readers = MCP_TOOLS.filter((t) => /^(list|get)_/.test(t.name));

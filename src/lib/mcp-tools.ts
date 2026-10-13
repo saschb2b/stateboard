@@ -11,6 +11,7 @@ import {
   listBoardStateCounts,
   listBoards,
   listShareLinks,
+  readLatestReleaseOverviews,
   updateBoard,
   updateRegion,
   writeAudit,
@@ -27,7 +28,11 @@ import {
   type Region,
   type RegionState,
 } from "./types";
-import type { CurrentMember } from "./auth";
+import type { ReleaseApiMember } from "./auth-helpers";
+import { releaseMcpTools } from "./mcp-release-tools";
+import { ReleaseError } from "./release-types";
+import { mcpArgumentsError } from "./mcp-schema";
+import { mcpFailure } from "./mcp-result";
 
 /**
  * DB-backed implementations of the MCP tools.
@@ -40,12 +45,14 @@ import type { CurrentMember } from "./auth";
 
 const text = (data: unknown): ToolOutcome => ({
   content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+  structuredContent: { data },
 });
 
-const fail = (message: string): ToolOutcome => ({
-  content: [{ type: "text", text: message }],
-  isError: true,
-});
+const fail = (message: string): ToolOutcome =>
+  mcpFailure(
+    message.endsWith("not found") ? "not_found" : "validation_error",
+    message,
+  );
 
 const str = (v: unknown): string | null =>
   typeof v === "string" && v.trim() ? v.trim() : null;
@@ -74,20 +81,26 @@ async function ownedRegion(
 }
 
 type ToolImpl = (
-  member: CurrentMember,
+  member: ReleaseApiMember,
   args: Record<string, unknown>,
 ) => Promise<ToolOutcome>;
 
 const impls: Record<string, ToolImpl> = {
+  ...releaseMcpTools,
   async list_boards(member) {
     const [boards, counts] = await Promise.all([
       listBoards(member.workspaceId),
       listBoardStateCounts(member.workspaceId),
     ]);
+    const overviews = await readLatestReleaseOverviews(
+      member.workspaceId,
+      boards.map((board) => board.id),
+    );
     return text(
       boards.map((b) => ({
         ...b,
         regionStates: counts.get(b.id) ?? { shipped: 0, mock: 0, missing: 0 },
+        latestRelease: overviews[b.id] ?? null,
       })),
     );
   },
@@ -359,7 +372,7 @@ for (const tool of MCP_TOOLS) {
 }
 
 /** Bind the tool set to an authenticated member for one request. */
-export function createMcpToolExecutor(member: CurrentMember) {
+export function createMcpToolExecutor(member: ReleaseApiMember) {
   return async (
     name: string,
     args: Record<string, unknown>,
@@ -368,10 +381,27 @@ export function createMcpToolExecutor(member: CurrentMember) {
     const impl = impls[name];
     if (!def || !impl) return fail(`unknown tool: ${name}`);
     if (!meetsRole(member.role, def.requiredRole)) {
-      return fail(
+      return mcpFailure(
+        "forbidden",
         `this API key has ${member.role} access; ${name} requires ${def.requiredRole}`,
+        403,
       );
     }
-    return impl(member, args);
+    const inputError = mcpArgumentsError(def.inputSchema, args);
+    if (inputError) return mcpFailure("validation_error", inputError, 400);
+    try {
+      return await impl(member, args);
+    } catch (error) {
+      if (!(error instanceof ReleaseError)) throw error;
+      const code =
+        error.status === 400
+          ? "validation_error"
+          : error.status === 403
+            ? "forbidden"
+            : error.status === 404
+              ? "not_found"
+              : "conflict";
+      return mcpFailure(code, error.message, error.status);
+    }
   };
 }
