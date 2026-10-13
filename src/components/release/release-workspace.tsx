@@ -2,12 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Button, Container, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Box,
+  Container,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
 import type { CheckSubjectScope } from "@/components/evidence/check-scope";
 import { evaluateRelease } from "@/lib/readiness";
-import { ReadinessSummary } from "./readiness-summary";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import { ReadinessSummary, ReadinessChip } from "./readiness-summary";
 import { ReleaseViewTabs } from "./release-view-tabs";
 import { releaseRequest } from "./release-request";
 import { ReleaseContext } from "./release-context";
@@ -166,73 +176,71 @@ export function ReleaseWorkspace({
                 href={`/boards/${product.board.id}/releases`}
                 size="small"
               >
-                Product overview
+                All releases
               </Button>
               {viewer && <UserMenu user={viewer.user} role={viewer.role} />}
             </>
           )
         }
       />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
         <Stack spacing={3}>
-          {demo && (
-            <Alert severity="info">
-              Permanent example · Try each perspective to inspect passing,
-              failing, stale, missing, and wrong-candidate evidence. No example
-              data is stored in your workspace.
-            </Alert>
-          )}
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            gap={2}
-          >
+          {demo && <Alert severity="info">Example release · Read-only</Alert>}
+          <Stack direction="row" justifyContent="space-between" gap={2}>
             <Stack spacing={0.5}>
-              <Typography variant="overline" color="primary">
-                Release assessment
+              <Typography variant="h5" component="h1">
+                {assessment.candidateLabel}
               </Typography>
-              <Typography variant="h4">{assessment.candidateLabel}</Typography>
-              <Typography color="text.secondary">
-                {assessment.ownerLabel} · Revision {assessment.revision}
-              </Typography>
+              <Stack
+                direction="row"
+                alignItems="center"
+                gap={1.5}
+                flexWrap="wrap"
+              >
+                {view !== "release" && (
+                  <ReadinessChip state={readiness.state} />
+                )}
+                <Typography variant="caption" color="text.secondary">
+                  Target · {assessment.targetEnvironment} · Revision{" "}
+                  {assessment.revision}
+                </Typography>
+              </Stack>
             </Stack>
             {!demo && (
-              <Button
-                disabled={reloading}
-                onClick={async () => {
-                  setReloading(true);
-                  setError(null);
-                  try {
-                    await reload();
-                  } catch (cause) {
-                    setError(
-                      cause instanceof Error
-                        ? cause.message
-                        : "Unable to reload.",
-                    );
-                  } finally {
-                    setReloading(false);
-                  }
-                }}
-              >
-                {reloading ? "Reloading…" : "Reload assessment"}
-              </Button>
+              <Tooltip title="Refresh assessment">
+                <IconButton
+                  aria-label="Refresh assessment"
+                  sx={{ alignSelf: "flex-start" }}
+                  size="small"
+                  disabled={reloading}
+                  onClick={async () => {
+                    setReloading(true);
+                    setError(null);
+                    try {
+                      await reload();
+                    } catch (cause) {
+                      setError(
+                        cause instanceof Error
+                          ? cause.message
+                          : "Unable to reload.",
+                      );
+                    } finally {
+                      setReloading(false);
+                    }
+                  }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             )}
           </Stack>
-          <ReleaseContext assessment={assessment} />
+          <ReleaseContext assessment={assessment} collapsible />
           {error && (
             <Alert severity="error">
               {error} Reload the assessment before retrying if another person
               changed it.
             </Alert>
           )}
-          <ReadinessSummary
-            readiness={readiness}
-            detail={detail}
-            editable={editable}
-            onInspectCheck={inspectCheck}
-            onReviewChecks={clearCheckFocus}
-          />
           <ReleaseViewTabs view={view} onChange={selectView} />
           {checkId && !focusedCheckId && (
             <Alert
@@ -245,38 +253,68 @@ export function ReleaseWorkspace({
               current check below.
             </Alert>
           )}
-          <ReleasePerspectives
-            view={view}
-            detail={detail}
-            product={product}
-            readiness={readiness}
-            editable={editable}
-            mutate={mutate}
-            now={now}
-            loadCheckRevisions={loadCheckRevisions}
-            onCheckScopeChange={selectCheckScope}
-            subjectScope={subjectScope}
-            focusedCheckId={focusedCheckId}
-            onClearFocus={clearCheckFocus}
-            onInspectCheck={inspectCheck}
-            onReviewView={selectView}
-            canRecord={canRecord}
-            record={record}
-            publish={publish}
-            revoke={(token) =>
-              action(`/api/release-share-links/${token}`, { method: "DELETE" })
-            }
-            upload={async (file, label) => {
-              const body = new FormData();
-              body.set("file", file);
-              body.set("label", label);
-              body.set("expectedRevision", String(detail.assessment.revision));
-              await action(`/api/releases/${detail.assessment.id}/assets`, {
-                method: "POST",
-                body,
-              });
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns:
+                view === "release"
+                  ? {
+                      xs: "minmax(0, 1fr)",
+                      md: "minmax(0, 0.85fr) minmax(0, 1.4fr)",
+                    }
+                  : "minmax(0, 1fr)",
+              gap: { xs: 4, md: 5 },
+              alignItems: "start",
             }}
-          />
+          >
+            {view === "release" && (
+              <ReadinessSummary
+                readiness={readiness}
+                detail={detail}
+                editable={editable}
+                onInspectCheck={inspectCheck}
+                onReviewChecks={clearCheckFocus}
+                onReviewDecision={() => selectView("decision")}
+              />
+            )}
+            <ReleasePerspectives
+              view={view}
+              detail={detail}
+              product={product}
+              readiness={readiness}
+              editable={editable}
+              mutate={mutate}
+              now={now}
+              loadCheckRevisions={loadCheckRevisions}
+              onCheckScopeChange={selectCheckScope}
+              subjectScope={subjectScope}
+              focusedCheckId={focusedCheckId}
+              onClearFocus={clearCheckFocus}
+              onInspectCheck={inspectCheck}
+              onReviewView={selectView}
+              canRecord={canRecord}
+              record={record}
+              publish={publish}
+              revoke={(token) =>
+                action(`/api/release-share-links/${token}`, {
+                  method: "DELETE",
+                })
+              }
+              upload={async (file, label) => {
+                const body = new FormData();
+                body.set("file", file);
+                body.set("label", label);
+                body.set(
+                  "expectedRevision",
+                  String(detail.assessment.revision),
+                );
+                await action(`/api/releases/${detail.assessment.id}/assets`, {
+                  method: "POST",
+                  body,
+                });
+              }}
+            />
+          </Box>
         </Stack>
       </Container>
     </>

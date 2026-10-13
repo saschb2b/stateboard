@@ -36,16 +36,13 @@ export const RequiredReleaseGate: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText(/Entire release · Required · Data operations/),
+      within(
+        canvas.getByRole("button", {
+          name: "Inspect check: Rollback restores the previous worker version without losing events.",
+        }),
+      ).getByText(/Data operations/),
     ).toBeVisible();
-    await expect(
-      canvas.getAllByText("Expected environment: staging-eu").length,
-    ).toBeGreaterThan(0);
-    await expect(
-      canvas.getByText(
-        "Next verification: Rehearse restoration with the target deployment backup.",
-      ),
-    ).toBeVisible();
+    await expect(canvas.queryByText(/Next verification:/)).toBeNull();
     await expect(
       canvas.queryByText("Partner signatures are checked before ingest."),
     ).toBeNull();
@@ -89,10 +86,10 @@ export const SummaryPreviewExpands: Story = {
   args: { initialLimit: 3 },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
+    await expect(canvas.getByText("3 of 5")).toBeVisible();
     await expect(
-      canvas.getByText("5 required findings · Showing 3"),
-    ).toBeVisible();
-    await expect(canvas.getAllByRole("alert")).toHaveLength(3);
+      canvas.getAllByRole("button", { name: /Inspect check:/ }),
+    ).toHaveLength(3);
     await expect(
       canvas.queryByText(
         "Rollback restores the previous worker version without losing events.",
@@ -101,10 +98,12 @@ export const SummaryPreviewExpands: Story = {
     await userEvent.click(
       canvas.getByRole("button", { name: "Show all 5 findings" }),
     );
-    await expect(canvas.getAllByRole("alert")).toHaveLength(5);
+    await expect(
+      canvas.getAllByRole("button", { name: /Inspect check:/ }),
+    ).toHaveLength(5);
     await expect(
       canvas.getByText(
-        "Next verification: Rehearse restoration with the target deployment backup.",
+        "Rollback restores the previous worker version without losing events.",
       ),
     ).toBeVisible();
     await userEvent.click(
@@ -114,13 +113,17 @@ export const SummaryPreviewExpands: Story = {
     );
     await expect(args.onInspectCheck).toHaveBeenCalledWith("check-rollback");
     await userEvent.click(canvas.getByRole("button", { name: "Show fewer" }));
-    await expect(canvas.getAllByRole("alert")).toHaveLength(3);
+    await expect(
+      canvas.getAllByRole("button", { name: /Inspect check:/ }),
+    ).toHaveLength(3);
   },
 };
 export const CompleteReviewDefault: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getAllByRole("alert")).toHaveLength(5);
+    await expect(
+      canvas.getAllByRole("button", { name: /Inspect check:/ }),
+    ).toHaveLength(5);
     await expect(canvas.queryByRole("button", { name: /Show all/ })).toBeNull();
     await expect(
       canvas.getByText(
@@ -141,9 +144,7 @@ export const ZeroConfiguredChecksRemainActionable: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByText("5 required findings · Showing 3"),
-    ).toBeVisible();
+    await expect(canvas.getByText("3 of 5")).toBeVisible();
     await expect(
       canvas.getAllByRole("button", { name: "Review acceptance checks" }),
     ).toHaveLength(3);

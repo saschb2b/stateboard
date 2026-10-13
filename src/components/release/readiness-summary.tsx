@@ -1,6 +1,7 @@
 "use client";
 
-import { Alert, Box, Chip, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import type {
   ReadinessState,
   ReleaseDetail,
@@ -32,6 +33,20 @@ export function ReadinessChip({
             : "warning"
       }
       variant="outlined"
+      sx={{
+        height: 23,
+        fontWeight: 500,
+        border: 0,
+        "& .MuiChip-label": { px: 0 },
+        "&::before": {
+          content: '""',
+          width: 6,
+          height: 6,
+          mr: 0.75,
+          borderRadius: "50%",
+          bgcolor: "currentColor",
+        },
+      }}
     />
   );
 }
@@ -63,99 +78,122 @@ export function ReadinessSummary({
   detail,
   onInspectCheck,
   onReviewChecks,
+  onReviewDecision,
   editable = false,
 }: {
   readiness: ReleaseEvaluation;
   detail?: ReleaseDetail;
   onInspectCheck?: (checkId: string) => void;
   onReviewChecks?: () => void;
+  onReviewDecision?: () => void;
   editable?: boolean;
 }) {
+  const currentDecision = detail?.decisions.find(
+    (decision) =>
+      decision.revision === detail.assessment.revision &&
+      (decision.expiresAt === null ||
+        decision.expiresAt > readiness.evaluatedAt),
+  );
   return (
-    <Paper sx={{ p: { xs: 2, md: 3 } }}>
+    <Stack spacing={2.5}>
       <Stack
-        direction={{ xs: "column", sm: "row" }}
+        direction="column"
+        gap={1}
         justifyContent="space-between"
-        gap={2}
+        alignItems="flex-start"
       >
-        <Box>
-          <Typography variant="overline" color="text.secondary">
-            Current assessment
-          </Typography>
-          <Typography variant="h4">
+        <Stack spacing={0.5}>
+          <Typography variant="h6" component="h2">
             {READINESS_LABELS[readiness.state]}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {readiness.state === "ready"
-              ? "Required checks have current passing evidence. A release owner records approval."
-              : readiness.state === "blocked"
-                ? "This assessment cannot be approved yet. A required check failed."
-                : "This assessment cannot be approved yet. Required claims still need current evidence."}
+              ? currentDecision
+                ? "Required checks pass."
+                : "Required checks pass. Ready for the release owner's decision."
+              : `${readiness.blockers.length} blockers · ${readiness.gaps.length} evidence gaps`}
           </Typography>
-          {detail && (
-            <VerificationContext detail={detail} now={readiness.evaluatedAt} />
-          )}
-        </Box>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Box>
-            <Typography variant="h5">{readiness.blockers.length}</Typography>
-            <Typography variant="caption">Blockers</Typography>
-          </Box>
-          <Box>
-            <Typography variant="h5">{readiness.gaps.length}</Typography>
-            <Typography variant="caption">Evidence gaps</Typography>
-          </Box>
         </Stack>
-      </Stack>
-      <Stack spacing={1} sx={{ mt: 2 }}>
         {detail && (
-          <ReleaseFindings
-            detail={detail}
-            readiness={readiness}
-            onInspectCheck={onInspectCheck}
-            onReviewChecks={onReviewChecks}
-            editable={editable}
-            initialLimit={3}
-          />
+          <Typography variant="caption" color="text.secondary">
+            Validation · {detail.assessment.validationEnvironment}
+          </Typography>
         )}
-        <Box component={detail ? "details" : "div"}>
-          {detail && (
-            <Typography
-              component="summary"
-              variant="body2"
-              sx={{ cursor: "pointer" }}
-            >
-              Full assessment findings · {readiness.blockers.length} blockers ·{" "}
-              {readiness.gaps.length} evidence gaps
-              {readiness.warnings.length > 0 &&
-                ` · ${readiness.warnings.length} optional warnings`}
-            </Typography>
-          )}
-          <Stack spacing={1} sx={detail ? { mt: 1 } : undefined}>
+        {onReviewDecision && (
+          <Button
+            color="inherit"
+            size="small"
+            endIcon={<ArrowForwardIcon fontSize="small" />}
+            sx={{ p: 0, mt: 0.5 }}
+            onClick={onReviewDecision}
+          >
+            {currentDecision
+              ? currentDecision.decision === "held"
+                ? "Decision held"
+                : "Decision approved"
+              : "Review decision"}
+          </Button>
+        )}
+      </Stack>
+      {detail && (
+        <ReleaseFindings
+          detail={detail}
+          readiness={readiness}
+          onInspectCheck={onInspectCheck}
+          onReviewChecks={onReviewChecks}
+          editable={editable}
+          initialLimit={3}
+        />
+      )}
+      {(readiness.blockers.length > 0 ||
+        readiness.gaps.length > 0 ||
+        readiness.warnings.length > 0) && (
+        <Box component="details">
+          <Typography
+            component="summary"
+            variant="caption"
+            color="text.secondary"
+            sx={{ cursor: "pointer", width: "fit-content" }}
+          >
+            All findings
+            {readiness.warnings.length > 0
+              ? ` · ${readiness.warnings.length} optional warnings`
+              : ""}
+          </Typography>
+          <Stack component="ul" spacing={1} sx={{ mt: 1, pl: 2.5 }}>
             {readiness.blockers.map((reason, index) => (
-              <Alert key={`blocker-${index}`} severity="error">
+              <Typography
+                component="li"
+                variant="body2"
+                key={`blocker-${index}`}
+                sx={{ "&::marker": { color: "error.main" } }}
+              >
                 {reason}
-              </Alert>
+              </Typography>
             ))}
             {readiness.gaps.map((reason, index) => (
-              <Alert key={`gap-${index}`} severity="warning">
+              <Typography
+                component="li"
+                variant="body2"
+                key={`gap-${index}`}
+                sx={{ "&::marker": { color: "warning.main" } }}
+              >
                 {reason}
-              </Alert>
+              </Typography>
             ))}
             {readiness.warnings.map((reason, index) => (
-              <Alert key={`warning-${index}`} severity="info">
+              <Typography
+                component="li"
+                variant="body2"
+                color="text.secondary"
+                key={`warning-${index}`}
+              >
                 {reason}
-              </Alert>
+              </Typography>
             ))}
-            {readiness.state === "ready" && (
-              <Alert severity="success">
-                All required checks have current passing evidence for this
-                assessment.
-              </Alert>
-            )}
           </Stack>
         </Box>
-      </Stack>
-    </Paper>
+      )}
+    </Stack>
   );
 }

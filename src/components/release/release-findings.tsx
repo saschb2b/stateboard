@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import type {
   ReleaseCheck,
   ReleaseDetail,
@@ -14,10 +15,9 @@ export function ReleaseFindings({
   readiness,
   onInspectCheck,
   onReviewChecks,
-  editable = false,
   includePassing = false,
   subjectTypes,
-  title = "Required verification actions",
+  title = "Needs attention",
   initialLimit,
 }: {
   detail: ReleaseDetail;
@@ -59,111 +59,108 @@ export function ReleaseFindings({
         justifyContent="space-between"
         gap={0.5}
       >
-        <Typography variant="h6">{title}</Typography>
-        {initialLimit !== undefined && (
+        <Typography variant="subtitle2">{title}</Typography>
+        {canCollapse && (
           <Typography variant="caption" color="text.secondary">
-            {total} required findings · Showing {visibleCount}
+            {visibleCount} of {total}
           </Typography>
         )}
       </Stack>
       {findings.slice(0, visibleCount).map(({ check, evaluation }) => {
-        const subject =
-          check.subjectType === "release"
-            ? "Entire release"
-            : check.subjectType === "component"
-              ? "Component check"
-              : (detail.scope.find(
-                  (item) => item.capabilityId === check.subjectId,
-                )?.name ?? "Capability check");
-        const noObservations = !detail.evidence.some(
-          (item) => item.checkId === check.id,
-        );
+        const state =
+          evaluation.state === "fail"
+            ? "Failed"
+            : evaluation.state === "pass"
+              ? "Passed"
+              : evaluation.state === "stale"
+                ? "Expired"
+                : "Needs evidence";
         return (
-          <Alert
+          <ButtonBase
             key={check.id}
-            icon={false}
-            severity={
-              evaluation.state === "fail"
-                ? "error"
-                : evaluation.state === "pass"
-                  ? "success"
-                  : "warning"
+            component={onInspectCheck ? "button" : "div"}
+            role={onInspectCheck ? undefined : "group"}
+            tabIndex={onInspectCheck ? 0 : -1}
+            onClick={
+              onInspectCheck ? () => onInspectCheck(check.id) : undefined
             }
+            aria-label={
+              onInspectCheck ? `Inspect check: ${check.claim}` : undefined
+            }
+            sx={{
+              width: "100%",
+              justifyContent: "space-between",
+              textAlign: "left",
+              py: 1.5,
+              gap: 2,
+              borderBottom: 1,
+              borderColor: "divider",
+              "&:hover": onInspectCheck ? { bgcolor: "action.hover" } : {},
+              "&.Mui-focusVisible": {
+                outline: "2px solid",
+                outlineColor: "primary.main",
+                outlineOffset: 2,
+              },
+            }}
           >
-            <Stack spacing={0.5}>
-              <Stack
-                direction="row"
-                gap={1}
-                alignItems="center"
-                flexWrap="wrap"
-              >
-                <Typography variant="subtitle2">{check.claim}</Typography>
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={evaluation.state}
-                />
-              </Stack>
-              <Typography variant="caption">
-                {subject} · Required · {check.ownerLabel} · Check revision{" "}
-                {check.revision}
+            <Stack spacing={0.5} sx={{ minWidth: 0 }}>
+              <Typography variant="body2" fontWeight={500}>
+                {check.claim}
               </Typography>
-              <Typography variant="body2">
-                Expected environment: {check.environment}
-              </Typography>
-              <Typography variant="body2">
-                Next verification: {check.method}
-              </Typography>
-              <Typography variant="body2">
-                {evaluation.state === "missing" && noObservations
-                  ? "No observation recorded for this check."
-                  : evaluation.reason}
-              </Typography>
-              {onInspectCheck && (
-                <Button
-                  size="small"
-                  sx={{ alignSelf: "flex-start" }}
-                  aria-label={`Inspect check: ${check.claim}`}
-                  onClick={() => onInspectCheck(check.id)}
+              <Typography variant="caption" color="text.secondary">
+                <Box
+                  component="span"
+                  sx={{
+                    color:
+                      evaluation.state === "fail"
+                        ? "error.main"
+                        : evaluation.state === "pass"
+                          ? "success.main"
+                          : "warning.main",
+                  }}
                 >
-                  {editable ? "Inspect / record evidence" : "Inspect check"}
-                </Button>
-              )}
+                  {state}
+                </Box>
+                {" · "}
+                {check.ownerLabel}
+              </Typography>
             </Stack>
-          </Alert>
+            {onInspectCheck && (
+              <ChevronRightIcon
+                fontSize="small"
+                sx={{ color: "text.secondary", flexShrink: 0 }}
+              />
+            )}
+          </ButtonBase>
         );
       })}
       {definitionGaps
         .slice(0, Math.max(0, visibleCount - findings.length))
         .map((capability) => (
-          <Alert key={capability.capabilityId} severity="warning" icon={false}>
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2">
-                {capability.name} needs a required functional acceptance check.
-              </Typography>
-              <Typography variant="body2">
-                Owner:{" "}
-                {
-                  detail.scope.find(
-                    (item) => item.capabilityId === capability.capabilityId,
-                  )?.ownerLabel
-                }
-              </Typography>
-              <Typography variant="body2">
-                Next action: define the acceptance check, then verify it in{" "}
-                {detail.assessment.validationEnvironment}.
-              </Typography>
-              {onReviewChecks && (
-                <Button
-                  size="small"
-                  sx={{ alignSelf: "flex-start" }}
-                  onClick={onReviewChecks}
-                >
-                  Review acceptance checks
-                </Button>
-              )}
-            </Stack>
-          </Alert>
+          <Box
+            key={capability.capabilityId}
+            sx={{ py: 1.5, borderBottom: 1, borderColor: "divider" }}
+          >
+            <Typography variant="body2">
+              {capability.name} needs a required functional acceptance check.
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {
+                detail.scope.find(
+                  (item) => item.capabilityId === capability.capabilityId,
+                )?.ownerLabel
+              }
+            </Typography>
+            {onReviewChecks && (
+              <Button
+                size="small"
+                onClick={onReviewChecks}
+                sx={{ display: "block", mt: 0.5 }}
+              >
+                Review acceptance checks
+              </Button>
+            )}
+          </Box>
         ))}
       {canCollapse && (
         <Button

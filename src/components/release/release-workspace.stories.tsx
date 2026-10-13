@@ -20,24 +20,20 @@ type Story = StoryObj<typeof meta>;
 export const ProductPerspective: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
     await expect(canvas.getByText("Receive a partner webhook")).toBeVisible();
     await expect(
       canvas.queryByRole("button", { name: "Edit scope" }),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole("tab", { name: "Backend" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
     await expect(
-      canvas.getByRole("heading", { name: "Architecture for this release" }),
+      canvas.getByRole("combobox", { name: "Capability" }),
     ).toBeVisible();
-    await userEvent.click(canvas.getByRole("tab", { name: "QA" }));
-    await expect(
-      canvas.getByRole("heading", { name: "Acceptance checks and evidence" }),
-    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "Checks" }));
+    await expect(canvas.getByRole("heading", { name: "Checks" })).toBeVisible();
     await expect(
       within(canvas.getByRole("region", { name: "Check evidence" })).getByText(
-        "stale",
+        "Expired evidence",
         { exact: true },
       ),
     ).toBeVisible();
@@ -48,9 +44,7 @@ export const ArchitectureScopeEndsWhenChangingPerspective: Story = {
   args: { initialView: "backend" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(
-      canvas.getByRole("combobox", { name: "Focus on capability" }),
-    );
+    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
     await userEvent.click(
       within(document.body).getByRole("option", { name: "Export an invoice" }),
     );
@@ -68,14 +62,12 @@ export const ArchitectureScopeEndsWhenChangingPerspective: Story = {
     await expect(
       evidence.queryByText("Duplicate delivery creates only one ledger entry."),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole("tab", { name: "QA" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Checks" }));
     evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
     await expect(
       evidence.getByText("Duplicate delivery creates only one ledger entry."),
     ).toBeVisible();
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
   },
 };
 export const FindingFocusAndClear: Story = {
@@ -86,7 +78,7 @@ export const FindingFocusAndClear: Story = {
         name: "Inspect check: Invoice CSV includes all tax fields.",
       }),
     );
-    await expect(canvas.getByRole("tab", { name: "QA" })).toHaveAttribute(
+    await expect(canvas.getByRole("tab", { name: "Checks" })).toHaveAttribute(
       "aria-selected",
       "true",
     );
@@ -99,15 +91,11 @@ export const FindingFocusAndClear: Story = {
     await expect(
       evidence.queryByText("Duplicate delivery creates only one ledger entry."),
     ).toBeNull();
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
-    await userEvent.click(canvas.getByRole("tab", { name: "Backend" }));
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
     evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
-    await expect(
-      evidence.getByText("Focused check. Other check filters are paused."),
-    ).toBeVisible();
-    await userEvent.click(canvas.getByRole("tab", { name: "QA" }));
+    await expect(evidence.getByText("Selected check")).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "Checks" }));
     evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
     await userEvent.click(
       evidence.getByRole("button", { name: "Clear check focus" }),
@@ -115,9 +103,7 @@ export const FindingFocusAndClear: Story = {
     await expect(
       evidence.getByText("Duplicate delivery creates only one ledger entry."),
     ).toBeVisible();
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
   },
 };
 export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
@@ -144,13 +130,11 @@ export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
     await expect(
       evidence.queryByText("Invoice CSV includes all tax fields."),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole("tab", { name: "Backend" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
     await expect(new URL(window.location.href).searchParams.get("check")).toBe(
       "check-recovery",
     );
-    await userEvent.click(
-      canvas.getByRole("combobox", { name: "Focus on capability" }),
-    );
+    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole("option", {
         name: "Export an invoice",
@@ -171,19 +155,16 @@ export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
     await expect(
       evidence.queryByText("Duplicate delivery creates only one ledger entry."),
     ).toBeNull();
-    await expect(canvas.getByRole("tab", { name: "Backend" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
+    await expect(
+      canvas.getByRole("tab", { name: "Architecture" }),
+    ).toHaveAttribute("aria-selected", "true");
     await expect(
       new URL(window.location.href).searchParams.get("check"),
     ).toBeNull();
     await expect(new URL(window.location.href).searchParams.get("view")).toBe(
       "backend",
     );
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
   },
 };
 export const OperationsPerspective: Story = {
@@ -193,9 +174,13 @@ export const DecisionPerspective: Story = {
   args: { initialView: "decision" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByText(/Reviewed .*Example release owner/));
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Decision by Example release owner at revision 1",
+      }),
+    );
     await expect(
-      canvas.getByText(/Hold for the invoice export failure/),
+      canvas.getAllByText(/Hold for the invoice export failure/)[1]!,
     ).toBeVisible();
   },
 };
@@ -252,7 +237,7 @@ export const EditorPermissions: Story = {
     await expect(
       canvas.queryByRole("button", { name: "Prepare public review link" }),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole("tab", { name: "QA" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Checks" }));
     await expect(
       canvas.getByRole("button", { name: "Add check" }),
     ).toBeVisible();
@@ -319,17 +304,18 @@ export const BrowserClockCannotHideFailure: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Short-lived release verification",
+      }),
+    );
     await expect(
       within(canvas.getByRole("region", { name: "Check evidence" })).findByText(
         "The latest passing verification has expired.",
       ),
     ).resolves.toBeVisible();
-    await expect(
-      canvas.getByRole("heading", { name: "Blocked" }),
-    ).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
     await expect(canvas.queryByRole("heading", { name: "Ready" })).toBeNull();
   },
 };

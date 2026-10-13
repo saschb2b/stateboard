@@ -23,24 +23,49 @@ export const Ready: Story = {
     },
   },
 };
+export const RecordedApproval: Story = {
+  args: {
+    detail: {
+      ...getReleaseDemo().detail,
+      decisions: [
+        {
+          ...getReleaseDemo().detail.decisions[0]!,
+          decision: "approved",
+          revision: getReleaseDemo().detail.assessment.revision,
+          expiresAt: null,
+        },
+      ],
+    },
+    readiness: {
+      ...getReleaseDemo().readiness,
+      state: "ready",
+      blockers: [],
+      gaps: [],
+      warnings: [],
+    },
+    onReviewDecision: fn(),
+  },
+  play: async ({ canvas, args }) => {
+    await expect(
+      canvas.queryByText(/Ready for the release owner's decision/),
+    ).toBeNull();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Decision approved" }),
+    );
+    await expect(args.onReviewDecision).toHaveBeenCalled();
+  },
+};
 export const CurrentVerificationContext: Story = {
   args: { detail: getReleaseDemo().detail },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expect(canvas.getByText("Validation · staging-eu")).toBeVisible();
     await expect(
-      canvas.getByText(/This assessment cannot be approved yet/),
+      canvas.getByRole("heading", { name: "Needs attention" }),
     ).toBeVisible();
-    await expect(
-      canvas.getByText(
-        /Verification: staging-eu · Deployment target: production-eu · No current approved decision for this revision/,
-      ),
-    ).toBeVisible();
-    await expect(
-      canvas.getByRole("heading", { name: "Required verification actions" }),
-    ).toBeVisible();
-    await expect(
-      canvas.getAllByText("Expected environment: staging-eu").length,
-    ).toBeGreaterThan(0);
+    await expect(canvas.queryByText(/Expected environment:/)).toBeNull();
+    await userEvent.click(canvas.getByText("All findings"));
+    await expect(canvas.getAllByRole("listitem").length).toBeGreaterThan(0);
   },
 };
 const allGapsDetail = {
@@ -57,9 +82,7 @@ export const CompactRequiredActionPreview: Story = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByText("5 required findings · Showing 3"),
-    ).toBeVisible();
+    await expect(canvas.getByText("3 of 5")).toBeVisible();
     await expect(
       canvas.getAllByRole("button", { name: /Inspect check:/ }),
     ).toHaveLength(3);
