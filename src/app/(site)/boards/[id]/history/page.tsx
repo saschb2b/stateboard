@@ -43,10 +43,10 @@ export default async function BoardHistoryPage({ params }: PageProps) {
       pageSize={PAGE_SIZE}
       listEndpoint={`/api/boards/${id}/audit`}
       exportEndpoint={`/api/boards/${id}/audit/export`}
-      backHref={`/boards/${id}`}
+      backHref={`/boards/${id}/releases`}
       crumb="History"
       heading={`${board.name} · History`}
-      subtitle="Every change to this board's screens, regions, and share links, newest first. Visible to anyone with access to this board."
+      subtitle="Recorded changes to this product, its assessments, evidence, and screens. Newest first."
     />
   );
 }

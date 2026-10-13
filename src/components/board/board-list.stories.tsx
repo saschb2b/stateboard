@@ -1,15 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { getReleaseDemo } from "@/lib/release-demo";
-import { expect } from "storybook/test";
-import { BoardList } from "./board-list";
+import { expect, fn, userEvent, within } from "storybook/test";
+import { BoardListView } from "./board-list";
 
 const example = getReleaseDemo();
-/** Board creation and duplication call real APIs; these stories render the navigation only. */
+/** Product overview with local callbacks for creation and duplication. */
 const meta = {
-  component: BoardList,
+  component: BoardListView,
   tags: ["ai-generated"],
   parameters: { layout: "fullscreen" },
   args: {
+    onCreate: fn(async () => example.product.board),
+    onDuplicate: fn(async () => example.product.board),
+    onOpen: fn(),
     initialItems: [
       {
         board: example.product.board,
@@ -41,7 +44,7 @@ const meta = {
       role: "owner",
     },
   },
-} satisfies Meta<typeof BoardList>;
+} satisfies Meta<typeof BoardListView>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const ProductOverview: Story = {
@@ -52,3 +55,58 @@ export const ProductOverview: Story = {
   },
 };
 export const FirstProduct: Story = { args: { initialItems: [] } };
+
+export const CreateFailureKeepsDraft: Story = {
+  args: {
+    onCreate: fn(async () => {
+      throw new Error("Connection interrupted. Try again.");
+    }),
+  },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "New board" }));
+    const dialog = within(document.body).getByRole("dialog");
+    const form = within(dialog);
+    await userEvent.type(
+      form.getByRole("textbox", { name: "Product name" }),
+      "StateBoard",
+    );
+    await userEvent.click(form.getByRole("button", { name: "Create board" }));
+    await expect(form.getByRole("alert")).toHaveTextContent(
+      "Connection interrupted",
+    );
+    await expect(
+      form.getByRole("textbox", { name: "Product name" }),
+    ).toHaveValue("StateBoard");
+    await expect(args.onOpen).not.toHaveBeenCalled();
+    await userEvent.click(form.getByRole("button", { name: "Cancel" }));
+  },
+};
+export const DuplicateFailure: Story = {
+  args: {
+    onDuplicate: fn(async () => {
+      throw new Error("Unable to duplicate this board.");
+    }),
+  },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: `Copy screens from ${example.product.board.name}`,
+      }),
+    );
+    await expect(canvas.getByRole("alert")).toHaveTextContent(
+      "Unable to duplicate",
+    );
+    await expect(args.onOpen).not.toHaveBeenCalled();
+  },
+};
+export const Viewer: Story = {
+  args: { viewer: { ...meta.args.viewer, role: "viewer" } },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole("button", { name: "New board" }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("link", { name: "Open board" }),
+    ).toHaveAttribute("href", `/boards/${example.product.board.id}/releases`);
+  },
+};

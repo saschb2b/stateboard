@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Alert from "@mui/material/Alert";
@@ -30,7 +30,7 @@ import type { CurrentMember } from "@/lib/auth";
 type Section = "general" | "sharing";
 const SECTIONS: { id: Section; label: string }[] = [
   { id: "general", label: "General" },
-  { id: "sharing", label: "Sharing" },
+  { id: "sharing", label: "Visual sharing" },
 ];
 
 export interface BoardStats {
@@ -86,7 +86,7 @@ export function BoardSettings({
           <>
             <Button
               component={Link}
-              href={`/boards/${board.id}`}
+              href={`/boards/${board.id}/releases`}
               size="small"
               startIcon={<ArrowBackIcon />}
               variant="outlined"
@@ -99,18 +99,21 @@ export function BoardSettings({
           </>
         }
       />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
+        <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+          Board settings
+        </Typography>
         <Box
           sx={{
             display: "flex",
-            gap: { xs: 2, sm: 5 },
+            gap: { xs: 3, sm: 4 },
             flexDirection: { xs: "column", sm: "row" },
           }}
         >
           <Box
             component="nav"
             aria-label="Settings sections"
-            sx={{ width: { sm: 200 }, flexShrink: 0 }}
+            sx={{ width: { sm: 184 }, flexShrink: 0 }}
           >
             <Typography
               variant="overline"
@@ -118,7 +121,11 @@ export function BoardSettings({
             >
               Settings
             </Typography>
-            <Stack sx={{ mt: 0.5 }} spacing={0.25}>
+            <Stack
+              direction={{ xs: "row", sm: "column" }}
+              sx={{ mt: 0.5 }}
+              spacing={0.25}
+            >
               {SECTIONS.map((s) => {
                 const active = s.id === section;
                 return (
@@ -136,6 +143,7 @@ export function BoardSettings({
                       py: 0.75,
                       borderRadius: 1,
                       fontSize: 14,
+                      fontFamily: "inherit",
                       fontWeight: 600,
                       color: active ? "text.primary" : "text.secondary",
                       bgcolor: active ? "action.selected" : "transparent",
@@ -152,7 +160,7 @@ export function BoardSettings({
             </Stack>
           </Box>
 
-          <Box sx={{ flex: 1, maxWidth: 720 }}>
+          <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720 }}>
             {section === "general" ? (
               <GeneralSection board={board} stats={stats} />
             ) : (
@@ -217,25 +225,27 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
 
   return (
     <>
-      <Typography variant="h5" sx={{ fontWeight: 700 }}>
-        General
+      <Typography component="h2" variant="h6" sx={{ mb: 0.75 }}>
+        Board details
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        The board name and description, and how to delete it.
+        Name this product and give reviewers a little context.
       </Typography>
 
       <Stack spacing={2.5}>
         <TextField
           label="Board name"
           value={name}
+          disabled={saving}
           onChange={(e) => setName(e.target.value)}
           fullWidth
           size="small"
-          placeholder="e.g. Acme Dashboard / Q2 2026"
+          placeholder="StateBoard"
         />
         <TextField
           label="Description"
           value={description}
+          disabled={saving}
           onChange={(e) => setDescription(e.target.value)}
           fullWidth
           size="small"
@@ -254,13 +264,10 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
         </Box>
       </Stack>
 
-      <Typography
-        variant="h6"
-        sx={{ mt: 6, mb: 1.5, fontWeight: 700, color: "error.main" }}
-      >
-        Danger zone
+      <Typography variant="h6" component="h2" sx={{ mt: 5, mb: 1.5 }}>
+        Delete board
       </Typography>
-      <Box sx={{ border: 1, borderColor: "error.main", borderRadius: 1 }}>
+      <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1 }}>
         <Box
           sx={{
             p: 2,
@@ -274,8 +281,9 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
           <Box>
             <Typography sx={{ fontWeight: 600 }}>Delete this board</Typography>
             <Typography variant="body2" color="text.secondary">
-              Once deleted, there is no going back. This permanently removes the
-              board{contents ? ` and its ${contents}` : ""}.
+              Permanently removes this board
+              {contents ? ` and its ${contents}` : ""}. Boards with release
+              history cannot be deleted.
             </Typography>
           </Box>
           <Button
@@ -412,12 +420,12 @@ function SharingSection({
 
   return (
     <>
-      <Typography variant="h5" sx={{ fontWeight: 700 }}>
-        Sharing
+      <Typography component="h2" variant="h6" sx={{ mb: 0.75 }}>
+        Visual share links
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Public links anyone can open without signing in. Make one per audience
-        and revoke any of them without affecting the others.
+        Share screens and annotations without sign-in. Release assessments stay
+        private until an owner publishes a release review.
       </Typography>
 
       <Stack
@@ -429,7 +437,9 @@ function SharingSection({
         <TextField
           size="small"
           fullWidth
-          placeholder="Label (optional), e.g. Exec review"
+          label="Link name (optional)"
+          placeholder="Design review"
+          disabled={creating}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           onKeyDown={(e) => {
@@ -597,8 +607,10 @@ function DeleteBoardDialog({
   const matches = confirm.trim() === board.name;
   const contents = describeContents(stats);
 
+  const deleteInFlight = useRef(false);
   const onDelete = async () => {
-    if (!matches) return;
+    if (!matches || deleteInFlight.current) return;
+    deleteInFlight.current = true;
     setDeleting(true);
     setError(null);
     try {
@@ -607,6 +619,7 @@ function DeleteBoardDialog({
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         setError(body.error ?? "Couldn't delete the board.");
         setDeleting(false);
+        deleteInFlight.current = false;
         return;
       }
       router.push("/boards");
@@ -614,6 +627,7 @@ function DeleteBoardDialog({
     } catch {
       setError("Couldn't delete the board.");
       setDeleting(false);
+      deleteInFlight.current = false;
     }
   };
 
@@ -639,10 +653,12 @@ function DeleteBoardDialog({
           fullWidth
           size="small"
           autoFocus
+          label="Board name to confirm"
+          disabled={deleting}
           placeholder={board.name}
           error={confirm.length > 0 && !matches}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && matches) onDelete();
+            if (e.key === "Enter" && matches && !deleting) onDelete();
           }}
         />
         {error ? (

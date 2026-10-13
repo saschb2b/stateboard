@@ -26,9 +26,7 @@ export const CandidateAndGaps: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/Latest candidate/)).toBeVisible();
     await expect(canvas.getByText(/No recorded decision/)).toBeVisible();
-    await expect(
-      canvas.getByText(/1 blockers · 3 evidence gaps/),
-    ).toBeVisible();
+    await expect(canvas.getByText(/1 blocker · 3 evidence gaps/)).toBeVisible();
   },
 };
 export const NoAssessment: Story = { args: { overview: undefined } };

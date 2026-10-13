@@ -3,47 +3,41 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
-import Container from "@mui/material/Container";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import IconButton from "@mui/material/IconButton";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
-import Tooltip from "@mui/material/Tooltip";
-import Typography from "@mui/material/Typography";
+import {
+  Alert,
+  Box,
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import LibraryAddOutlinedIcon from "@mui/icons-material/LibraryAddOutlined";
-import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
-import { StateChip } from "@/components/region/state-chip";
-import { MONO_FONT } from "@/lib/theme";
-import { STATE_META } from "@/lib/state-meta";
-import { REGION_STATES } from "@/lib/types";
 import type { Board, ScreenWithRegions } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 import type { ReleaseOverview } from "@/lib/release-types";
 import { ReleaseOverviewSummary } from "@/components/release/release-overview-summary";
+import { clientRequest } from "@/lib/client-request";
 
 export interface BoardListItem {
   board: Board;
-  /** Most-recent active share-link token, or null if none. */
   shareToken: string | null;
-  /** Screens (with regions) for the card's preview carousel, in display order. */
   screens: ScreenWithRegions[];
-  /** Region counts by state across the whole board, for the status summary. */
   totals: { shipped: number; mock: number; missing: number };
-  /** Pre-formatted relative time the board was last touched, e.g. "3d ago". */
   updatedLabel: string;
   releaseOverview?: ReleaseOverview;
 }
@@ -53,770 +47,385 @@ interface BoardListProps {
   viewer: CurrentMember;
 }
 
-const canEdit = (role: CurrentMember["role"]) =>
-  role === "owner" || role === "editor";
+interface BoardListActions {
+  onCreate: (input: { name: string; description: string }) => Promise<Board>;
+  onDuplicate: (board: Board) => Promise<Board>;
+  onOpen: (board: Board) => void;
+}
 
-export function BoardList({ initialItems, viewer }: BoardListProps) {
+export function BoardList(props: BoardListProps) {
   const router = useRouter();
-  const [items, setItems] = useState<BoardListItem[]>(initialItems);
+  return (
+    <BoardListView
+      {...props}
+      onCreate={(input) =>
+        clientRequest<Board>("/api/boards", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(input),
+        })
+      }
+      onDuplicate={(board) =>
+        clientRequest<Board>(`/api/boards/${board.id}/clone`, {
+          method: "POST",
+        })
+      }
+      onOpen={(board) => router.push(`/boards/${board.id}/releases`)}
+    />
+  );
+}
+
+export function BoardListView({
+  initialItems,
+  viewer,
+  onCreate,
+  onDuplicate,
+  onOpen,
+}: BoardListProps & BoardListActions) {
+  const [items, setItems] = useState(initialItems);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const editable = viewer.role !== "viewer";
 
-  const editable = canEdit(viewer.role);
-
-  const onCreate = async () => {
-    setError(null);
-    if (!name.trim()) {
-      setError("name is required");
-      return;
-    }
+  const create = async () => {
+    if (inFlight.current || !name.trim()) return;
+    inFlight.current = true;
     setCreating(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/boards`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name, description }),
+      const board = await onCreate({
+        name: name.trim(),
+        description: description.trim(),
       });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `failed (${res.status})`);
-        return;
-      }
-      const created: Board = await res.json();
-      setItems((prev) => [
+      setItems((current) => [
         {
-          board: created,
+          board,
           shareToken: null,
           screens: [],
           totals: { shipped: 0, mock: 0, missing: 0 },
-          updatedLabel: "just now",
+          updatedLabel: "Just now",
         },
-        ...prev,
+        ...current,
       ]);
       setOpen(false);
-      setName("");
-      setDescription("");
-      router.push(`/boards/${created.id}/releases`);
-    } catch {
-      setError("Unable to create this board. Try again.");
+      onOpen(board);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to create this board. Try again.",
+      );
     } finally {
+      inFlight.current = false;
       setCreating(false);
     }
-  };
-
-  const openCreate = () => {
-    setError(null);
-    setName("");
-    setDescription("");
-    setOpen(true);
   };
 
   return (
     <>
       <AppHeader
         homeHref="/boards"
-        actions={
-          <>
-            <Button
-              size="small"
-              variant="text"
-              color="inherit"
-              component={Link}
-              href="/share/demo/releases"
-              target="_blank"
-              rel="noopener"
-              endIcon={<OpenInNewIcon fontSize="inherit" />}
-              sx={{ color: "text.secondary" }}
-            >
-              View example
-            </Button>
-            <UserMenu user={viewer.user} role={viewer.role} />
-          </>
-        }
+        crumb="Workspace"
+        actions={<UserMenu user={viewer.user} role={viewer.role} />}
       />
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Stack spacing={4}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Typography variant="h3" sx={{ mb: 0.5 }}>
-                Boards
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                One board per product. Keep its capabilities, dependencies, and
-                release reviews together.
-              </Typography>
-            </Box>
-            {editable ? (
-              <Button
-                variant="contained"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={() => openCreate()}
-              >
-                New board
-              </Button>
-            ) : null}
-          </Stack>
-
-          {items.length === 0 ? (
-            <EmptyState canCreate={editable} />
-          ) : (
-            <Box
-              sx={{
-                display: "grid",
-                gap: 2,
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                },
+      <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          justifyContent="space-between"
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          sx={{ mb: 3 }}
+        >
+          <Box>
+            <Typography component="h1" variant="h5">
+              Boards
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+              Your products and their latest release assessments.
+            </Typography>
+          </Box>
+          {editable && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setName("");
+                setDescription("");
+                setError(null);
+                setOpen(true);
               }}
             >
-              {items.map((it) => (
-                <BoardCard key={it.board.id} item={it} editable={editable} />
-              ))}
-            </Box>
+              New board
+            </Button>
           )}
         </Stack>
+        {items.length ? (
+          <Paper sx={{ overflow: "hidden" }}>
+            <Box
+              sx={{
+                px: 2.5,
+                py: 1.25,
+                borderBottom: 1,
+                borderColor: "divider",
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                {items.length} {items.length === 1 ? "product" : "products"}
+              </Typography>
+            </Box>
+            <Stack
+              divider={<Box sx={{ borderTop: 1, borderColor: "divider" }} />}
+            >
+              {items.map((item) => (
+                <BoardRow
+                  key={item.board.id}
+                  item={item}
+                  editable={editable}
+                  onDuplicate={onDuplicate}
+                  onOpen={onOpen}
+                />
+              ))}
+            </Stack>
+          </Paper>
+        ) : (
+          <Paper sx={{ px: 3, py: { xs: 4, sm: 6 } }}>
+            <Stack spacing={1.5} alignItems="flex-start" sx={{ maxWidth: 460 }}>
+              <FolderOutlinedIcon sx={{ color: "text.secondary" }} />
+              <Typography component="h2" variant="h6">
+                Your first product starts here
+              </Typography>
+              <Typography color="text.secondary">
+                {editable
+                  ? "Create a board to connect capabilities, evidence, and release decisions."
+                  : "An editor can create the first board for this workspace."}
+              </Typography>
+              <Button
+                component={Link}
+                href="/share/demo/releases"
+                color="inherit"
+                endIcon={<ArrowForwardIcon />}
+              >
+                Explore an example
+              </Button>
+            </Stack>
+          </Paper>
+        )}
+        {items.length > 0 && (
+          <Button
+            component={Link}
+            href="/share/demo/releases"
+            color="inherit"
+            size="small"
+            sx={{ mt: 2, color: "text.secondary" }}
+          >
+            View example assessment
+          </Button>
+        )}
       </Container>
-
       <Dialog
         open={open}
         onClose={() => !creating && setOpen(false)}
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ pb: 0.5 }}>New board</DialogTitle>
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ px: 3, pb: 2 }}
-        >
-          A board holds product capabilities and release assessments. Add
-          screens where they help explain the outcome.
-        </Typography>
-        <DialogContent sx={{ pt: 1 }}>
-          <Stack spacing={2.5}>
-            <TextField
-              autoFocus
-              label="Name"
-              fullWidth
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Acme Dashboard"
-              helperText={
-                <>
-                  Names the product in your overview and visual share links,
-                  e.g.{" "}
-                  <Box
-                    component="span"
-                    sx={{ fontFamily: MONO_FONT, color: "text.primary" }}
-                  >
-                    Acme Dashboard
-                  </Box>
-                  .
-                </>
-              }
-            />
-            <TextField
-              label="Subtitle"
-              fullWidth
-              multiline
-              minRows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Customer billing and partner event processing."
-              helperText="Appears beneath the name on the share link. Useful for context the title can't carry."
-            />
-
-            <Box
-              sx={{
-                p: 2,
-                bgcolor: "background.default",
-                border: 1,
-                borderColor: "divider",
-                borderRadius: 1,
-              }}
-            >
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  color: "text.secondary",
-                  textTransform: "uppercase",
-                }}
-              >
-                Next, in this board
-              </Typography>
-              <Stack
-                direction="row"
-                alignItems="center"
-                spacing={1}
-                sx={{ mt: 1, flexWrap: "wrap", rowGap: 1 }}
-              >
-                <NextStep n={1} label="Define capabilities" />
-                <StepArrow />
-                <NextStep n={2} label="Assess a candidate" />
-                <StepArrow />
-                <NextStep n={3} label="Review and share" />
-              </Stack>
-            </Box>
-
-            {error ? (
-              <Typography variant="caption" color="error">
-                {error}
-              </Typography>
-            ) : null}
-          </Stack>
-        </DialogContent>
-        <DialogActions
-          sx={{
-            px: 3,
-            pb: 2,
-            justifyContent: "space-between",
+        <Box
+          component="form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void create();
           }}
         >
-          <Button
-            size="small"
-            component={Link}
-            href="/share/demo/releases"
-            target="_blank"
-            rel="noopener"
-            endIcon={<OpenInNewIcon fontSize="inherit" />}
-            sx={{ color: "text.secondary" }}
-          >
-            See the example first
-          </Button>
-          <Stack direction="row" spacing={1}>
+          <DialogTitle>New board</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <TextField
+                autoFocus
+                label="Product name"
+                required
+                fullWidth
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                disabled={creating}
+                placeholder="StateBoard"
+              />
+              <TextField
+                label="Description (optional)"
+                fullWidth
+                multiline
+                minRows={2}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                disabled={creating}
+              />
+              {error && <Alert severity="error">{error}</Alert>}
+            </Stack>
+          </DialogContent>
+          <DialogActions>
             <Button onClick={() => setOpen(false)} disabled={creating}>
               Cancel
             </Button>
             <Button
+              type="submit"
               variant="contained"
-              color="primary"
-              onClick={onCreate}
-              disabled={creating}
+              disabled={creating || !name.trim()}
             >
-              {creating ? "Creating…" : "Create"}
+              {creating ? "Creating…" : "Create board"}
             </Button>
-          </Stack>
-        </DialogActions>
+          </DialogActions>
+        </Box>
       </Dialog>
     </>
   );
 }
 
-function EmptyState({ canCreate }: { canCreate: boolean }) {
-  return (
-    <Paper
-      sx={{
-        p: { xs: 4, sm: 6 },
-        textAlign: "center",
-      }}
-    >
-      <Typography variant="h6" sx={{ mb: 1 }}>
-        {canCreate ? "Not sure where to start?" : "No boards yet"}
-      </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ mb: 3, maxWidth: 460, mx: "auto" }}
-      >
-        {canCreate
-          ? "Explore an example release through product, frontend, backend, QA, operations, and decision views."
-          : "An editor in this workspace hasn't created any boards yet. Open the example to see what one looks like."}
-      </Typography>
-      <Button
-        component={Link}
-        href="/share/demo/releases"
-        target="_blank"
-        rel="noopener"
-        variant="outlined"
-        color="primary"
-        endIcon={<OpenInNewIcon fontSize="inherit" />}
-      >
-        Open the example
-      </Button>
-    </Paper>
-  );
-}
-
-function NextStep({ n, label }: { n: number; label: string }) {
-  return (
-    <Stack direction="row" spacing={0.75} alignItems="center">
-      <Box
-        sx={{
-          width: 18,
-          height: 18,
-          borderRadius: "50%",
-          bgcolor: "primary.main",
-          color: "primary.contrastText",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 10,
-          fontWeight: 700,
-          flexShrink: 0,
-        }}
-      >
-        {n}
-      </Box>
-      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-        {label}
-      </Typography>
-    </Stack>
-  );
-}
-
-function StepArrow() {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        color: "text.secondary",
-        opacity: 0.5,
-        display: { xs: "none", sm: "inline" },
-      }}
-    >
-      →
-    </Box>
-  );
-}
-
-function BoardCard({
+function BoardRow({
   item,
   editable,
-}: {
-  item: BoardListItem;
-  editable: boolean;
-}) {
-  const router = useRouter();
-  const [copied, setCopied] = useState(false);
+  onDuplicate,
+  onOpen,
+}: { item: BoardListItem; editable: boolean } & Pick<
+  BoardListActions,
+  "onDuplicate" | "onOpen"
+>) {
+  const { board, screens, shareToken, updatedLabel } = item;
   const [cloning, setCloning] = useState(false);
-  const { board, shareToken, screens, totals, updatedLabel } = item;
-  const totalRegions = totals.shipped + totals.mock + totals.missing;
-
-  const copyShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!shareToken) return;
-    const url = `${window.location.origin}/share/${shareToken}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // ignore
-    }
-  };
-
-  // Deep-copy this board, then open the copy so the user can swap a screen or
-  // two. The whole card is a link, so swallow the click that triggered it.
-  const onClone = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (cloning) return;
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const inFlight = useRef(false);
+  const duplicate = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setCloning(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/boards/${board.id}/clone`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        setCloning(false);
-        return;
-      }
-      const cloned: Board = await res.json();
-      router.push(`/boards/${cloned.id}`);
-    } catch {
+      onOpen(await onDuplicate(board));
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to duplicate this board. Try again.",
+      );
+    } finally {
+      inFlight.current = false;
       setCloning(false);
     }
   };
-
-  // Every member starts with the product assessment. Screens remain an explicit view.
-  const href = `/boards/${board.id}/releases`;
-
+  const copy = async () => {
+    setError(null);
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/share/${shareToken}`,
+      );
+      setCopied(true);
+    } catch {
+      setError("Unable to copy the link. Open Screens to manage sharing.");
+    }
+  };
   return (
-    <Paper
-      component={Link}
-      href={href}
-      sx={{
-        textDecoration: "none",
-        color: "inherit",
-        display: "block",
-        overflow: "hidden",
-        transition: "transform 120ms ease, border-color 120ms ease",
-        "&:hover": {
-          borderColor: "primary.main",
-          transform: "translateY(-2px)",
-        },
-      }}
-    >
-      <BoardScreenCarousel screens={screens} />
-      <Box sx={{ p: 2 }}>
-        <Button
-          size="small"
-          sx={{ mb: 1 }}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            router.push(`/boards/${board.id}`);
-          }}
-        >
-          Screens →
-        </Button>
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="flex-start"
-          justifyContent="space-between"
-        >
-          <Typography variant="h6" sx={{ mb: 0.5, flex: 1 }}>
-            {board.name}
-          </Typography>
-          <Stack direction="row" spacing={0.25} sx={{ flexShrink: 0 }}>
-            {editable ? (
-              <Tooltip title="Duplicate board">
-                <IconButton
-                  size="small"
-                  onClick={onClone}
-                  disabled={cloning}
-                  aria-label="Duplicate board"
-                >
-                  {cloning ? (
-                    <CircularProgress size={16} color="inherit" />
-                  ) : (
-                    <LibraryAddOutlinedIcon fontSize="small" />
-                  )}
-                </IconButton>
-              </Tooltip>
-            ) : null}
-            {shareToken ? (
-              <Tooltip title={copied ? "Copied!" : "Copy share link"}>
-                <IconButton
-                  size="small"
-                  onClick={copyShare}
-                  aria-label="Copy share link"
-                >
-                  <ContentCopyIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            ) : null}
-          </Stack>
-        </Stack>
-        {board.description ? (
+    <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "minmax(0, 1fr)",
+            md: "minmax(0, 1fr) minmax(260px, 0.9fr) auto",
+          },
+          gap: { xs: 2, md: 3 },
+          alignItems: "center",
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
           <Typography
-            variant="body2"
-            color="text.secondary"
+            component={Link}
+            href={`/boards/${board.id}/releases`}
+            variant="h6"
             sx={{
-              mb: 1.5,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
+              display: "inline-block",
+              color: "text.primary",
+              textDecoration: "none",
+              overflowWrap: "anywhere",
+              "&:hover": { color: "primary.main" },
             }}
           >
-            {board.description}
+            {board.name}
           </Typography>
-        ) : null}
-        <ReleaseOverviewSummary overview={item.releaseOverview} showCandidate />
-        {totalRegions > 0 ? (
-          <Stack direction="row" spacing={1.25} sx={{ mb: 1.5 }}>
-            {REGION_STATES.map((s) => (
-              <Stack key={s} direction="row" spacing={0.5} alignItems="center">
-                <StateChip state={s} size="sm" />
-                <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                  {totals[s]}
-                </Typography>
-              </Stack>
-            ))}
-          </Stack>
-        ) : null}
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="baseline"
-          justifyContent="space-between"
-        >
-          {shareToken ? (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                fontFamily: MONO_FONT,
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              /share/{shareToken.slice(0, 8)}…
-            </Typography>
-          ) : (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontStyle: "italic" }}
-            >
-              No active share link
+          {board.description && (
+            <Typography color="text.secondary" sx={{ mt: 0.5, maxWidth: 440 }}>
+              {board.description}
             </Typography>
           )}
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ flexShrink: 0 }}
+            sx={{ display: "block", mt: 1.25 }}
           >
-            {updatedLabel}
+            Updated {updatedLabel}
           </Typography>
+        </Box>
+        <Box sx={{ minWidth: 0, "& > .MuiStack-root": { my: 0 } }}>
+          <ReleaseOverviewSummary
+            overview={item.releaseOverview}
+            showCandidate
+          />
+        </Box>
+        <Stack spacing={1} alignItems={{ xs: "flex-start", md: "flex-end" }}>
+          <Button
+            component={Link}
+            href={`/boards/${board.id}/releases`}
+            variant="outlined"
+            color="inherit"
+            endIcon={<ArrowForwardIcon />}
+          >
+            Open board
+          </Button>
+          <Stack direction="row" alignItems="center" spacing={0.5}>
+            <Button
+              component={Link}
+              href={`/boards/${board.id}`}
+              color="inherit"
+              size="small"
+              startIcon={<ImageOutlinedIcon />}
+              sx={{ color: "text.secondary" }}
+            >
+              {screens.length} {screens.length === 1 ? "screen" : "screens"}
+            </Button>
+            {editable && (
+              <Tooltip title="Copy screens and annotations into a new board">
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={() => void duplicate()}
+                    disabled={cloning}
+                    aria-label={`Copy screens from ${board.name}`}
+                  >
+                    <LibraryAddOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+            {shareToken && (
+              <Tooltip title={copied ? "Copied" : "Copy visual share link"}>
+                <IconButton
+                  size="small"
+                  onClick={() => void copy()}
+                  aria-label={`Copy visual share link for ${board.name}`}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
         </Stack>
       </Box>
-    </Paper>
-  );
-}
-
-/**
- * Swipeable peek at a board's screens. Native horizontal scroll-snap gives
- * touch/trackpad swiping for free; dots and hover arrows drive it on desktop.
- * It lives inside the card link, so its controls preventDefault/stopPropagation
- * to change slides without navigating — a tap on a slide still opens the board.
- */
-function BoardScreenCarousel({ screens }: { screens: ScreenWithRegions[] }) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
-
-  if (screens.length === 0) {
-    return (
-      <Box
-        sx={{
-          aspectRatio: "16 / 10",
-          bgcolor: "background.default",
-          borderBottom: 1,
-          borderColor: "divider",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 0.5,
-          color: "text.disabled",
-        }}
-      >
-        <ImageOutlinedIcon />
-        <Typography variant="caption">No screens yet</Typography>
-      </Box>
-    );
-  }
-
-  const go = (e: React.MouseEvent, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
-  };
-
-  const onScroll = () => {
-    const el = scrollRef.current;
-    if (el) setActive(Math.round(el.scrollLeft / el.clientWidth));
-  };
-
-  return (
-    <Box
-      sx={{
-        position: "relative",
-        borderBottom: 1,
-        borderColor: "divider",
-        "&:hover .carousel-nav": { opacity: 1 },
-      }}
-    >
-      <Box
-        ref={scrollRef}
-        onScroll={onScroll}
-        sx={{
-          display: "flex",
-          aspectRatio: "16 / 10",
-          overflowX: "auto",
-          bgcolor: "background.default",
-          scrollSnapType: "x mandatory",
-          scrollbarWidth: "none",
-          "&::-webkit-scrollbar": { display: "none" },
-        }}
-      >
-        {screens.map((s, i) => (
-          <Box
-            key={s.id}
-            sx={{
-              flex: "0 0 100%",
-              height: "100%",
-              scrollSnapAlign: "center",
-              containerType: "size",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {/* Inner box carries the screen's exact aspect ratio, contained
-                inside the fixed thumbnail via container-query units, so the
-                painted regions line up with the image at any card width. */}
-            <Box
-              sx={{
-                position: "relative",
-                aspectRatio: `${s.width} / ${s.height}`,
-                width: `min(100cqw, calc(100cqh * ${s.width} / ${s.height}))`,
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={s.mediaUrl}
-                alt={s.label ?? `Screen ${i + 1}`}
-                loading="lazy"
-                draggable={false}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "fill",
-                  display: "block",
-                }}
-              />
-              {s.regions.map((r) => (
-                <Box
-                  key={r.id}
-                  aria-hidden
-                  sx={{
-                    position: "absolute",
-                    left: `${r.x * 100}%`,
-                    top: `${r.y * 100}%`,
-                    width: `${r.w * 100}%`,
-                    height: `${r.h * 100}%`,
-                    border: `1.5px solid ${STATE_META[r.state].color}`,
-                    bgcolor: STATE_META[r.state].fill,
-                    borderRadius: "2px",
-                    pointerEvents: "none",
-                  }}
-                />
-              ))}
-            </Box>
-          </Box>
-        ))}
-      </Box>
-
-      {screens.length > 1 ? (
-        <>
-          <Box
-            aria-hidden
-            sx={{
-              position: "absolute",
-              top: 6,
-              right: 6,
-              px: 0.75,
-              py: 0.25,
-              borderRadius: 1,
-              bgcolor: "rgba(0,0,0,0.55)",
-              color: "#fff",
-              fontSize: 11,
-              fontWeight: 600,
-              fontVariantNumeric: "tabular-nums",
-              lineHeight: 1.4,
-              pointerEvents: "none",
-            }}
-          >
-            {active + 1} / {screens.length}
-          </Box>
-          <CarouselArrow
-            edge="left"
-            disabled={active === 0}
-            onClick={(e) => go(e, active - 1)}
-          />
-          <CarouselArrow
-            edge="right"
-            disabled={active === screens.length - 1}
-            onClick={(e) => go(e, active + 1)}
-          />
-          <Stack
-            direction="row"
-            spacing={0.5}
-            sx={{
-              position: "absolute",
-              bottom: 6,
-              left: 0,
-              right: 0,
-              justifyContent: "center",
-            }}
-          >
-            {screens.map((s, i) => (
-              <Box
-                component="button"
-                key={s.id}
-                onClick={(e) => go(e, i)}
-                aria-label={`Show screen ${i + 1}`}
-                aria-current={i === active ? "true" : undefined}
-                sx={{
-                  width: 8,
-                  height: 8,
-                  p: 0,
-                  border: 0,
-                  borderRadius: "50%",
-                  cursor: "pointer",
-                  bgcolor:
-                    i === active ? "primary.main" : "rgba(255,255,255,0.55)",
-                  boxShadow: "0 0 2px rgba(0,0,0,0.6)",
-                  transition: "background-color 120ms ease",
-                  "&:focus-visible": {
-                    outline: 2,
-                    outlineStyle: "solid",
-                    outlineColor: "primary.main",
-                    outlineOffset: 2,
-                  },
-                }}
-              />
-            ))}
-          </Stack>
-        </>
-      ) : null}
-    </Box>
-  );
-}
-
-function CarouselArrow({
-  edge,
-  disabled,
-  onClick,
-}: {
-  edge: "left" | "right";
-  disabled: boolean;
-  onClick: (e: React.MouseEvent) => void;
-}) {
-  return (
-    <IconButton
-      className="carousel-nav"
-      size="small"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={edge === "left" ? "Previous screen" : "Next screen"}
-      sx={{
-        position: "absolute",
-        top: "50%",
-        transform: "translateY(-50%)",
-        [edge]: 4,
-        opacity: 0,
-        transition: "opacity 120ms ease",
-        bgcolor: "rgba(0,0,0,0.45)",
-        color: "#fff",
-        "&:hover": { bgcolor: "rgba(0,0,0,0.65)" },
-        "&.Mui-disabled": { color: "rgba(255,255,255,0.3)" },
-      }}
-    >
-      {edge === "left" ? (
-        <ChevronLeftIcon fontSize="small" />
-      ) : (
-        <ChevronRightIcon fontSize="small" />
+      {error && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {error}
+        </Alert>
       )}
-    </IconButton>
+    </Box>
   );
 }

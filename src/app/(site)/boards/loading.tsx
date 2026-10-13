@@ -1,59 +1,57 @@
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
-import Paper from "@mui/material/Paper";
-import Skeleton from "@mui/material/Skeleton";
-import Stack from "@mui/material/Stack";
+import {
+  Box,
+  Container,
+  Paper,
+  Skeleton,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 
-/**
- * Shown while the board list streams in from Postgres. Mirrors the
- * BoardList layout (header row + responsive card grid) so the page
- * doesn't jump when the real data lands.
- */
 export default function BoardsLoading() {
   return (
     <>
-      <AppHeader />
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Stack spacing={4}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            justifyContent="space-between"
-          >
-            <Box>
-              <Skeleton variant="text" width={140} height={44} />
-              <Skeleton variant="text" width={300} />
-            </Box>
-            <Skeleton variant="rounded" width={132} height={36} />
-          </Stack>
-          <Box
-            sx={{
-              display: "grid",
-              gap: 2,
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
-              },
-            }}
-          >
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Paper key={i} sx={{ overflow: "hidden" }}>
-                <Skeleton
-                  variant="rectangular"
-                  sx={{ width: "100%", aspectRatio: "16 / 10" }}
-                />
-                <Box sx={{ p: 2 }}>
-                  <Skeleton variant="text" width="65%" height={28} />
-                  <Skeleton variant="text" width="95%" />
-                  <Skeleton variant="text" width="45%" />
-                </Box>
-              </Paper>
-            ))}
+      <AppHeader homeHref="/boards" crumb="Workspace" />
+      <Container
+        component="main"
+        maxWidth="lg"
+        sx={{ py: { xs: 3, md: 4 } }}
+        aria-busy="true"
+        aria-label="Loading boards"
+      >
+        <Box sx={{ mb: 3 }}>
+          <Typography component="h1" variant="h5">
+            Boards
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+            Your products and their latest release assessments.
+          </Typography>
+        </Box>
+        <Paper sx={{ overflow: "hidden" }}>
+          <Box sx={{ px: 2.5, py: 1.25 }}>
+            <Skeleton width={80} />
           </Box>
-        </Stack>
+          {Array.from({ length: 3 }, (_, index) => (
+            <Stack
+              key={index}
+              direction={{ xs: "column", md: "row" }}
+              spacing={3}
+              sx={{ p: 2.5, borderTop: 1, borderColor: "divider" }}
+            >
+              <Box sx={{ flex: 1 }}>
+                <Skeleton width="65%" height={32} />
+                <Skeleton width="90%" />
+                <Skeleton width={90} sx={{ mt: 1 }} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Skeleton width="65%" />
+                <Skeleton width="85%" />
+                <Skeleton width="50%" />
+              </Box>
+              <Skeleton variant="rounded" width={136} height={36} />
+            </Stack>
+          ))}
+        </Paper>
       </Container>
     </>
   );

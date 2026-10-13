@@ -10,10 +10,16 @@ export default function BoardHistoryLoading() {
   return (
     <>
       <AppHeader />
-      <Container maxWidth="lg" sx={{ py: 6 }}>
+      <Container
+        component="main"
+        maxWidth="lg"
+        sx={{ py: { xs: 3, md: 4 } }}
+        aria-busy="true"
+        aria-label="Loading product history"
+      >
         <Stack spacing={3}>
           <Box>
-            <Skeleton variant="text" width={220} height={44} />
+            <Skeleton variant="text" width={220} height={36} />
             <Skeleton variant="text" width="60%" />
           </Box>
           <Paper sx={{ p: 2 }}>

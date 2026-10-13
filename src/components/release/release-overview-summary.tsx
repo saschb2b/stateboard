@@ -54,7 +54,7 @@ export function ReleaseOverviewSummary({
         <Typography variant="caption" color="text.secondary">
           {expired
             ? "Evidence expired; open the assessment to recheck."
-            : `${overview.blockerCount} blockers · ${overview.gapCount} evidence gaps`}
+            : `${overview.blockerCount} blocker${overview.blockerCount === 1 ? "" : "s"} · ${overview.gapCount} evidence gap${overview.gapCount === 1 ? "" : "s"}`}
         </Typography>
       </Stack>
       {!compact && (
