@@ -31,7 +31,7 @@ export function CapabilityVisualView({
   product: ProductContext;
   detail: ReleaseDetail;
   readiness: ReleaseEvaluation;
-  onReviewView?: (view: ReleaseView) => void;
+  onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   screensHref?: string;
 }) {
   const [capabilityId, setCapabilityId] = useState("all");
@@ -57,20 +57,54 @@ export function CapabilityVisualView({
   );
   return (
     <Stack spacing={2}>
-      <TextField
-        label="Capability"
-        value={capabilityId}
-        select
-        size="small"
-        onChange={(event) => setCapabilityId(event.target.value)}
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        alignItems={{ xs: "stretch", sm: "center" }}
+        gap={1}
       >
-        <MenuItem value="all">All screens</MenuItem>
-        {included.map((item) => (
-          <MenuItem key={item.capabilityId} value={item.capabilityId}>
-            {item.name}
-          </MenuItem>
-        ))}
-      </TextField>
+        <TextField
+          label="Capability"
+          value={capabilityId}
+          select
+          fullWidth
+          size="small"
+          sx={{ flex: 1, minWidth: 0 }}
+          onChange={(event) => setCapabilityId(event.target.value)}
+        >
+          <MenuItem value="all">All screens</MenuItem>
+          {included.map((item) => (
+            <MenuItem key={item.capabilityId} value={item.capabilityId}>
+              {item.name}
+            </MenuItem>
+          ))}
+        </TextField>
+        {onReviewView && (
+          <Stack direction="row" gap={0.5} flexWrap="wrap">
+            <Button
+              size="small"
+              onClick={() =>
+                onReviewView(
+                  "backend",
+                  capabilityId === "all" ? undefined : capabilityId,
+                )
+              }
+            >
+              View architecture
+            </Button>
+            <Button
+              size="small"
+              onClick={() =>
+                onReviewView(
+                  "qa",
+                  capabilityId === "all" ? undefined : capabilityId,
+                )
+              }
+            >
+              View checks
+            </Button>
+          </Stack>
+        )}
+      </Stack>
       {screens.length > 0 && (
         <Typography variant="caption" color="text.secondary">
           Annotations show shipped, mock, or missing UI. Checks verify the
@@ -164,27 +198,11 @@ export function CapabilityVisualView({
           <Typography variant="subtitle1">
             {capabilityId === "all" ? "No screens yet" : "No linked screen"}
           </Typography>
-          <Stack
-            direction="row"
-            justifyContent="center"
-            gap={1}
-            flexWrap="wrap"
-            sx={{ mt: 1.5 }}
-          >
-            {onReviewView && (
-              <>
-                <Button onClick={() => onReviewView("backend")}>
-                  View architecture
-                </Button>
-                <Button onClick={() => onReviewView("qa")}>View checks</Button>
-              </>
-            )}
-            {screensHref && (
-              <Button component={Link} href={screensHref}>
-                Manage screens
-              </Button>
-            )}
-          </Stack>
+          {screensHref && (
+            <Button component={Link} href={screensHref} sx={{ mt: 1.5 }}>
+              Manage screens
+            </Button>
+          )}
         </Box>
       )}
       {noUI.length > 0 && (

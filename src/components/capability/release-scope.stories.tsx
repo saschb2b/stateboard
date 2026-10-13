@@ -14,6 +14,7 @@ const meta = {
     editable: false,
     mutate: fn(async () => {}),
     onInspectCheck: fn(),
+    onReviewView: fn(),
   },
 } satisfies Meta<typeof ReleaseScope>;
 export default meta;
@@ -39,6 +40,13 @@ export const CapabilityReadiness: Story = {
       canvas.getByRole("button", { name: "Inspect acceptance check" }),
     );
     await expect(args.onInspectCheck).toHaveBeenCalledWith("check-export");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "View architecture" }),
+    );
+    await expect(args.onReviewView).toHaveBeenCalledWith(
+      "backend",
+      "cap-export",
+    );
     await userEvent.click(row);
     await expect(row).toHaveAttribute("aria-expanded", "false");
   },

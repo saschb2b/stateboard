@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
+import { dependencyFocus } from "@/components/dependency/dependency-focus";
 import type { CheckSubjectScope } from "@/components/evidence/check-scope";
 import { evaluateRelease } from "@/lib/readiness";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -60,6 +61,9 @@ export function ReleaseWorkspace({
   const [product, setProduct] = useState(initialProduct);
   const [view, changeView] = useReleaseView(initialView);
   const [checkId, setCheckId] = useCheckFocus();
+  const [focusedCapabilityId, setFocusedCapabilityId] = useState<string | null>(
+    null,
+  );
   const [subjectScope, setSubjectScope] = useState<CheckSubjectScope | null>(
     null,
   );
@@ -69,8 +73,21 @@ export function ReleaseWorkspace({
     ? checkId
     : null;
   function selectView(next: ReleaseView) {
+    clearCheckFocus();
+    changeView(next);
+  }
+  function reviewView(next: ReleaseView, capabilityId?: string) {
+    const capability = detail.scope.find(
+      (item) => item.included && item.capabilityId === capabilityId,
+    );
+    const id = capability?.capabilityId ?? null;
     setCheckId(null);
-    setSubjectScope(null);
+    setFocusedCapabilityId(id);
+    setSubjectScope(
+      id && (next === "backend" || next === "qa")
+        ? dependencyFocus(product, detail, id).checkScope
+        : null,
+    );
     changeView(next);
   }
   function inspectCheck(id: string) {
@@ -81,12 +98,14 @@ export function ReleaseWorkspace({
     )
       return;
     setSubjectScope(null);
+    setFocusedCapabilityId(null);
     changeView("qa");
     setCheckId(id);
   }
   function clearCheckFocus() {
     setCheckId(null);
     setSubjectScope(null);
+    setFocusedCapabilityId(null);
   }
   function reviewChecks() {
     clearCheckFocus();
@@ -293,9 +312,10 @@ export function ReleaseWorkspace({
               onCheckScopeChange={selectCheckScope}
               subjectScope={subjectScope}
               focusedCheckId={focusedCheckId}
+              focusedCapabilityId={focusedCapabilityId}
               onClearFocus={clearCheckFocus}
               onInspectCheck={inspectCheck}
-              onReviewView={selectView}
+              onReviewView={reviewView}
               canRecord={canRecord}
               record={record}
               publish={publish}

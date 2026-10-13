@@ -37,6 +37,7 @@ export function CheckManager({
   operationsOnly = false,
   loadCheckRevisions,
   subjectScope,
+  subjectLabel,
   focusedCheckId,
   onClearFocus,
 }: {
@@ -51,6 +52,7 @@ export function CheckManager({
   operationsOnly?: boolean;
   loadCheckRevisions?: (checkId: string) => Promise<ReleaseCheck[]>;
   subjectScope?: CheckSubjectScope;
+  subjectLabel?: string;
   focusedCheckId?: string | null;
   onClearFocus?: () => void;
 }) {
@@ -130,6 +132,32 @@ export function CheckManager({
               }}
             >
               Clear check focus
+            </Button>
+          )}
+        </Stack>
+      )}
+      {!focusedCheckId && subjectLabel && (
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={1}
+        >
+          <Stack spacing={0.25}>
+            <Typography variant="body2">{subjectLabel}</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Capability, related components and release-wide checks
+            </Typography>
+          </Stack>
+          {onClearFocus && (
+            <Button
+              size="small"
+              onClick={() => {
+                resetFilters();
+                onClearFocus();
+              }}
+            >
+              Clear capability
             </Button>
           )}
         </Stack>

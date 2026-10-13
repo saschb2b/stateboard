@@ -40,6 +40,127 @@ export const ProductPerspective: Story = {
   },
 };
 export const BackendPerspective: Story = { args: { initialView: "backend" } };
+export const CapabilityOverviewOpensItsArchitecture: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Details for Export an invoice" }),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "View architecture" }),
+    );
+    await expect(
+      canvas.getByRole("tab", { name: "Architecture" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+      canvas.getByRole("combobox", { name: "Capability" }),
+    ).toHaveTextContent("Export an invoice");
+    const evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText("Invoice CSV includes all tax fields."),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeNull();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
+  },
+};
+export const ScreensKeepCapabilityInArchitecture: Story = {
+  args: {
+    initialView: "visual",
+    initialProduct: { ...example.product, screens: [], regionCapabilities: [] },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(
+      within(canvasElement.ownerDocument.body).getByRole("option", {
+        name: "Export an invoice",
+      }),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "View architecture" }),
+    );
+    await expect(
+      canvas.getByRole("combobox", { name: "Capability" }),
+    ).toHaveTextContent("Export an invoice");
+    await expect(
+      canvas.getByRole("button", { name: /Billing API.*1 dependency/ }),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", { name: /Identity API/ }),
+    ).toBeNull();
+  },
+};
+export const ScreensKeepCapabilityInChecks: Story = {
+  args: {
+    initialView: "visual",
+    initialProduct: { ...example.product, screens: [], regionCapabilities: [] },
+    initialDetail: {
+      ...example.detail,
+      checks: [
+        ...example.detail.checks,
+        {
+          ...example.detail.checks[0]!,
+          id: "related-ledger-check",
+          subjectType: "component",
+          subjectId: "cmp-db",
+          claim: "Related ledger verification.",
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(
+      within(canvasElement.ownerDocument.body).getByRole("option", {
+        name: "Export an invoice",
+      }),
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "View checks" }));
+    const evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText(
+        "Capability, related components and release-wide checks",
+      ),
+    ).toBeVisible();
+    await expect(
+      evidence.getByText("Invoice CSV includes all tax fields."),
+    ).toBeVisible();
+    await expect(
+      evidence.getByText("Related ledger verification."),
+    ).toBeVisible();
+    await expect(
+      evidence.getByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeNull();
+    await userEvent.click(
+      evidence.getByRole("button", { name: "Clear capability" }),
+    );
+    await expect(
+      evidence.getByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText(
+        "Capability, related components and release-wide checks",
+      ),
+    ).toBeNull();
+    await expect(canvas.getByRole("tab", { name: "Checks" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
+  },
+};
 export const ArchitectureScopeEndsWhenChangingPerspective: Story = {
   args: { initialView: "backend" },
   play: async ({ canvasElement }) => {

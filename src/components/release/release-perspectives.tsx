@@ -31,6 +31,7 @@ export function ReleasePerspectives({
   onCheckScopeChange,
   subjectScope,
   focusedCheckId,
+  focusedCapabilityId,
   onClearFocus,
   onInspectCheck,
   onReviewView,
@@ -53,9 +54,10 @@ export function ReleasePerspectives({
   onCheckScopeChange: (scope: CheckSubjectScope | null) => void;
   subjectScope: CheckSubjectScope | null;
   focusedCheckId: string | null;
+  focusedCapabilityId?: string | null;
   onClearFocus: () => void;
   onInspectCheck: (checkId: string) => void;
-  onReviewView?: (view: ReleaseView) => void;
+  onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   canRecord: boolean;
   record: (input: DecisionInput) => Promise<void>;
   publish: (decisionId: string, values: PublicationValues) => Promise<void>;
@@ -72,6 +74,7 @@ export function ReleasePerspectives({
           editable={editable}
           mutate={mutate}
           onInspectCheck={onInspectCheck}
+          onReviewView={onReviewView}
         />
       )}
       {view === "visual" && (
@@ -85,6 +88,8 @@ export function ReleasePerspectives({
       )}
       {view === "backend" && (
         <DependencyView
+          key={focusedCapabilityId ?? "all"}
+          initialCapabilityId={focusedCapabilityId}
           detail={detail}
           product={product}
           readiness={readiness}
@@ -94,7 +99,7 @@ export function ReleasePerspectives({
       {(view === "backend" || view === "qa" || view === "operations") && (
         <Stack component="section" aria-label="Check evidence">
           <CheckManager
-            key={view}
+            key={`${view}:${focusedCapabilityId ?? "all"}`}
             detail={detail}
             product={product}
             readiness={readiness}
@@ -104,6 +109,13 @@ export function ReleasePerspectives({
             operationsOnly={view === "operations"}
             loadCheckRevisions={loadCheckRevisions}
             subjectScope={subjectScope ?? undefined}
+            subjectLabel={
+              view === "qa" && focusedCapabilityId
+                ? detail.scope.find(
+                    (item) => item.capabilityId === focusedCapabilityId,
+                  )?.name
+                : undefined
+            }
             focusedCheckId={focusedCheckId}
             onClearFocus={onClearFocus}
           />

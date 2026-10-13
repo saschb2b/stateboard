@@ -23,6 +23,7 @@ import type {
   ReleaseDetail,
   ReleaseEvaluation,
   ReleaseMutation,
+  ReleaseView,
 } from "@/lib/release-types";
 
 export function ReleaseScope({
@@ -32,12 +33,14 @@ export function ReleaseScope({
   editable,
   mutate,
   onInspectCheck,
+  onReviewView,
 }: {
   detail: ReleaseDetail;
   product: ProductContext;
   readiness: ReleaseEvaluation;
   editable: boolean;
   onInspectCheck?: (checkId: string) => void;
+  onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   mutate: (
     mutation: Omit<ReleaseMutation, "expectedRevision">,
   ) => Promise<void>;
@@ -191,6 +194,7 @@ export function ReleaseScope({
                     </Typography>
                   )}
                   {(editable ||
+                    (item.included && onReviewView) ||
                     (item.included && acceptanceCheck && onInspectCheck)) && (
                     <Stack direction="row" gap={1} flexWrap="wrap">
                       {item.included && acceptanceCheck && onInspectCheck && (
@@ -199,6 +203,16 @@ export function ReleaseScope({
                           onClick={() => onInspectCheck(acceptanceCheck.id)}
                         >
                           Inspect acceptance check
+                        </Button>
+                      )}
+                      {item.included && onReviewView && (
+                        <Button
+                          size="small"
+                          onClick={() =>
+                            onReviewView("backend", item.capabilityId)
+                          }
+                        >
+                          View architecture
                         </Button>
                       )}
                       {editable && (
