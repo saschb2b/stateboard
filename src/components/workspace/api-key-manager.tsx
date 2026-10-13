@@ -3,13 +3,12 @@
 import { useRef, useState } from "react";
 import { clientRequest } from "@/lib/client-request";
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Link from "next/link";
-import { AppHeader } from "@/components/app/app-header";
-import { UserMenu } from "@/components/app/user-menu";
+import Button from "@mui/material/Button";
+import { SettingsFrame } from "./settings-frame";
 import {
   ApiKeyCreateForm,
   type ApiKeyCreateInput,
@@ -148,86 +147,83 @@ export function ApiKeyManagerView({
   };
 
   return (
-    <>
-      <AppHeader
-        homeHref="/boards"
-        crumb="API keys"
-        actions={<UserMenu user={viewer.user} role={viewer.role} />}
-      />
-      <Container maxWidth="md" sx={{ py: 6 }}>
-        <Stack spacing={3}>
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.5 }}>
-              API keys
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Let agents and scripts read and update boards without a browser
-              sign-in — over the REST API or the MCP endpoint at{" "}
-              <code>/api/mcp</code>. Keys act as you, capped at the role you
-              give them. See <Link href="/docs/agents">the agent docs</Link> for
-              wiring one up.
-            </Typography>
-          </Box>
+    <SettingsFrame
+      viewer={viewer}
+      section="api-keys"
+      title="API keys"
+      description="Connect agents and CI to this workspace. Each key acts with its assigned role."
+      actions={
+        <Button
+          component={Link}
+          href="/docs/agents"
+          color="inherit"
+          variant="outlined"
+          sx={{ flexShrink: 0 }}
+        >
+          Agent setup
+        </Button>
+      }
+    >
+      <Stack spacing={3}>
+        {error ? (
+          <Paper
+            role="alert"
+            sx={{ p: 2, borderColor: "error.main", color: "error.main" }}
+          >
+            <Typography variant="body2">{error}</Typography>
+          </Paper>
+        ) : null}
 
-          {error ? (
-            <Paper
-              role="alert"
-              sx={{ p: 2, borderColor: "error.main", color: "error.main" }}
-            >
-              <Typography variant="body2">{error}</Typography>
-            </Paper>
-          ) : null}
+        <ApiKeyCreateForm
+          viewerRole={viewer.role}
+          creating={creating}
+          onCreate={onCreate}
+        />
 
-          <ApiKeyCreateForm
-            viewerRole={viewer.role}
-            creating={creating}
-            onCreate={onCreate}
+        {revealed ? (
+          <ApiKeyReveal key={revealed.id} secret={revealed.key} />
+        ) : null}
+
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
+            Your keys
+          </Typography>
+          <ApiKeyList
+            keys={keys}
+            now={now}
+            viewerId={viewer.user.id}
+            pendingId={pendingId}
+            onRevoke={onRevoke}
+            emptyText="No keys yet. Create one above to let an agent read this workspace."
           />
+        </Box>
 
-          {revealed ? (
-            <ApiKeyReveal key={revealed.id} secret={revealed.key} />
-          ) : null}
-
+        {workspaceKeys ? (
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-              Your keys
+            <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
+              Other workspace keys
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mb: 1.5 }}
+            >
+              Owner access · Revocations are recorded in the audit log.
             </Typography>
             <ApiKeyList
-              keys={keys}
+              keys={workspaceKeys.filter(
+                (key) => key.userId !== viewer.user.id,
+              )}
               now={now}
               viewerId={viewer.user.id}
               pendingId={pendingId}
               onRevoke={onRevoke}
-              emptyText="No keys yet. Create one above to let an agent read this workspace."
+              showOwner
+              emptyText="No other members have created keys."
             />
           </Box>
-
-          {workspaceKeys ? (
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
-                All workspace keys
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mb: 1.5 }}
-              >
-                Every key in this workspace, visible to owners only. You can
-                revoke any of them; the audit log records who revoked what.
-              </Typography>
-              <ApiKeyList
-                keys={workspaceKeys}
-                now={now}
-                viewerId={viewer.user.id}
-                pendingId={pendingId}
-                onRevoke={onRevoke}
-                showOwner
-                emptyText="No keys exist in this workspace yet."
-              />
-            </Box>
-          ) : null}
-        </Stack>
-      </Container>
-    </>
+        ) : null}
+      </Stack>
+    </SettingsFrame>
   );
 }

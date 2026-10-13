@@ -105,12 +105,20 @@ export const MemberView: Story = {
   },
 };
 
-/** Owners additionally get the whole-workspace inventory, owners named. */
+/** Owners see other members' keys without repeating their own inventory. */
 export const OwnerView: Story = {
   args: {
     viewer: viewer("owner"),
     initialKeys: KEYS,
     initialWorkspaceKeys: WORKSPACE_KEYS,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getAllByRole("button", { name: "Revoke release-bot" }),
+    ).toHaveLength(1);
+    await expect(
+      canvas.getByRole("button", { name: "Revoke bobs-agent" }),
+    ).toBeVisible();
   },
 };
 

@@ -25,7 +25,7 @@ export default async function AuditPage() {
       exportEndpoint="/api/workspace/audit/export"
       crumb="Audit log"
       heading="Audit log"
-      subtitle="Every board, screen, region, share-link, and member change, newest first. Visible to owners only."
+      subtitle="Changes across this workspace, newest first. Visible to owners."
     />
   );
 }

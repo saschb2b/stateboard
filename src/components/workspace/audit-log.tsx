@@ -19,6 +19,7 @@ import Typography from "@mui/material/Typography";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
+import { SettingsFrame } from "./settings-frame";
 import {
   AUDIT_ACTIONS,
   AUDIT_EXPORT_CAP,
@@ -165,6 +166,235 @@ export function AuditLog({
 
   const exportHref = `${exportEndpoint}?${buildQuery(false).toString()}`;
 
+  const content = (
+    <Stack spacing={3}>
+      {/* filter bar */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "minmax(0, 1fr)",
+            sm: "repeat(2, minmax(0, 1fr))",
+            lg: "repeat(3, minmax(0, 1fr))",
+          },
+          gap: 1.5,
+        }}
+      >
+        <TextField
+          select
+          size="small"
+          label="Actor"
+          value={actor}
+          onChange={(e) => setActor(e.target.value)}
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">All actors</MenuItem>
+          {actors.map((a) => (
+            <MenuItem key={a.id} value={a.id}>
+              {a.name ?? a.email}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Action"
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          sx={{ minWidth: 190 }}
+        >
+          <MenuItem value="">All actions</MenuItem>
+          {AUDIT_ACTIONS.map((a) => (
+            <MenuItem key={a} value={a}>
+              {auditActionLabel(a)}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Resource"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="">All resources</MenuItem>
+          {AUDIT_TARGET_TYPES.map((t) => (
+            <MenuItem key={t} value={t}>
+              {t.replace("_", " ")}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        <TextField
+          type="date"
+          size="small"
+          label="From"
+          value={from}
+          onChange={(e) => setFrom(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+        <TextField
+          type="date"
+          size="small"
+          label="To"
+          value={to}
+          onChange={(e) => setTo(e.target.value)}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+
+        {hasFilters ? (
+          <Button size="small" color="inherit" onClick={clearFilters}>
+            Clear
+          </Button>
+        ) : null}
+
+        <Tooltip
+          title={`Downloads up to ${AUDIT_EXPORT_CAP.toLocaleString()} most recent matching entries`}
+        >
+          <Button
+            component="a"
+            href={exportHref}
+            download
+            size="small"
+            variant="outlined"
+            color="inherit"
+            startIcon={<FileDownloadOutlinedIcon />}
+            sx={{ borderColor: "divider" }}
+          >
+            Export CSV
+          </Button>
+        </Tooltip>
+      </Box>
+
+      {error ? (
+        <Paper sx={{ p: 2, borderColor: "error.main", color: "error.main" }}>
+          <Typography variant="body2">{error}</Typography>
+        </Paper>
+      ) : null}
+
+      {entries.length === 0 ? (
+        <Paper sx={{ p: { xs: 3, sm: 5 }, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            {hasFilters
+              ? "No entries match these filters."
+              : "No activity has been recorded yet."}
+          </Typography>
+        </Paper>
+      ) : (
+        <Paper
+          role="region"
+          aria-label="Activity entries"
+          tabIndex={0}
+          sx={{ overflowX: "auto" }}
+        >
+          <Table size="small" sx={{ "& th": { whiteSpace: "nowrap" } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>When (UTC)</TableCell>
+                <TableCell>Actor</TableCell>
+                <TableCell>Action</TableCell>
+                <TableCell>Resource</TableCell>
+                <TableCell>Details</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {entries.map((e) => {
+                const details = summarizeMeta(e.meta);
+                return (
+                  <TableRow key={e.id} hover>
+                    <TableCell
+                      sx={{
+                        fontFamily: MONO_FONT,
+                        color: "text.secondary",
+                      }}
+                    >
+                      {formatAuditTime(e.at)}
+                    </TableCell>
+                    <TableCell>{e.actorName ?? "a former member"}</TableCell>
+                    <TableCell>{auditActionLabel(e.action)}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.75} alignItems="center">
+                        <Chip
+                          label={e.targetType.replace("_", " ")}
+                          size="small"
+                          variant="outlined"
+                          sx={{ borderColor: "divider" }}
+                        />
+                        {e.targetId ? (
+                          <Tooltip title={e.targetId}>
+                            <Box
+                              component="span"
+                              sx={{
+                                fontFamily: MONO_FONT,
+                                fontSize: 12,
+                                color: "text.secondary",
+                              }}
+                            >
+                              {shortId(e.targetId)}
+                            </Box>
+                          </Tooltip>
+                        ) : null}
+                      </Stack>
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        maxWidth: 320,
+                        whiteSpace: "normal",
+                        overflowWrap: "anywhere",
+                        minWidth: 220,
+                        color: "text.secondary",
+                      }}
+                    >
+                      {details ? (
+                        <Tooltip title={details}>
+                          <Box
+                            component="span"
+                            sx={{ fontFamily: MONO_FONT, fontSize: 12 }}
+                          >
+                            {details}
+                          </Box>
+                        </Tooltip>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Paper>
+      )}
+
+      {cursor ? (
+        <Box sx={{ textAlign: "center" }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => void load(false)}
+            disabled={loading}
+            sx={{ borderColor: "divider" }}
+          >
+            {loading ? "Loading…" : "Load more"}
+          </Button>
+        </Box>
+      ) : null}
+    </Stack>
+  );
+  if (backHref === "/boards")
+    return (
+      <SettingsFrame
+        viewer={viewer}
+        section="audit"
+        title={heading}
+        description={subtitle}
+      >
+        {content}
+      </SettingsFrame>
+    );
   return (
     <>
       <AppHeader
@@ -172,234 +402,16 @@ export function AuditLog({
         crumb={crumb}
         actions={<UserMenu user={viewer.user} role={viewer.role} />}
       />
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Stack spacing={3}>
-          <Box>
-            <Typography variant="h4" sx={{ mb: 0.5 }}>
-              {heading}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {subtitle}
-            </Typography>
-          </Box>
-
-          {/* filter bar */}
-          <Stack
-            direction="row"
-            spacing={1.5}
-            alignItems="center"
-            sx={{ flexWrap: "wrap", rowGap: 1.5 }}
-          >
-            <TextField
-              select
-              size="small"
-              label="Actor"
-              value={actor}
-              onChange={(e) => setActor(e.target.value)}
-              sx={{ minWidth: 180 }}
-            >
-              <MenuItem value="">All actors</MenuItem>
-              {actors.map((a) => (
-                <MenuItem key={a.id} value={a.id}>
-                  {a.name ?? a.email}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Action"
-              value={action}
-              onChange={(e) => setAction(e.target.value)}
-              sx={{ minWidth: 190 }}
-            >
-              <MenuItem value="">All actions</MenuItem>
-              {AUDIT_ACTIONS.map((a) => (
-                <MenuItem key={a} value={a}>
-                  {auditActionLabel(a)}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              select
-              size="small"
-              label="Resource"
-              value={target}
-              onChange={(e) => setTarget(e.target.value)}
-              sx={{ minWidth: 150 }}
-            >
-              <MenuItem value="">All resources</MenuItem>
-              {AUDIT_TARGET_TYPES.map((t) => (
-                <MenuItem key={t} value={t}>
-                  {t.replace("_", " ")}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <TextField
-              type="date"
-              size="small"
-              label="From"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-            <TextField
-              type="date"
-              size="small"
-              label="To"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-            />
-
-            {hasFilters ? (
-              <Button size="small" color="inherit" onClick={clearFilters}>
-                Clear
-              </Button>
-            ) : null}
-
-            <Box sx={{ flex: 1 }} />
-
-            <Tooltip
-              title={`Downloads up to ${AUDIT_EXPORT_CAP.toLocaleString()} most recent matching entries`}
-            >
-              <Button
-                component="a"
-                href={exportHref}
-                download
-                size="small"
-                variant="outlined"
-                color="inherit"
-                startIcon={<FileDownloadOutlinedIcon />}
-                sx={{ borderColor: "divider" }}
-              >
-                Export CSV
-              </Button>
-            </Tooltip>
-          </Stack>
-
-          {error ? (
-            <Paper
-              sx={{ p: 2, borderColor: "error.main", color: "error.main" }}
-            >
-              <Typography variant="body2">{error}</Typography>
-            </Paper>
-          ) : null}
-
-          {entries.length === 0 ? (
-            <Paper sx={{ p: 6, textAlign: "center" }}>
-              <Typography variant="body2" color="text.secondary">
-                {hasFilters
-                  ? "No entries match these filters."
-                  : "No activity has been recorded yet."}
-              </Typography>
-            </Paper>
-          ) : (
-            <Paper sx={{ overflow: "hidden" }}>
-              <Table
-                size="small"
-                sx={{ "& td, & th": { whiteSpace: "nowrap" } }}
-              >
-                <TableHead>
-                  <TableRow>
-                    <TableCell>When (UTC)</TableCell>
-                    <TableCell>Actor</TableCell>
-                    <TableCell>Action</TableCell>
-                    <TableCell>Resource</TableCell>
-                    <TableCell>Details</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {entries.map((e) => {
-                    const details = summarizeMeta(e.meta);
-                    return (
-                      <TableRow key={e.id} hover>
-                        <TableCell
-                          sx={{
-                            fontFamily: MONO_FONT,
-                            color: "text.secondary",
-                          }}
-                        >
-                          {formatAuditTime(e.at)}
-                        </TableCell>
-                        <TableCell>
-                          {e.actorName ?? "a former member"}
-                        </TableCell>
-                        <TableCell>{auditActionLabel(e.action)}</TableCell>
-                        <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            alignItems="center"
-                          >
-                            <Chip
-                              label={e.targetType.replace("_", " ")}
-                              size="small"
-                              variant="outlined"
-                              sx={{ borderColor: "divider" }}
-                            />
-                            {e.targetId ? (
-                              <Tooltip title={e.targetId}>
-                                <Box
-                                  component="span"
-                                  sx={{
-                                    fontFamily: MONO_FONT,
-                                    fontSize: 12,
-                                    color: "text.secondary",
-                                  }}
-                                >
-                                  {shortId(e.targetId)}
-                                </Box>
-                              </Tooltip>
-                            ) : null}
-                          </Stack>
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            maxWidth: 320,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            color: "text.secondary",
-                          }}
-                        >
-                          {details ? (
-                            <Tooltip title={details}>
-                              <Box
-                                component="span"
-                                sx={{ fontFamily: MONO_FONT, fontSize: 12 }}
-                              >
-                                {details}
-                              </Box>
-                            </Tooltip>
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </Paper>
-          )}
-
-          {cursor ? (
-            <Box sx={{ textAlign: "center" }}>
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={() => void load(false)}
-                disabled={loading}
-                sx={{ borderColor: "divider" }}
-              >
-                {loading ? "Loading…" : "Load more"}
-              </Button>
-            </Box>
-          ) : null}
-        </Stack>
+      <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
+        <Box sx={{ mb: 3 }}>
+          <Typography component="h1" variant="h5">
+            {heading}
+          </Typography>
+          <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+            {subtitle}
+          </Typography>
+        </Box>
+        {content}
       </Container>
     </>
   );

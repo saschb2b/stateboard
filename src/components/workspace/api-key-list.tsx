@@ -111,7 +111,11 @@ export function ApiKeyList({
               direction="row"
               spacing={2}
               alignItems="center"
-              sx={{ px: 2.5, py: 2, opacity: dead ? 0.55 : 1 }}
+              sx={{
+                px: 2.5,
+                py: 2,
+                color: dead ? "text.secondary" : "text.primary",
+              }}
             >
               <Box
                 aria-hidden
@@ -141,7 +145,7 @@ export function ApiKeyList({
                   direction="row"
                   spacing={1}
                   alignItems="center"
-                  sx={{ minWidth: 0, mb: 0.25 }}
+                  sx={{ minWidth: 0, mb: 0.5, flexWrap: "wrap", rowGap: 0.5 }}
                 >
                   <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                     {k.name}
@@ -168,7 +172,7 @@ export function ApiKeyList({
                   direction="row"
                   spacing={1}
                   alignItems="center"
-                  sx={{ minWidth: 0 }}
+                  sx={{ minWidth: 0, flexWrap: "wrap", rowGap: 0.5 }}
                 >
                   <Box
                     component="code"
@@ -178,13 +182,13 @@ export function ApiKeyList({
                       flexShrink: 0,
                       bgcolor: "action.hover",
                       borderRadius: 0.5,
-                      fontSize: 11.5,
+                      fontSize: 12,
                       color: "text.secondary",
                     }}
                   >
                     {k.keyPrefix}…
                   </Box>
-                  <Typography variant="caption" color="text.secondary" noWrap>
+                  <Typography variant="caption" color="text.secondary">
                     created {fmtDate(k.createdAt)}
                     {status.kind === "active"
                       ? ` · ${status.expiryText}`

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Button from "@mui/material/Button";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
 import Select from "@mui/material/Select";
@@ -35,6 +37,7 @@ export function ApiKeyCreateForm({
   creating,
   onCreate,
 }: ApiKeyCreateFormProps) {
+  const fieldId = useId();
   const [name, setName] = useState("");
   const [role, setRole] = useState<WorkspaceRole>(
     viewerRole === "owner" ? "editor" : viewerRole,
@@ -64,14 +67,19 @@ export function ApiKeyCreateForm({
         color="text.secondary"
         sx={{ display: "block", mb: 2 }}
       >
-        The name appears in the key list and the audit log. Viewer keys read
-        product context and assessments. Editor keys maintain mappings, checks,
-        evidence, and visual boards.
+        Use a name that identifies the agent or workflow. Editor keys can
+        maintain boards; viewer keys can read them.
       </Typography>
       <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={1.5}
-        alignItems={{ xs: "stretch", sm: "center" }}
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "minmax(0, 1fr)",
+            sm: "repeat(2, minmax(0, 1fr))",
+            lg: "minmax(0, 1fr) 120px 140px auto",
+          },
+          gap: 1.5,
+        }}
       >
         <TextField
           size="small"
@@ -83,37 +91,47 @@ export function ApiKeyCreateForm({
           onKeyDown={(e) => {
             if (e.key === "Enter" && name.trim() && !creating) void submit();
           }}
-          sx={{ flex: 1 }}
+          sx={{ minWidth: 0 }}
         />
-        <Select
-          size="small"
-          value={role}
-          disabled={creating}
-          inputProps={{ "aria-label": "Key role" }}
-          onChange={(e) => setRole(e.target.value as WorkspaceRole)}
-          sx={{ minWidth: 120, textTransform: "capitalize" }}
-        >
-          {roleOptions.map((r) => (
-            <MenuItem key={r} value={r} sx={{ textTransform: "capitalize" }}>
-              {r}
-            </MenuItem>
-          ))}
-        </Select>
-        <Select
-          size="small"
-          value={expiry}
-          disabled={creating}
-          inputProps={{ "aria-label": "Key expiration" }}
-          onChange={(e) => setExpiry(e.target.value)}
-          sx={{ minWidth: 140 }}
-        >
-          {API_KEY_EXPIRY_PRESETS.map((days) => (
-            <MenuItem key={days} value={String(days)}>
-              {days === 365 ? "1 year" : `${days} days`}
-            </MenuItem>
-          ))}
-          <MenuItem value="never">No expiration</MenuItem>
-        </Select>
+        <FormControl size="small" sx={{ minWidth: 120 }} disabled={creating}>
+          <InputLabel id={`${fieldId}-role`}>Key role</InputLabel>
+          <Select
+            labelId={`${fieldId}-role`}
+            label="Key role"
+            size="small"
+            value={role}
+            disabled={creating}
+            inputProps={{ "aria-label": "Key role" }}
+            onChange={(e) => setRole(e.target.value as WorkspaceRole)}
+            sx={{ minWidth: 120, textTransform: "capitalize" }}
+          >
+            {roleOptions.map((r) => (
+              <MenuItem key={r} value={r} sx={{ textTransform: "capitalize" }}>
+                {r}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140 }} disabled={creating}>
+          <InputLabel id={`${fieldId}-expiry`}>Key expiration</InputLabel>
+          <Select
+            labelId={`${fieldId}-expiry`}
+            label="Key expiration"
+            size="small"
+            value={expiry}
+            disabled={creating}
+            inputProps={{ "aria-label": "Key expiration" }}
+            onChange={(e) => setExpiry(e.target.value)}
+            sx={{ minWidth: 140 }}
+          >
+            {API_KEY_EXPIRY_PRESETS.map((days) => (
+              <MenuItem key={days} value={String(days)}>
+                {days === 365 ? "1 year" : `${days} days`}
+              </MenuItem>
+            ))}
+            <MenuItem value="never">No expiration</MenuItem>
+          </Select>
+        </FormControl>
         <Button
           variant="contained"
           onClick={submit}
