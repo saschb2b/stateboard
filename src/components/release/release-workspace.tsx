@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Alert,
@@ -24,7 +24,7 @@ import { releaseRequest } from "./release-request";
 import { ReleaseContext } from "./release-context";
 import { ReleasePerspectives } from "./release-perspectives";
 import { useReleaseView } from "./use-release-view";
-import { useCheckFocus } from "./use-check-focus";
+import { useCheckFocus, useCheckCategory } from "./use-check-focus";
 import { useServerClock } from "./use-server-clock";
 import type { PublicationValues } from "./publication-form";
 import type {
@@ -61,6 +61,7 @@ export function ReleaseWorkspace({
   const [product, setProduct] = useState(initialProduct);
   const [view, changeView] = useReleaseView(initialView);
   const [checkId, setCheckId] = useCheckFocus();
+  const [category, setCategory] = useCheckCategory();
   const [focusedCapabilityId, setFocusedCapabilityId] = useState<string | null>(
     null,
   );
@@ -83,6 +84,7 @@ export function ReleaseWorkspace({
     const id = capability?.capabilityId ?? null;
     setCheckId(null);
     setFocusedCapabilityId(id);
+    setCategory(null);
     setSubjectScope(
       id && (next === "backend" || next === "qa")
         ? dependencyFocus(product, detail, id).checkScope
@@ -104,6 +106,7 @@ export function ReleaseWorkspace({
   }
   function clearCheckFocus() {
     setCheckId(null);
+    setCategory(null);
     setSubjectScope(null);
     setFocusedCapabilityId(null);
   }
@@ -120,7 +123,7 @@ export function ReleaseWorkspace({
   const [reloading, setReloading] = useState(false);
   const editable = !demo && !!viewer && viewer.role !== "viewer";
   const canRecord = !demo && viewer?.role === "owner";
-  const readiness = useMemo(() => evaluateRelease(detail, now), [detail, now]);
+  const readiness = evaluateRelease(detail, now);
   useEffect(() => {
     if (demo) return;
     const delay =
@@ -200,7 +203,7 @@ export function ReleaseWorkspace({
                 href={`/boards/${product.board.id}/releases`}
                 size="small"
               >
-                All releases
+                Product overview
               </Button>
               {viewer && <UserMenu user={viewer.user} role={viewer.role} />}
             </>
@@ -278,7 +281,13 @@ export function ReleaseWorkspace({
         }
         navigation={<ReleaseViewTabs view={view} onChange={selectView} />}
       >
-        <Stack spacing={3}>
+        <Stack
+          spacing={3}
+          role="tabpanel"
+          id={`assessment-panel-${view}`}
+          aria-labelledby={`assessment-tab-${view}`}
+          tabIndex={0}
+        >
           {error && (
             <Alert severity="error">
               {error} Reload the assessment before retrying if another person
@@ -299,13 +308,7 @@ export function ReleaseWorkspace({
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns:
-                view === "release"
-                  ? {
-                      xs: "minmax(0, 1fr)",
-                      md: "minmax(0, 0.9fr) minmax(0, 1.35fr)",
-                    }
-                  : "minmax(0, 1fr)",
+              gridTemplateColumns: "minmax(0, 1fr)",
               gap: 3,
               alignItems: "start",
             }}
@@ -333,6 +336,8 @@ export function ReleaseWorkspace({
               subjectScope={subjectScope}
               focusedCheckId={focusedCheckId}
               focusedCapabilityId={focusedCapabilityId}
+              category={category}
+              onCategoryChange={setCategory}
               onClearFocus={clearCheckFocus}
               onInspectCheck={inspectCheck}
               onReviewView={reviewView}

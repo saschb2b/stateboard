@@ -33,7 +33,7 @@ export function ProductReleaseList({
           justifyContent="space-between"
         >
           <Typography variant="subtitle2" color="text.secondary">
-            {latest ? "Latest release" : "Releases"}
+            {latest ? "Latest assessment" : "Assessments"}
           </Typography>
           {editable && latest && (
             <Button
@@ -78,7 +78,7 @@ export function ProductReleaseList({
                 endIcon={<ArrowForwardIcon />}
                 sx={{ flexShrink: 0 }}
               >
-                Review release
+                Review assessment
               </Button>
             </Stack>
             <Box
@@ -126,7 +126,7 @@ export function ProductReleaseList({
       {history.length > 0 && (
         <Stack spacing={1.5}>
           <Typography variant="subtitle2" color="text.secondary">
-            Earlier releases
+            Earlier assessments
           </Typography>
           <Box
             sx={{

@@ -64,8 +64,7 @@ export const CurrentVerificationContext: Story = {
       canvas.getByRole("heading", { name: "Needs attention" }),
     ).toBeVisible();
     await expect(canvas.queryByText(/Expected environment:/)).toBeNull();
-    await userEvent.click(canvas.getByText("All findings"));
-    await expect(canvas.getAllByRole("listitem").length).toBeGreaterThan(0);
+    await expect(canvas.queryByText("All findings")).toBeNull();
   },
 };
 const allGapsDetail = {

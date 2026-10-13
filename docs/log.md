@@ -2,6 +2,8 @@
 
 ## 2026-10-14
 
+- **Update**: Documented the product overview default, retained capability scope, own-check qualifications, and declared mappings. Added the optional REST/MCP overview coverage projection, coherent reads, expiry handling, and missing-coverage semantics.
+
 - **Update**: Added Agent Browser setup, named-session browser review, private artifact storage, CLI verification, and upstream skill provenance to engineering concepts. Kept browser execution in the development environment and product upkeep through REST/MCP.
 
 ## 2026-10-13

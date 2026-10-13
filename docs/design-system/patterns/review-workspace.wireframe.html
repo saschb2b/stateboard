@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>StateBoard review wireframe</title>
+    <title>StateBoard review workspace wireframe</title>
     <link rel="stylesheet" href="../styles/tokens.css" />
     <link rel="stylesheet" href="../styles/components.css" />
     <link rel="stylesheet" href="../styles/wireframe.css" />
@@ -32,30 +32,55 @@
           </p>
         </details>
       </header>
-      <main class="workspace__content" id="overview">
-        <section>
-          <h2><span class="status status--missing">Needs evidence</span></h2>
-          <p class="meta">0 blockers · 2 evidence gaps</p>
-          <p class="meta">Validation · local development</p>
-          <a class="review__decision" href="#decision">Review decision →</a>
-          <h3 id="attention">Needs attention</h3>
-          <div class="rows">
-            <div class="row">
-              <p>
-                A coordinated database and private-media backup can be restored.
-              </p>
-              <span class="status status--missing">Missing evidence</span>
-              <div class="meta">Data operations</div>
+      <main
+        class="workspace__content product-overview-review-flow"
+        id="overview"
+      >
+        <section class="product-overview-assessment">
+          <div class="product-overview-assessment-heading">
+            <div>
+              <p class="meta">Candidate assessment</p>
+              <h2>
+                <span
+                  class="product-overview-state product-overview-state--missing"
+                  >Needs evidence</span
+                >
+              </h2>
             </div>
-            <div class="row">
-              <p>
-                An external reviewer can distinguish local verification from
-                production availability.
-              </p>
-              <span class="status status--missing">Inconclusive</span>
-              <div class="meta">Product maintainer</div>
-            </div>
+            <a class="product-overview-review" href="#decision"
+              >Review decision →</a
+            >
           </div>
+          <div class="product-overview-context">
+            <span
+              >Validation: local development → Target: self-hosted
+              production</span
+            ><span>Owner decision: Hold</span>
+          </div>
+          <section
+            class="product-overview-findings"
+            id="attention"
+            aria-labelledby="attention-title"
+          >
+            <h3 id="attention-title">Needs attention</h3>
+            <ul>
+              <li>
+                <strong>Operations · Restore product data</strong
+                ><span class="meta"
+                  >A coordinated database and private-media backup can be
+                  restored. No matching observation.</span
+                >
+              </li>
+              <li>
+                <strong>UX · Share a comprehensible review</strong
+                ><span class="meta"
+                  >Independent human review has not established that readers
+                  understand candidate verification. Inconclusive
+                  observation.</span
+                >
+              </li>
+            </ul>
+          </section>
           <details id="decision">
             <summary>Decision context</summary>
             <p>
@@ -65,7 +90,7 @@
           </details>
         </section>
         <section id="capabilities">
-          <h2>Capabilities <span class="meta">3 shown</span></h2>
+          <h2>Capabilities in scope <span class="meta">3 shown</span></h2>
           <div class="rows">
             <details class="row">
               <summary>

@@ -16,9 +16,13 @@ Explore the [example assessment](/share/demo/releases) to switch between all six
 
 ## Describe the product
 
-Open a board from the overview to enter its product workspace. From the screen editor, choose **Release readiness**. The workspace has **Release assessments**, **Capabilities**, **Components**, and **Connections** tabs.
+Open a board to enter its product workspace. From the screen editor, choose **Release readiness**. **Overview** opens first, followed by **Assessments**, **Capabilities**, **Components**, and **Connections**. The URL retains the selected section. Browser Back returns to the previous section.
 
-Board cards show the newest candidate's readiness and gaps, validation environment, and recorded decision context. This is one candidate's assessment, not a product-wide availability score. Product assessment cards show the same scoped summary.
+The overview starts with the latest candidate, its readiness, validation environment, release target, and recorded decision. Expand unresolved items to see missing or failed claims. **Review assessment** opens that candidate's full review.
+
+The capability list includes outcomes outside the latest assessment and marks newer definitions. Expand a row for its outcome, scope reason, and definition context. Check status describes the candidate's own capability checks. Component and screen counts describe declared mappings, which do not verify behavior or production availability.
+
+**Verification coverage** shows functionality, integration, user experience, data, security, and operations. Areas with no checks remain unassessed. Optional-only coverage remains distinct from required checks. Choose an area to open its checks in QA. **Assessments** holds the latest candidate and earlier assessments.
 
 1. Add a capability with a name, observable outcome, and accountable owner. For example, **Export an invoice** could require an authorized finance user to download a valid PDF.
 2. Add the services, API operations, events, workers, data stores, or external dependencies that implement it. Components can be reused across boards in the workspace.
@@ -59,9 +63,11 @@ StateBoard selects the newest matching observation by verification time, with a 
 
 All six views use the same assessment. The selected view is preserved in the URL so a colleague can open the same perspective.
 
-The summary shows required verification actions with accountable owner, expected environment and method. **Inspect / record evidence** opens the exact check; its `check` URL parameter can be shared. **Show all** reveals the complete findings. Passing check badges describe verification, not deployment or production availability.
+The summary leads with the conclusion, followed by required findings and capability scope. Each finding shows its evidence state and accountable owner. Select a finding to inspect its exact check. Share the resulting `check` URL parameter to keep that focus. **Show all** reveals findings beyond the first three. Optional warnings have their own disclosure. Passing check badges describe verification, not deployment or production availability.
 
 In **Backend**, choosing a capability or component narrows the architecture and checks, retaining release-wide gates. Selecting a new architecture scope replaces any earlier exact-check focus. **QA** offers **Needs attention**, claim/owner search and result/category filters. These filters never change calculated readiness. **Operations / security / data** starts with those explicit categories; **Include functional checks** also shows outcome checks that may cover those concerns.
+
+A category link retains its selection in the URL and shows a **Category** chip above the check list. Select the chip's clear control or **Reset filters** to remove that category. Reloading the page restores the category from its URL. Clearing the category preserves an exact-check link and other URL context.
 
 Component editing starts with this product's linked components. **Browse workspace catalog** exposes reusable components when needed. A component with no component-specific check can still support a verified capability; the two claims are shown separately.
 

@@ -4,12 +4,13 @@ title: Interface research coverage
 description: Bounded source ledger for the StateBoard interface study.
 tags: [research, coverage, provenance]
 status: draft
-generated: { by: codex/unversioned, at: 2026-10-13T21:19:01Z }
+generated: { by: codex/unversioned, at: 2026-10-13T22:20:11Z }
 stale_after: 2027-01-13
 sources:
   - id: research
     resource: interface-research.md
     title: Project management interface research
+  - resource: product-overview-research.md
 ---
 
 # Scope
@@ -17,6 +18,8 @@ sources:
 This ledger supports [interface research](interface-research.md) and the [design system](../overview.md). It records a comparative study, not a source-site clone.
 
 The later [landing study](landing-research.md) has its own bounded page and image ledger. The [supporting screen contracts](../patterns/supporting-surfaces.md) record app requirements separately from external research coverage.
+
+The [product overview study](product-overview-research.md) records seven further Dribbble comparisons and two first-party UX articles. Its ledger separates visual observations from the proposed capability matrix and category coverage rows.
 
 The bound was 13 reference pages, plus their directly linked public images, at one link depth. Hosts were `dribbble.com`, `cdn.dribbble.com`, `linear.app`, `plane.so`, `docs.plane.so`, and `media.docs.plane.so`. Search pages served discovery only. Profiles, recommended shots, signup flows, and private workspaces were outside scope.
 

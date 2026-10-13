@@ -53,3 +53,24 @@ h2 .status::before,
 .landing__role-list a > :nth-child(2) {
   color: black;
 }
+.product-overview-assessment,
+.product-overview-context,
+.product-overview-state,
+.product-overview-capabilities thead th,
+.product-overview-detail {
+  background: white;
+  color: black;
+  border-color: gray;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: monospace;
+}
+.product-overview-assessment-heading > *,
+.product-overview-context > *,
+.product-overview-findings,
+.product-overview-section-heading > *,
+.product-overview-capabilities tr,
+.product-overview-category,
+.product-overview-detail {
+  outline: 1px dashed gray;
+}

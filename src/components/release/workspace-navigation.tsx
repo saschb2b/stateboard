@@ -21,11 +21,13 @@ export function WorkspaceNavigation<T extends string>({
   value,
   sections,
   onChange,
+  idPrefix,
 }: {
   label: string;
   value: T;
   sections: WorkspaceSection<T>[];
   onChange: (value: T) => void;
+  idPrefix?: string;
 }) {
   const theme = useTheme();
   const vertical = useMediaQuery(theme.breakpoints.up("lg"));
@@ -43,7 +45,7 @@ export function WorkspaceNavigation<T extends string>({
         onChange={(_, next: T) => onChange(next)}
         orientation={vertical ? "vertical" : "horizontal"}
         variant="scrollable"
-        scrollButtons="auto"
+        scrollButtons={vertical ? false : "auto"}
         allowScrollButtonsMobile
         aria-label={label}
         sx={{
@@ -70,6 +72,10 @@ export function WorkspaceNavigation<T extends string>({
         {sections.map((section) => (
           <Tab
             key={section.value}
+            id={idPrefix ? `${idPrefix}-tab-${section.value}` : undefined}
+            aria-controls={
+              idPrefix ? `${idPrefix}-panel-${section.value}` : undefined
+            }
             value={section.value}
             label={section.label}
             iconPosition="start"

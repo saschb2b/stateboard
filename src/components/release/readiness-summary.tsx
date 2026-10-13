@@ -95,7 +95,13 @@ export function ReadinessSummary({
   );
   return (
     <Stack spacing={3}>
-      <Stack gap={1.5} justifyContent="space-between" alignItems="flex-start">
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        gap={2}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+        sx={{ py: 2, borderBottom: 1, borderColor: "divider" }}
+      >
         <Stack spacing={1}>
           <Typography
             variant="h6"
@@ -121,18 +127,18 @@ export function ReadinessSummary({
               ? currentDecision
                 ? "Required checks pass."
                 : "Required checks pass. Ready for the release owner's decision."
-              : `${readiness.blockers.length} blockers · ${readiness.gaps.length} evidence gaps`}
+              : `${readiness.blockers.length} blocker${readiness.blockers.length === 1 ? "" : "s"} · ${readiness.gaps.length} evidence gap${readiness.gaps.length === 1 ? "" : "s"}`}
           </Typography>
+          {detail && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ overflowWrap: "anywhere" }}
+            >
+              Validation · {detail.assessment.validationEnvironment}
+            </Typography>
+          )}
         </Stack>
-        {detail && (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ overflowWrap: "anywhere" }}
-          >
-            Validation · {detail.assessment.validationEnvironment}
-          </Typography>
-        )}
         {onReviewDecision && (
           <Button
             color="inherit"
@@ -149,6 +155,12 @@ export function ReadinessSummary({
           </Button>
         )}
       </Stack>
+      {detail && !detail.scope.some((capability) => capability.included) && (
+        <Typography variant="body2" color="text.secondary">
+          No capabilities included. Add the outcomes this candidate must
+          support.
+        </Typography>
+      )}
       {detail && (
         <ReleaseFindings
           detail={detail}
@@ -159,8 +171,8 @@ export function ReadinessSummary({
           initialLimit={3}
         />
       )}
-      {(readiness.blockers.length > 0 ||
-        readiness.gaps.length > 0 ||
+      {((!detail &&
+        (readiness.blockers.length > 0 || readiness.gaps.length > 0)) ||
         readiness.warnings.length > 0) && (
         <Box component="details">
           <Typography
@@ -169,32 +181,36 @@ export function ReadinessSummary({
             color="text.secondary"
             sx={{ cursor: "pointer", width: "fit-content" }}
           >
-            All findings
+            {detail ? "Optional warnings" : "All findings"}
             {readiness.warnings.length > 0
-              ? ` · ${readiness.warnings.length} optional warnings`
+              ? detail
+                ? ` · ${readiness.warnings.length}`
+                : ` · ${readiness.warnings.length} optional warnings`
               : ""}
           </Typography>
           <Stack component="ul" spacing={1} sx={{ mt: 1, pl: 2.5 }}>
-            {readiness.blockers.map((reason, index) => (
-              <Typography
-                component="li"
-                variant="body2"
-                key={`blocker-${index}`}
-                sx={{ "&::marker": { color: "error.main" } }}
-              >
-                {reason}
-              </Typography>
-            ))}
-            {readiness.gaps.map((reason, index) => (
-              <Typography
-                component="li"
-                variant="body2"
-                key={`gap-${index}`}
-                sx={{ "&::marker": { color: "warning.main" } }}
-              >
-                {reason}
-              </Typography>
-            ))}
+            {!detail &&
+              readiness.blockers.map((reason, index) => (
+                <Typography
+                  component="li"
+                  variant="body2"
+                  key={`blocker-${index}`}
+                  sx={{ "&::marker": { color: "error.main" } }}
+                >
+                  {reason}
+                </Typography>
+              ))}
+            {!detail &&
+              readiness.gaps.map((reason, index) => (
+                <Typography
+                  component="li"
+                  variant="body2"
+                  key={`gap-${index}`}
+                  sx={{ "&::marker": { color: "warning.main" } }}
+                >
+                  {reason}
+                </Typography>
+              ))}
             {readiness.warnings.map((reason, index) => (
               <Typography
                 component="li"

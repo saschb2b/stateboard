@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>StateBoard product overview wireframe</title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <link rel="stylesheet" href="../styles/components.css" />
+    <link rel="stylesheet" href="../styles/wireframe.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <strong class="app-bar__brand">StateBoard</strong
+      ><span class="app-bar__context">Product workspace</span
+      ><span class="app-bar__actions meta">Design specimen</span>
+    </header>
+    <div class="workspace product-overview-shell">
+      <nav class="workspace__nav" aria-label="Product views">
+        <a href="#product" aria-current="page">Overview</a
+        ><a href="#assessment-detail" data-open="assessment-detail"
+          >Assessments</a
+        ><a href="#capabilities">Capabilities</a><a href="#coverage">Checks</a>
+      </nav>
+      <header class="workspace__header" id="product">
+        <p class="meta">Illustrative StateBoard product · No live data</p>
+        <h1>StateBoard</h1>
+        <p class="muted">
+          Judge a release from capabilities, dependencies, checks, and evidence.
+        </p>
+      </header>
+      <main class="product-overview-main">
+        <section
+          class="product-overview-assessment"
+          aria-labelledby="assessment-title"
+        >
+          <div class="product-overview-assessment-heading">
+            <div>
+              <p class="meta">Latest assessment · Example RC 1</p>
+              <h2 id="assessment-title">
+                <span
+                  class="product-overview-state product-overview-state--missing"
+                  >Needs evidence</span
+                >
+              </h2>
+            </div>
+            <a
+              class="product-overview-review"
+              href="#assessment-detail"
+              data-open="assessment-detail"
+              >Review assessment →</a
+            >
+          </div>
+          <div class="product-overview-context">
+            <span
+              >Validation: local development → Target: self-hosted
+              production</span
+            ><span>Owner decision: Hold</span>
+          </div>
+          <details class="product-overview-findings">
+            <summary>2 evidence gaps · 0 blockers</summary>
+            <ul>
+              <li>
+                <strong>Restore product data</strong
+                ><span class="meta"
+                  >Operations · No matching restore-drill observation.</span
+                >
+              </li>
+              <li>
+                <strong>Share a comprehensible review</strong
+                ><span class="meta"
+                  >Product maintainer · Independent human review is
+                  inconclusive.</span
+                >
+              </li>
+            </ul>
+          </details>
+        </section>
+        <section id="capabilities" aria-labelledby="capability-title">
+          <div class="product-overview-section-heading">
+            <h2 id="capability-title">Capabilities</h2>
+            <span class="meta">6 active · 4 in the latest assessment</span>
+          </div>
+          <p class="meta">
+            Own checks describe this candidate. Mappings describe the declared
+            implementation.
+          </p>
+          <table class="product-overview-capabilities">
+            <caption class="product-overview-visually-hidden">
+              Active capabilities, own-check results, and declared
+              implementation mappings
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Capability / owner</th>
+                <th scope="col">Latest assessment</th>
+                <th scope="col">Declared mappings</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">
+                  <strong>Trace a release dependency</strong
+                  ><span class="meta">Engineering</span>
+                </th>
+                <td>
+                  <span
+                    class="product-overview-state product-overview-state--ready"
+                    >Ready · own checks</span
+                  ><span class="meta">2 required checks passed</span>
+                </td>
+                <td>
+                  <details>
+                    <summary>3 components · 1 screen</summary>
+                    <p class="meta">
+                      Review UI, Release API, PostgreSQL. These are declared
+                      mappings.
+                    </p>
+                  </details>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <strong>Preserve a reviewed baseline</strong
+                  ><span class="meta">Release owner</span>
+                </th>
+                <td>
+                  <span
+                    class="product-overview-state product-overview-state--ready"
+                    >Ready · own checks</span
+                  ><span class="meta">2 required checks passed</span>
+                </td>
+                <td>
+                  <details>
+                    <summary>2 components · 1 screen</summary>
+                    <p class="meta">
+                      Assessment service and retained snapshots support the
+                      review workspace.
+                    </p>
+                  </details>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <strong>Restore product data</strong
+                  ><span class="meta">Operations</span>
+                </th>
+                <td>
+                  <span
+                    class="product-overview-state product-overview-state--missing"
+                    >Needs evidence</span
+                  ><span class="meta">Restore drill missing</span>
+                </td>
+                <td>
+                  <details>
+                    <summary>2 components · No screen</summary>
+                    <p class="meta">
+                      PostgreSQL and private-media storage need a coordinated
+                      restore observation.
+                    </p>
+                  </details>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <strong>Share a comprehensible review</strong
+                  ><span class="meta">Product maintainer</span>
+                </th>
+                <td>
+                  <span
+                    class="product-overview-state product-overview-state--missing"
+                    >Needs evidence</span
+                  ><span class="meta">Human review inconclusive</span>
+                </td>
+                <td>
+                  <details>
+                    <summary>2 components · 2 screens</summary>
+                    <p class="meta">
+                      A simulated review cannot establish independent human
+                      understanding.
+                    </p>
+                  </details>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <strong>Import deployment records</strong
+                  ><span class="meta">Platform</span>
+                </th>
+                <td>
+                  <span
+                    class="product-overview-state product-overview-state--neutral"
+                    >Excluded from assessment</span
+                  ><span class="meta">Scope reason: next release</span>
+                </td>
+                <td>
+                  <details>
+                    <summary>1 component · No screen</summary>
+                    <p class="meta">
+                      Excluded from this candidate. Its check state does not
+                      affect this assessment.
+                    </p>
+                  </details>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  <strong>Compare release candidates</strong
+                  ><span class="meta">Product maintainer</span>
+                </th>
+                <td>
+                  <span
+                    class="product-overview-state product-overview-state--neutral"
+                    >Not assessed</span
+                  ><span class="meta">Definition newer than assessment</span>
+                </td>
+                <td>
+                  <details>
+                    <summary>No declared mappings</summary>
+                    <p class="meta">
+                      This capability was added after the latest assessment. It
+                      has no assessment result.
+                    </p>
+                  </details>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+        <section id="coverage" aria-labelledby="coverage-title">
+          <div class="product-overview-section-heading">
+            <h2 id="coverage-title">Verification coverage</h2>
+            <span class="meta">Latest assessment</span>
+          </div>
+          <p class="meta">
+            Each area reflects its recorded acceptance checks. Missing coverage
+            remains visible.
+          </p>
+          <div class="product-overview-categories">
+            <a
+              class="product-overview-category"
+              href="#category-detail"
+              data-category="Functionality"
+              data-category-key="functional"
+              data-detail="The dependency boundary and retained baseline checks passed for this specimen candidate."
+              ><strong>Functionality</strong
+              ><span class="meta">2 required · 2 passed</span
+              ><span
+                class="product-overview-state product-overview-state--ready"
+                >Required checks passed <span aria-hidden="true">→</span></span
+              ></a
+            >
+            <a
+              class="product-overview-category"
+              href="#category-detail"
+              data-category="Integration"
+              data-category-key="integration"
+              data-detail="REST and MCP contract checks passed for this specimen candidate."
+              ><strong>Integration</strong
+              ><span class="meta">2 required · 2 passed</span
+              ><span
+                class="product-overview-state product-overview-state--ready"
+                >Required checks passed <span aria-hidden="true">→</span></span
+              ></a
+            >
+            <a
+              class="product-overview-category"
+              href="#category-detail"
+              data-category="UX"
+              data-category-key="ux"
+              data-detail="An external reviewer can distinguish candidate verification from production availability. The submitted observation is inconclusive."
+              ><strong>UX</strong
+              ><span class="meta">1 required · Inconclusive</span
+              ><span
+                class="product-overview-state product-overview-state--missing"
+                >Needs human evidence <span aria-hidden="true">→</span></span
+              ></a
+            >
+            <a
+              class="product-overview-category"
+              href="#category-detail"
+              data-category="Data"
+              data-category-key="data"
+              data-detail="No data acceptance checks exist in this illustrative assessment. This is not a passing result."
+              ><strong>Data</strong><span class="meta">No checks</span
+              ><span
+                class="product-overview-state product-overview-state--neutral"
+                >Coverage not defined <span aria-hidden="true">→</span></span
+              ></a
+            >
+            <a
+              class="product-overview-category"
+              href="#category-detail"
+              data-category="Security"
+              data-category-key="security"
+              data-detail="An optional access review passed. No required security check is defined."
+              ><strong>Security</strong
+              ><span class="meta">1 optional · Passed</span
+              ><span
+                class="product-overview-state product-overview-state--neutral"
+                >Optional-only coverage <span aria-hidden="true">→</span></span
+              ></a
+            >
+            <a
+              class="product-overview-category"
+              href="#category-detail"
+              data-category="Operations"
+              data-category-key="operational"
+              data-detail="A coordinated database and private-media backup can be restored. No matching restore observation is recorded."
+              ><strong>Operations</strong
+              ><span class="meta">1 required · Missing</span
+              ><span
+                class="product-overview-state product-overview-state--missing"
+                >Needs restore evidence <span aria-hidden="true">→</span></span
+              ></a
+            >
+          </div>
+          <section
+            id="category-detail"
+            class="product-overview-detail"
+            hidden
+            aria-labelledby="category-title"
+          >
+            <h3 id="category-title" tabindex="-1"></h3>
+            <button
+              type="button"
+              id="category-filter"
+              class="product-overview-category-filter"
+            ></button>
+            <p id="category-description"></p>
+            <button type="button" id="close-category">Reset filters</button>
+          </section>
+        </section>
+        <details id="assessment-detail" class="product-overview-detail">
+          <summary>Assessment details</summary>
+          <p>
+            Example RC 1 was assessed in local development for a self-hosted
+            production target. The owner recorded Hold while two evidence gaps
+            remain.
+          </p>
+          <p class="meta">
+            This specimen demonstrates disclosure. Open the running product to
+            inspect a real candidate, its exact check revisions, and append-only
+            evidence.
+          </p>
+        </details>
+      </main>
+    </div>
+    <script>
+      let categoryTrigger;
+      const categoryLinks = [...document.querySelectorAll("[data-category]")];
+      function showCategory(link) {
+        categoryTrigger = link;
+        document.getElementById("category-title").textContent =
+          link.dataset.category + " checks";
+        document.getElementById("category-description").textContent =
+          link.dataset.detail;
+        const chip = document.getElementById("category-filter");
+        chip.textContent = "Category: " + link.dataset.categoryKey + " ×";
+        chip.setAttribute(
+          "aria-label",
+          "Clear " + link.dataset.categoryKey + " category filter",
+        );
+        document.getElementById("category-detail").hidden = false;
+      }
+      function restoreCategory() {
+        const category = new URL(location.href).searchParams.get("category");
+        const link = categoryLinks.find(
+          (item) => item.dataset.categoryKey === category,
+        );
+        if (link) showCategory(link);
+        else document.getElementById("category-detail").hidden = true;
+      }
+      function clearCategory() {
+        const url = new URL(location.href);
+        url.searchParams.delete("category");
+        history.replaceState(null, "", url.pathname + url.search + url.hash);
+        document.getElementById("category-detail").hidden = true;
+        categoryTrigger?.focus();
+      }
+      categoryLinks.forEach((link) =>
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          const url = new URL(location.href);
+          url.searchParams.set("category", link.dataset.categoryKey);
+          history.replaceState(null, "", url.pathname + url.search + url.hash);
+          showCategory(link);
+          document.getElementById("category-title").focus();
+        }),
+      );
+      document
+        .getElementById("close-category")
+        .addEventListener("click", clearCategory);
+      document
+        .getElementById("category-filter")
+        .addEventListener("click", clearCategory);
+      window.addEventListener("popstate", restoreCategory);
+      restoreCategory();
+      document.querySelectorAll("[data-open]").forEach((link) =>
+        link.addEventListener("click", () => {
+          document.getElementById(link.dataset.open).open = true;
+        }),
+      );
+    </script>
+  </body>
+</html>

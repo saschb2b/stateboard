@@ -36,6 +36,7 @@ export function ReleaseViewTabs({
   return (
     <WorkspaceNavigation
       label="Assessment perspective"
+      idPrefix="assessment"
       value={view}
       onChange={onChange}
       sections={RELEASE_VIEWS.map((value) => ({

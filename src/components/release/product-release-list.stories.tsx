@@ -33,7 +33,7 @@ export const LatestAndHistory: Story = {
   },
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole("link", { name: "Review release" }),
+      canvas.getByRole("link", { name: "Review assessment" }),
     ).toHaveAttribute(
       "href",
       `/boards/${example.product.board.id}/releases/${example.detail.assessment.id}`,

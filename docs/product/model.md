@@ -5,7 +5,7 @@ description: Define capabilities, components, assessments, checks, evidence, and
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:15:41Z
+  at: 2026-10-13T22:24:04Z
 sources:
   - id: types
     resource: "src/lib/release-types.ts"
@@ -13,6 +13,10 @@ sources:
     resource: "src/content/docs/release-readiness.mdx"
   - id: visual
     resource: "src/lib/types.ts"
+  - id: overview
+    resource: "src/lib/product-overview.ts"
+  - id: navigation
+    resource: "src/components/release/use-product-section.ts"
 ---
 
 A board is the product boundary. Capabilities belong to a board. Components belong to the workspace and can support capabilities on several boards.[^types]
@@ -60,6 +64,12 @@ The assessment preserves its original capability outcome. Explicitly adopting a 
 
 Visual regions retain `shipped`, `mock`, and `missing`. `shipped` means working in production for the intended users. Region geometry uses normalized `[0, 1]` coordinates. These states do not calculate release readiness.[^visual]
 
+The product workspace opens its overview at `/boards/:id/releases`. The `section` query selects release history, capabilities, components, or connections and persists through browser navigation. Assessment views remain at `/boards/:id/releases/:releaseId`.[^navigation]
+
+The [product overview](../design-system/patterns/product-overview.md) combines the current catalog with the latest assessment's retained scope. It distinguishes included outcomes, explicit exclusions, and capabilities never added to that assessment. Retained definitions remain visible when the catalog changes. The latest assessment describes one candidate, not the whole product's deployment state.[^overview]
+
+Capability status summarizes that capability's own required checks. Component and release checks still govern the overall assessment. Each check category reports required results separately from optional warnings. A category without checks remains unassessed without adding a new release requirement. Component and screen counts describe declared product mappings and cannot establish readiness.[^overview]
+
 The [persistence boundary](../architecture/persistence.md) preserves definitions and history. The [agent workflow](../architecture/agent-api.md) explains how to reconcile existing records without duplicating them.
 
 [^types]: TypeScript release records and enum definitions.
@@ -67,3 +77,7 @@ The [persistence boundary](../architecture/persistence.md) preserves definitions
 [^guide]: Release readiness usage guide, scope and definition adoption.
 
 [^visual]: Visual region types and state meanings, also documented in the usage guide.
+
+[^overview]: Product overview rows, candidate coverage, retained definitions, and declared mapping counts.
+
+[^navigation]: Product-section URL state, defaults, and browser-history handling.

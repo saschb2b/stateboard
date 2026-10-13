@@ -4,7 +4,7 @@ import { requirePageMember } from "@/lib/auth-helpers";
 import { readProductContext } from "@/lib/db";
 import { ProductWorkspace } from "@/components/release/product-workspace";
 
-export const metadata: Metadata = { title: "Product release assessments" };
+export const metadata: Metadata = { title: "Product overview" };
 export default async function ProductReleasePage({
   params,
 }: {
