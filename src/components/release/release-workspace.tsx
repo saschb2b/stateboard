@@ -69,7 +69,8 @@ export function ReleaseWorkspace({
     ? checkId
     : null;
   function selectView(next: ReleaseView) {
-    if (next !== "backend") setSubjectScope(null);
+    setCheckId(null);
+    setSubjectScope(null);
     changeView(next);
   }
   function inspectCheck(id: string) {
@@ -86,6 +87,9 @@ export function ReleaseWorkspace({
   function clearCheckFocus() {
     setCheckId(null);
     setSubjectScope(null);
+  }
+  function reviewChecks() {
+    clearCheckFocus();
     changeView("qa");
   }
   function selectCheckScope(scope: CheckSubjectScope | null) {
@@ -273,7 +277,7 @@ export function ReleaseWorkspace({
                 detail={detail}
                 editable={editable}
                 onInspectCheck={inspectCheck}
-                onReviewChecks={clearCheckFocus}
+                onReviewChecks={reviewChecks}
                 onReviewDecision={() => selectView("decision")}
               />
             )}

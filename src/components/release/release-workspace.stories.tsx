@@ -82,7 +82,7 @@ export const FindingFocusAndClear: Story = {
       "aria-selected",
       "true",
     );
-    let evidence = within(
+    const evidence = within(
       canvas.getByRole("region", { name: "Check evidence" }),
     );
     await expect(
@@ -92,11 +92,6 @@ export const FindingFocusAndClear: Story = {
       evidence.queryByText("Duplicate delivery creates only one ledger entry."),
     ).toBeNull();
     await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
-    await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
-    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
-    await expect(evidence.getByText("Selected check")).toBeVisible();
-    await userEvent.click(canvas.getByRole("tab", { name: "Checks" }));
-    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
     await userEvent.click(
       evidence.getByRole("button", { name: "Clear check focus" }),
     );
@@ -106,7 +101,7 @@ export const FindingFocusAndClear: Story = {
     await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
   },
 };
-export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
+export const ArchitectureNavigationClearsLinkedCheckFocus: Story = {
   args: { initialView: "qa" },
   beforeEach: () => {
     const originalUrl = window.location.href;
@@ -131,9 +126,9 @@ export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
       evidence.queryByText("Invoice CSV includes all tax fields."),
     ).toBeNull();
     await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
-    await expect(new URL(window.location.href).searchParams.get("check")).toBe(
-      "check-recovery",
-    );
+    await expect(
+      new URL(window.location.href).searchParams.get("check"),
+    ).toBeNull();
     await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole("option", {
@@ -169,6 +164,136 @@ export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
 };
 export const OperationsPerspective: Story = {
   args: { initialView: "operations" },
+};
+export const RoleNavigationClearsFunctionalCheckFocus: Story = {
+  args: { initialView: "qa" },
+  beforeEach: () => {
+    const originalUrl = window.location.href;
+    const originalState = window.history.state;
+    window.history.replaceState(
+      originalState,
+      "",
+      "/share/demo/releases?view=qa&check=check-recovery",
+    );
+    return () => window.history.replaceState(originalState, "", originalUrl);
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    let evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText("Recovery tokens expire and cannot be reused."),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "Operations" }));
+    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
+    await expect(
+      evidence.getByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Recovery tokens expire and cannot be reused."),
+    ).toBeNull();
+    await expect(evidence.queryByText("Selected check")).toBeNull();
+    await expect(
+      new URL(window.location.href).searchParams.get("check"),
+    ).toBeNull();
+    await expect(new URL(window.location.href).searchParams.get("view")).toBe(
+      "operations",
+    );
+  },
+};
+export const ClearLinkedCheckKeepsOperationsView: Story = {
+  args: { initialView: "operations" },
+  beforeEach: () => {
+    const originalUrl = window.location.href;
+    const originalState = window.history.state;
+    window.history.replaceState(
+      originalState,
+      "",
+      "/share/demo/releases?view=operations&check=check-recovery",
+    );
+    return () => window.history.replaceState(originalState, "", originalUrl);
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText("Recovery tokens expire and cannot be reused."),
+    ).toBeVisible();
+    await userEvent.click(
+      evidence.getByRole("button", { name: "Clear check focus" }),
+    );
+    await expect(
+      canvas.getByRole("tab", { name: "Operations" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+      evidence.getByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Recovery tokens expire and cannot be reused."),
+    ).toBeNull();
+    await expect(new URL(window.location.href).searchParams.get("view")).toBe(
+      "operations",
+    );
+  },
+};
+export const RoleNavigationClearsCheckFilters: Story = {
+  args: { initialView: "qa" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    let evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await userEvent.type(
+      evidence.getByRole("textbox", { name: "Search claims or owners" }),
+      "Recovery tokens",
+    );
+    await expect(
+      evidence.queryByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeNull();
+    await userEvent.click(canvas.getByRole("tab", { name: "Operations" }));
+    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
+    await expect(
+      evidence.getByRole("textbox", { name: "Search claims or owners" }),
+    ).toHaveValue("");
+    await expect(
+      evidence.getByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeVisible();
+  },
+};
+export const MissingDefinitionOpensChecks: Story = {
+  args: {
+    initialDetail: {
+      ...example.detail,
+      checks: example.detail.checks.filter(
+        (check) => check.id !== "check-export",
+      ),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Show all 4 findings" }),
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Review acceptance checks" }),
+    );
+    await expect(canvas.getByRole("tab", { name: "Checks" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(canvas.getByRole("heading", { name: "Checks" })).toBeVisible();
+  },
 };
 export const DecisionPerspective: Story = {
   args: { initialView: "decision" },

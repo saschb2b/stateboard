@@ -94,6 +94,7 @@ export function ReleasePerspectives({
       {(view === "backend" || view === "qa" || view === "operations") && (
         <Stack component="section" aria-label="Check evidence">
           <CheckManager
+            key={view}
             detail={detail}
             product={product}
             readiness={readiness}
