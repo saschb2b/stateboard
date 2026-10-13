@@ -50,7 +50,7 @@
   "boardDetailsDescription": "Produkt benennen und den Kontext für die Beurteilung beschreiben.",
   "boardName": "Board-Name",
   "description": "Beschreibung",
-  "descriptionHelp": "Wird in der Freigabeansicht unter dem Namen angezeigt.",
+  "descriptionHelp": "Beschreiben Sie das Produkt und den Umfang dieses Boards.",
   "saving": "Wird gespeichert…",
   "saveChanges": "Änderungen speichern",
   "deleteBoard": "Board löschen",
@@ -246,5 +246,7 @@
     "qa": "Prüfungen im Beispiel öffnen"
   },
   "or": "oder ",
-  "controlKey": "Strg"
+  "controlKey": "Strg",
+  "unsavedChanges": "Ungespeicherte Änderungen",
+  "discardChanges": "Änderungen verwerfen"
 }

@@ -3,7 +3,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 
 import { useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -20,13 +19,12 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
 import { MONO_FONT } from "@/lib/theme";
-import type { Board, ShareLink } from "@/lib/types";
+import { TEXT_LIMITS, type Board, type ShareLink } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
 type Section = "general" | "sharing";
@@ -58,41 +56,34 @@ interface BoardSettingsProps {
   initialShareLinks: ShareLink[];
   stats: BoardStats;
   initialSection?: Section;
+  onSaveDetails?: (
+    details: Pick<Board, "name" | "description">,
+  ) => Promise<Board>;
 }
 
-/**
- * Per-board settings, reached from the editor's gear icon. A left rail
- * switches between sections; each renders its own pane. General edits the
- * basics and holds the Danger Zone; Sharing manages public links.
- */
 export function BoardSettings({
   board,
   viewer,
   initialShareLinks,
   stats,
   initialSection = "general",
+  onSaveDetails,
 }: BoardSettingsProps) {
   const t = useTranslations("Visual");
+  const common = useTranslations("Common");
   const [section, setSection] = useState<Section>(initialSection);
 
   return (
     <>
       <AppHeader
         homeHref="/boards"
-        crumb={board.name}
+        breadcrumbs={[
+          { label: common("boards"), href: "/boards" },
+          { label: board.name, href: `/boards/${board.id}/releases` },
+          { label: t("boardSettings") },
+        ]}
         actions={
           <>
-            <Button
-              component={Link}
-              href={`/boards/${board.id}/releases`}
-              size="small"
-              startIcon={<ArrowBackIcon />}
-              variant="outlined"
-              color="inherit"
-              sx={{ borderColor: "divider" }}
-            >
-              {t("backToBoard")}
-            </Button>
             <UserMenu user={viewer.user} role={viewer.role} />
           </>
         }
@@ -159,14 +150,19 @@ export function BoardSettings({
           </Box>
 
           <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720 }}>
-            {section === "general" ? (
-              <GeneralSection board={board} stats={stats} />
-            ) : (
+            <Box hidden={section !== "general"}>
+              <GeneralSection
+                board={board}
+                stats={stats}
+                onSaveDetails={onSaveDetails}
+              />
+            </Box>
+            <Box hidden={section !== "sharing"}>
               <SharingSection
                 board={board}
                 initialShareLinks={initialShareLinks}
               />
-            )}
+            </Box>
           </Box>
         </Box>
       </Container>
@@ -174,50 +170,83 @@ export function BoardSettings({
   );
 }
 
-function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
+function GeneralSection({
+  board,
+  stats,
+  onSaveDetails,
+}: Pick<BoardSettingsProps, "board" | "stats" | "onSaveDetails">) {
   const t = useTranslations("Visual");
   const router = useRouter();
   const contents = useContentsDescription(stats);
+  const nameInput = useRef<HTMLInputElement>(null);
+  const saveInFlight = useRef(false);
+  const [savedDetails, setSavedDetails] = useState({
+    name: board.name,
+    description: board.description ?? "",
+  });
   const [name, setName] = useState(board.name);
   const [description, setDescription] = useState(board.description ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameInvalid, setNameInvalid] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const trimmedDesc = description.trim();
   const dirty =
-    name.trim() !== board.name || trimmedDesc !== (board.description ?? "");
+    name.trim() !== savedDetails.name ||
+    trimmedDesc !== savedDetails.description;
+
+  const discard = () => {
+    setName(savedDetails.name);
+    setDescription(savedDetails.description);
+    setSaved(false);
+    setError(null);
+    setNameInvalid(false);
+  };
 
   const save = async () => {
+    if (!dirty || saveInFlight.current) return;
     if (!name.trim()) {
-      setError(t("boardNameEmpty"));
+      setNameInvalid(true);
+      nameInput.current?.focus();
       return;
     }
+    saveInFlight.current = true;
     setSaving(true);
+    setSaved(false);
     setError(null);
+    const details = { name: name.trim(), description: trimmedDesc || null };
     try {
-      const res = await fetch(`/api/boards/${board.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: trimmedDesc || null,
-        }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? t("saveChangesError"));
-        return;
+      let updated: Board;
+      if (onSaveDetails) {
+        updated = await onSaveDetails(details);
+      } else {
+        const res = await fetch(`/api/boards/${board.id}`, {
+          method: "PATCH",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(details),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(body.error ?? t("saveChangesError"));
+        }
+        updated = await res.json();
       }
-      const updated: Board = await res.json();
       setName(updated.name);
       setDescription(updated.description ?? "");
+      setSavedDetails({
+        name: updated.name,
+        description: updated.description ?? "",
+      });
       setSaved(true);
       router.refresh();
-    } catch {
-      setError(t("saveChangesError"));
+    } catch (error) {
+      setError(error instanceof Error ? error.message : t("saveChangesError"));
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   };
@@ -231,36 +260,70 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
         {t("boardDetailsDescription")}
       </Typography>
 
-      <Stack spacing={2.5}>
+      <Stack
+        component="form"
+        noValidate
+        spacing={2.5}
+        onSubmit={(event) => {
+          event.preventDefault();
+          void save();
+        }}
+      >
         <TextField
           label={t("boardName")}
           value={name}
           disabled={saving}
-          onChange={(e) => setName(e.target.value)}
+          inputRef={nameInput}
+          required
+          error={nameInvalid}
+          helperText={nameInvalid ? t("boardNameEmpty") : undefined}
+          onChange={(e) => {
+            setName(e.target.value);
+            setSaved(false);
+            if (e.target.value.trim()) setNameInvalid(false);
+          }}
           fullWidth
           size="small"
-          placeholder="StateBoard"
+          slotProps={{ htmlInput: { maxLength: TEXT_LIMITS.name } }}
         />
         <TextField
           label={t("description")}
           value={description}
           disabled={saving}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            setSaved(false);
+          }}
           fullWidth
           size="small"
           multiline
           minRows={2}
           helperText={t("descriptionHelp")}
+          slotProps={{ htmlInput: { maxLength: TEXT_LIMITS.description } }}
         />
-        <Box>
-          <Button
-            variant="contained"
-            onClick={save}
-            disabled={!dirty || saving}
-          >
+        {error ? <Alert severity="error">{error}</Alert> : null}
+        <Stack
+          direction="row"
+          spacing={1.5}
+          useFlexGap
+          sx={{ flexWrap: "wrap", alignItems: "center" }}
+        >
+          <Button type="submit" variant="contained" disabled={!dirty || saving}>
             {saving ? t("saving") : t("saveChanges")}
           </Button>
-        </Box>
+          {dirty ? (
+            <Button color="inherit" onClick={discard} disabled={saving}>
+              {t("discardChanges")}
+            </Button>
+          ) : null}
+          <Typography
+            role="status"
+            variant="body2"
+            color={saved ? "success.main" : "text.secondary"}
+          >
+            {saved ? t("changesSaved") : dirty ? t("unsavedChanges") : ""}
+          </Typography>
+        </Stack>
       </Stack>
 
       <Typography variant="h6" component="h2" sx={{ mt: 5, mb: 1.5 }}>
@@ -291,6 +354,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
             color="error"
             variant="outlined"
             onClick={() => setDeleteOpen(true)}
+            disabled={saving}
             sx={{ flexShrink: 0 }}
           >
             {t("deleteThisBoard")}
@@ -305,37 +369,6 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
           onClose={() => setDeleteOpen(false)}
         />
       ) : null}
-
-      <Snackbar
-        open={saved}
-        autoHideDuration={3000}
-        onClose={() => setSaved(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity="success"
-          variant="filled"
-          onClose={() => setSaved(false)}
-          sx={{ width: "100%" }}
-        >
-          {t("changesSaved")}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={error !== null}
-        autoHideDuration={6000}
-        onClose={() => setError(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity="error"
-          variant="filled"
-          onClose={() => setError(null)}
-          sx={{ width: "100%" }}
-        >
-          {error}
-        </Alert>
-      </Snackbar>
     </>
   );
 }

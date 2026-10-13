@@ -50,7 +50,7 @@
   "boardDetailsDescription": "Name this product and give reviewers a little context.",
   "boardName": "Board name",
   "description": "Description",
-  "descriptionHelp": "Appears beneath the name on the share link.",
+  "descriptionHelp": "Describe the product and what this board covers.",
   "saving": "Saving…",
   "saveChanges": "Save changes",
   "deleteBoard": "Delete board",
@@ -246,5 +246,7 @@
     "qa": "Explore checks in the demo"
   },
   "or": "or ",
-  "controlKey": "Ctrl"
+  "controlKey": "Ctrl",
+  "unsavedChanges": "Unsaved changes",
+  "discardChanges": "Discard changes"
 }
