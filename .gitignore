@@ -36,9 +36,18 @@ Thumbs.db
 .vscode/
 .idea/
 
-# agent / claude code tooling (local harness artifacts, not project source)
+# Keep local agent artifacts private; share only the installed project skills.
 .claude/
-.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/react-compiler/
+!.agents/skills/react-stinky/
+!.agents/skills/okf/
+!.agents/skills/odsf/
+!.agents/skills/no-slop/
+!.agents/skills/sources.json
+!.agents/skills/LICENSE
 skills-lock.json
 
 *storybook.log

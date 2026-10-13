@@ -15,6 +15,9 @@ const config = [
   eslintConfigPrettier,
   {
     rules: {
+      "react-hooks/exhaustive-deps": "error",
+      "react-hooks/incompatible-library": "error",
+      "react-hooks/unsupported-syntax": "error",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
@@ -31,6 +34,7 @@ const config = [
       ".source/**",
       "next-env.d.ts",
       "storybook-static/**",
+      ".agents/skills/**",
     ],
   },
   ...storybook.configs["flat/recommended"],

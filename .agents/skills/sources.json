@@ -1,0 +1,133 @@
+{
+  "repository": "https://github.com/saschb2b/skills",
+  "revision": "007d499932facd683aae4775dc0d341dca91e53b",
+  "skills": [
+    {
+      "name": "react-compiler",
+      "source": "https://saschb2b.com/ai/skills/react-compiler",
+      "path": "skills/engineering/react-compiler",
+      "files": {
+        "CARD.manifest.json": "9f017a2cbe3dbbe97fd864b076626804514a3634009aa95c525dda3daf790f40",
+        "CARD.md": "ddb78c4a9ef441250a60eb53281ee39ba143ceffaa2abb9d21aab94a27b8cd8b",
+        "CARD.md.sigstore": "b0c987b913d29ac272db0f54e2007a2a0f81e984e2f1a72567b4130c3e8da7e6",
+        "CARD.svg": "f52e3eb2a0b11e76a3d26108878776199a8efdfe348e51c901a0efdf983725c3",
+        "SKILL.md": "8fb8cad89b5a4556e5a866d63c87ab6b0f186bb2e13cdddf893a3eb60e181e6d",
+        "permissions.yaml": "a59c33d37ea2d14fbd0b443829a952a6a6ff099c8ffcdc1f12ff6a8e9c8112aa",
+        "references/exceptions.md": "661e72dd6d5faf9354235a88bfd1a43cad2d39e584f115c810637ec51bf482da",
+        "references/index.md": "5bbd11d0656fbec067daad5751ddefdcc86779cd62469fd4d411f1063d9bbab7",
+        "references/lint-setup.md": "f62b4e799f37146f0b9498ed25b14b8bf7b2e8fdcdebfc205e46e7445cc64000"
+      }
+    },
+    {
+      "name": "react-stinky",
+      "source": "https://saschb2b.com/ai/skills/react-stinky",
+      "path": "skills/engineering/react-stinky",
+      "files": {
+        "CARD.manifest.json": "384420b0d63c58b25106e14daa03972779f95e880df6d3cae61dddea431eec4d",
+        "CARD.md": "f64b3c8d8215341d60f45536c4c45f69120c533a97b6939a00b4b5366e90fe92",
+        "CARD.md.sigstore": "30edcd61ad81bce6cf20abcb67f3f4839d92b1e07b2be95043974d5dc162baa6",
+        "CARD.svg": "03e6df0f6dbea5644c281571eb9dbdb9a6a2c0e10b04d83b0417598205ff0ad6",
+        "SKILL.md": "6ce7ca137a1d1b5fb20c010f26bbf552ff33293c25650d988010904c825593b8",
+        "permissions.yaml": "a59c33d37ea2d14fbd0b443829a952a6a6ff099c8ffcdc1f12ff6a8e9c8112aa",
+        "references/catalog.md": "6a4a4b4f461325494b26774dffb755d44bcb4117ffa548289ac126f8650ebb68",
+        "references/concepts/composition-layer.md": "9741430844d768994c62ad9bb02ee3318972c38fd41edd5bcfb39e2be8b91424",
+        "references/concepts/controlled-uncontrolled.md": "c135be0adf4bf142b8a7c08c01047be051bd435c1eb9316c50e590b209620ee7",
+        "references/concepts/effects-model.md": "8bd6f302dc0644c901204de446e0b948706b2d538e6744f0a1eaec12170bca21",
+        "references/concepts/hydration.md": "ee1f8982e01e2e0826f4ee5fa6e5db920dbf489c525fe4500429793a14b3e40e",
+        "references/concepts/impossible-states.md": "1c52ab61bfca8af808421e497fe5a2a814dc60e52fb5c183c20419859aaac6d1",
+        "references/concepts/index.md": "f60eae3340a0e9cdff8bdc9d549480926b33d35ec106db4451aebc2ecc3b6685",
+        "references/concepts/one-fact-one-home.md": "66a9e5b2cad390d8beef4fcbf0d473fb0d394914b7808db059504dcd216369d5",
+        "references/concepts/render-snapshots.md": "66c6f6deae656b250a9904a2bc2509ee7826ea4582e4493fc6370b2f0be0bcc9",
+        "references/duplication-pass.md": "99614ef4e197d3bddc1cb711cc01d533f72d641e751e85b27f2413966ce399d6",
+        "references/index.md": "09cae724331298b52293b4cdb6fb482ee83ad6cf0afc17e0ba7a63b4b70d4b5f",
+        "references/log.md": "0571bd8138d4d145009a696bf3ca8639a9d87df8717ce8f58ceb307bbe3f42c6",
+        "references/restructure-pass.md": "8f389a3d1146f005c23292da8d83e63fe1c37e2202d53dcd3191abb98551b8b8"
+      }
+    },
+    {
+      "name": "okf",
+      "source": "https://saschb2b.com/ai/skills/okf",
+      "path": "skills/engineering/okf",
+      "files": {
+        "CARD.manifest.json": "67d6ca997e6bac59271c2579bdf4d8719cecec2b3856ed7e58e49ce2c1e6b2b4",
+        "CARD.md": "4f672dcebb877d4521adeab6ccfd618ca913cb8c6a7460468627d912e15f2cb2",
+        "CARD.md.sigstore": "f88eda8b0b1444ce9c343528b2094aa2bb8b2dd57d9c30bd4db412685de66db5",
+        "CARD.svg": "370ae1722c0e1916907ca9d0854b43f0e69584a5b8ca2c2496403698b843ef12",
+        "SKILL.md": "4a5acb239eb260c595e869d542a2c761f02ee829198d85887b4026af15141415",
+        "capabilities/audit.md": "cc329121202af4d7586687d1ac36e200afac20fe12e96dc0d3679c9af7f16793",
+        "capabilities/author.md": "febd3c433afdaa645873632f2f297430412115188533ff7e9e83aa7da25d3e60",
+        "capabilities/change-impact.md": "f4e1a0097d77b07e249aa8c65d86e513bb56df7ae6f146c33188566577e3dc17",
+        "capabilities/create.md": "c9a2208ec36d872f70da46728a17abf45df4ea02ba7b879aefec6fcc8bfba706",
+        "capabilities/enrich.md": "ae3ed602b1664ccf10fd80ff421660fc5ef3068758ff86be06b57705714415fb",
+        "capabilities/inspect.md": "f88640c4f2f087dab2a72fd49e162af336f2bfa6cc6456ddb27dd3715512b6d8",
+        "capabilities/migrate.md": "e2763a7130c4cc7e56e10baadf98b526f46db53faea45354b6bb3478baa7c000",
+        "capabilities/repair.md": "2dc58d286fbf10d8fd049b48098ed45861492cf1cfc6d0e1f661f5d2a948912b",
+        "capabilities/research.md": "0d2d3fd2ec74394eecc3d258303cea5585cc6c74ac5bc42b3e21f4c73e142772",
+        "capabilities/retrieve.md": "0e8bc686fbf390ac51b6deb88a0ac0fe6eaec516d683208068518421851b533f",
+        "capabilities/revise.md": "785a4db087627ac22cc4bd5b79596ede0814255009e3336c5a4ac2e80507f891",
+        "commands.md": "07dc0c11405e788d1b58d4be1f2f0ee5cb9a22c3ea7833e83bee65e5cb73f015",
+        "okf-validate.mjs": "1d5ee6a763155442c1da6fc826b5d107ef7460e86ead9eb6f1956e17e37a17ac",
+        "permissions.yaml": "405d91ba51e76e67551d47a3f7f8616a1a4a4a9238624a65f553cbca3f2f5436",
+        "spec.md": "521bb6040a7068711c0eb2134dbcf4396c17df28674c62fccd71fd002ea9d531",
+        "templates.md": "47624379fe1640c66fd802c4587589d033636d6c4328b2c9905d7f141ffeebb6",
+        "writing.md": "5f49869a059504fa0592810cce129527cd5cd0c31443cd8a50be4377fcfdf34f"
+      }
+    },
+    {
+      "name": "odsf",
+      "source": "https://saschb2b.com/ai/skills/odsf",
+      "path": "skills/engineering/odsf",
+      "files": {
+        "CARD.manifest.json": "6a1d85b47ebbe0856fc6697330b9804d716e9707c443ed283e72f034083f9262",
+        "CARD.md": "c45c83cab74e492d8e23ebc7e1b7c706e0c9a984f694a22f330ecfda15ff2224",
+        "CARD.md.sigstore": "3df6fa7eb2c1025e58d8248136234370ff35ea168940975aea1ccf6a97322794",
+        "CARD.svg": "0c7d720aecc2c09e0626257548229ecee1db80301cc241a3c7f49e9ca9bc1e91",
+        "SKILL.md": "3286d6b2acc154482489c02bad2e106222abe460895acad9bf14af14dc26c9f9",
+        "commands.md": "ba65bd318aa733820438e24d6eab5fa9215695d95e2e9068a6b23676c827ae9c",
+        "enrich-machine.md": "54d331ad025aab2ef2b3d27a965acb080a9c4dd92a4587aa36c4c81640ce95ad",
+        "odsf-validate.mjs": "c3130eac6abada8780eb5d5a9de96bda3dbbbab59d09182545be50d213c9c750",
+        "permissions.yaml": "6be32f4985b917b53a1adbedb2d7652f7229e77c4b482bd1b910715f5af7ceb8",
+        "spec.md": "345e168bae9c1bb168b50e23def230ee6d10e64cb3adbaee78426578c7fb3d3c",
+        "templates.md": "2519bc9bce4aec363a4f5401e84ff3a21a00c9443eb1559f626e01e4222561da"
+      }
+    },
+    {
+      "name": "no-slop",
+      "source": "https://saschb2b.com/ai/skills/no-slop",
+      "path": "skills/productivity/no-slop",
+      "files": {
+        "CARD.manifest.json": "94ed72cf01b4c8ce95641075b5071ee3fb5901b7c5dc0b4400c02ddcb053fdb4",
+        "CARD.md": "fd8fa037742166cfab8fdcc6a5a8e834d3605f66f965994cc7272e40ea9462b1",
+        "CARD.md.sigstore": "3ef68e7af45a505ec2b29a3f3790946917dc489c9ed4641559b5626d74f93482",
+        "CARD.svg": "a532956658e97e800b0796fa84650a96fba187c199385ef7de99fbd4bc6c5178",
+        "SKILL.md": "58e41ba30578dc7a2053842f276475f000b2348ae276bd2025cd1736eb064553",
+        "permissions.yaml": "71845d24730a9bb4543416d384102b10eeea9f80c2f0658c8afe8cda98583512",
+        "references/code-comments.md": "9f7d0b5a5ddd9c969ad298f92fcf92737f70ea60754c97eeee95ff65ef163ee4",
+        "references/code-strings.md": "6f8634840c3e936b7c59f955cff296ae28a7daaed57ddb6b788b6dee03817205",
+        "references/commits-and-prs.md": "ddf242900d7d50caa54326f429d51f27c7acd5b71b7058e628e7da9614a8868e",
+        "references/formatting.md": "65d94bb698301e789de2c1fe58286e781fa2111466855c2684e7829440c1d19d",
+        "references/inclusive-and-accessible.md": "d0f91f0c1b066c385ca8271d80436adc5a98a309ec62dd9fa6c9c2231a820b46",
+        "references/index.md": "209812e8650e63f25fd0c0edacbf57036277728d6f30ee1a63439b89d35352c2",
+        "references/log.md": "15ba2da246f84eeda149a304acafe6ea6a5f594daa348865f120b0f0dacdd2e1",
+        "references/microsoft/capitalization.md": "8687d4c1ec7d1370728af5bae8d2acacc02a8a0022802848a5ba89b24f4bf93f",
+        "references/microsoft/grammar.md": "f39c5d6ab19b2385425e5c4a333fbedeb5bfcd1b6cec269a8ab4c09a23673ba5",
+        "references/microsoft/index.md": "207791538287e504d7ad5764591d626650e5041721b700303ccc43d34380d959",
+        "references/microsoft/numbers-and-acronyms.md": "c5155fb113e43c189d2a9349e3d444e5fc4d07e94929128f57c9e17016f2dfc7",
+        "references/microsoft/procedures.md": "eb780f1374b21f1e70bb23044fb366b0b6c0cf4a1f0cc00563bed1ffcf3d820a",
+        "references/microsoft/punctuation.md": "4518b0b2fa9b7e7609255197f2e2ba00bd326dc00967a856660e9cdf908659dc",
+        "references/microsoft/scannable-and-global.md": "5e15b84cf13057fa5f28bd74d4900a78278edaf5f37bc7ef0a0e1e13eca11d7f",
+        "references/microsoft/word-choice.md": "df004a6bf33962e78140489122ffd236e6a2444a6a48e3a07575bddf407b91d4",
+        "references/microsoft-style.md": "9b60356a2b0445906e223902d95a715467c8d8b23b8a242fc7c8a86e943b0107",
+        "references/prose.md": "7c5722895e390111c47d2ad422f9a0508fad28b9089f6f0a571d7b5e64ae0568",
+        "references/ste/dictionary.md": "597b0ca0bbd7d648969ca9269dc744e2cb7a7e9fe6663cbbc7a32b5a17081d4c",
+        "references/ste/index.md": "53ddf9c7fd1732f259982acd1dd33e80dc3fbd24a60eba1284bf47b5ba105a05",
+        "references/ste/multi-word-nouns.md": "78a789ca4b8018dae9a4c35304c05d8d6c370793fa0dfb06393ef0fa3052e78e",
+        "references/ste/procedural-and-descriptive.md": "591fbaf287396e5734e53b17cf592a65cee5960957ae514ffafd4bd48edc7345",
+        "references/ste/safety-and-word-counts.md": "08959cc557f2fdca445871b39d6902fdd8a88724d0deb6b6da63182f26581fea",
+        "references/ste.md": "cf3b001dc989a4430fa06f0fd67f3fef1d14d3f4ea58d89ef07014ec4d25eca2",
+        "references/structure.md": "d3326544189eb94e33402c4014092770691580872403a4ee9f600a6b17d02c1b",
+        "slop-lint.mjs": "455e193587a536246eed228b99481cd7f878003a9046db18868a42ff330a9262"
+      }
+    }
+  ]
+}
