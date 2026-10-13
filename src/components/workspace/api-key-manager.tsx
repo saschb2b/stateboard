@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { clientRequest } from "@/lib/client-request";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
@@ -33,12 +34,45 @@ interface ApiKeyManagerProps {
  * panel), and ApiKeyList (own keys, plus the owner-only workspace
  * inventory — a credential nobody can inventory is a liability).
  */
-export function ApiKeyManager({
+type CreatedKey = ApiKey & { key: string };
+
+export function ApiKeyManager(props: ApiKeyManagerProps) {
+  return (
+    <ApiKeyManagerView
+      {...props}
+      createKey={async (input) => {
+        const result = await clientRequest<CreatedKey>("/api/api-keys", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(input),
+        });
+        if (!result.key || !result.id)
+          throw new Error(
+            "The key response was incomplete. Reload the key list before trying again.",
+          );
+        return result;
+      }}
+      revokeKey={async (key) => {
+        if (!confirm(`Revoke "${key.name}"? Anything using it stops working.`))
+          return false;
+        await clientRequest(`/api/api-keys/${key.id}`, { method: "DELETE" });
+        return true;
+      }}
+    />
+  );
+}
+
+export function ApiKeyManagerView({
   viewer,
   initialKeys,
   initialWorkspaceKeys,
   now,
-}: ApiKeyManagerProps) {
+  createKey,
+  revokeKey,
+}: ApiKeyManagerProps & {
+  createKey: (input: ApiKeyCreateInput) => Promise<CreatedKey>;
+  revokeKey: (key: ApiKey) => Promise<boolean>;
+}) {
   const [keys, setKeys] = useState<ApiKey[]>(initialKeys);
   const [workspaceKeys, setWorkspaceKeys] = useState<WorkspaceApiKey[] | null>(
     initialWorkspaceKeys,
@@ -50,30 +84,23 @@ export function ApiKeyManager({
   );
   const [pendingId, setPendingId] = useState<string | null>(null);
 
+  const createInFlight = useRef(false);
+  const revokeInFlight = useRef(false);
+
   const onCreate = async (input: ApiKeyCreateInput): Promise<boolean> => {
+    if (createInFlight.current) return false;
+    createInFlight.current = true;
     setError(null);
     setCreating(true);
     try {
-      const res = await fetch("/api/api-keys", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(input),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        key?: string;
-      } & Partial<ApiKey>;
-      if (!res.ok || !body.key || !body.id) {
-        setError(body.error ?? `failed (${res.status})`);
-        return false;
-      }
+      const body = await createKey(input);
       const { key, ...created } = body;
-      setKeys((prev) => [created as ApiKey, ...prev]);
+      setKeys((prev) => [created, ...prev]);
       setWorkspaceKeys((prev) =>
         prev
           ? [
               {
-                ...(created as ApiKey),
+                ...created,
                 userName: viewer.user.name,
                 userEmail: viewer.user.email,
               },
@@ -83,30 +110,39 @@ export function ApiKeyManager({
       );
       setRevealed({ id: body.id, key });
       return true;
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to create the key. Try again.",
+      );
+      return false;
     } finally {
+      createInFlight.current = false;
       setCreating(false);
     }
   };
 
   const onRevoke = async (k: ApiKey) => {
-    if (!confirm(`Revoke "${k.name}"? Anything using it stops working.`)) {
-      return;
-    }
+    if (revokeInFlight.current) return;
+    revokeInFlight.current = true;
     setError(null);
     setPendingId(k.id);
     try {
-      const res = await fetch(`/api/api-keys/${k.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `failed (${res.status})`);
-        return;
-      }
+      if (!(await revokeKey(k))) return;
       const markRevoked = <T extends ApiKey>(list: T[]): T[] =>
         list.map((x) => (x.id === k.id ? { ...x, revokedAt: Date.now() } : x));
       setKeys(markRevoked);
       setWorkspaceKeys((prev) => (prev ? markRevoked(prev) : prev));
-      if (revealed?.id === k.id) setRevealed(null);
+      setRevealed((current) => (current?.id === k.id ? null : current));
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to revoke the key. Try again.",
+      );
     } finally {
+      revokeInFlight.current = false;
       setPendingId(null);
     }
   };
@@ -135,6 +171,7 @@ export function ApiKeyManager({
 
           {error ? (
             <Paper
+              role="alert"
               sx={{ p: 2, borderColor: "error.main", color: "error.main" }}
             >
               <Typography variant="body2">{error}</Typography>

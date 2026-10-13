@@ -65,7 +65,8 @@ export function ApiKeyCreateForm({
         sx={{ display: "block", mb: 2 }}
       >
         The name appears in the key list and the audit log. Viewer keys read
-        boards; editor keys also change regions, screens, and share links.
+        product context and assessments. Editor keys maintain mappings, checks,
+        evidence, and visual boards.
       </Typography>
       <Stack
         direction={{ xs: "column", sm: "row" }}
@@ -74,6 +75,8 @@ export function ApiKeyCreateForm({
       >
         <TextField
           size="small"
+          label="Key name"
+          disabled={creating}
           placeholder="e.g. release-bot"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -85,6 +88,8 @@ export function ApiKeyCreateForm({
         <Select
           size="small"
           value={role}
+          disabled={creating}
+          inputProps={{ "aria-label": "Key role" }}
           onChange={(e) => setRole(e.target.value as WorkspaceRole)}
           sx={{ minWidth: 120, textTransform: "capitalize" }}
         >
@@ -97,6 +102,8 @@ export function ApiKeyCreateForm({
         <Select
           size="small"
           value={expiry}
+          disabled={creating}
+          inputProps={{ "aria-label": "Key expiration" }}
           onChange={(e) => setExpiry(e.target.value)}
           sx={{ minWidth: 140 }}
         >

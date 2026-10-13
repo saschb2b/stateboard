@@ -17,10 +17,16 @@ interface ApiKeyRevealProps {
 /** Show-once panel for a freshly minted key, with copy-to-clipboard. */
 export function ApiKeyReveal({ secret }: ApiKeyRevealProps) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const onCopy = async () => {
-    await navigator.clipboard.writeText(secret);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(secret);
+      setCopied(true);
+      setCopyFailed(false);
+    } catch {
+      setCopyFailed(true);
+    }
   };
 
   return (
@@ -50,6 +56,11 @@ export function ApiKeyReveal({ secret }: ApiKeyRevealProps) {
           </IconButton>
         </Tooltip>
       </Stack>
+      {copyFailed && (
+        <Typography role="alert" variant="caption" color="error">
+          Clipboard access failed. Select and copy the key text manually.
+        </Typography>
+      )}
     </Paper>
   );
 }

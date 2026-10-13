@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
@@ -20,6 +20,7 @@ import {
   type WorkspaceRole,
 } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
+import { clientRequest } from "@/lib/client-request";
 
 interface MemberRosterProps {
   viewer: CurrentMember;
@@ -35,48 +36,85 @@ interface MemberRosterProps {
  * surfaces the API error.
  */
 export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
+  const changeRole = async (member: WorkspaceMember, role: WorkspaceRole) => {
+    await clientRequest(`/api/workspace/members/${member.userId}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+  };
+
+  const removeMember = async (member: WorkspaceMember) => {
+    if (!confirm(`Remove ${member.email ?? member.name ?? "this member"}?`))
+      return false;
+    await clientRequest(`/api/workspace/members/${member.userId}`, {
+      method: "DELETE",
+    });
+    return true;
+  };
+
+  return (
+    <MemberRosterView
+      viewer={viewer}
+      initialMembers={initialMembers}
+      onChangeRole={changeRole}
+      onRemove={removeMember}
+    />
+  );
+}
+
+export function MemberRosterView({
+  viewer,
+  initialMembers,
+  onChangeRole,
+  onRemove,
+}: MemberRosterProps & {
+  onChangeRole: (member: WorkspaceMember, role: WorkspaceRole) => Promise<void>;
+  onRemove: (member: WorkspaceMember) => Promise<boolean>;
+}) {
   const [members, setMembers] = useState<WorkspaceMember[]>(initialMembers);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const mutationInFlight = useRef(false);
 
-  const onChangeRole = async (m: WorkspaceMember, role: WorkspaceRole) => {
+  const changeRole = async (m: WorkspaceMember, role: WorkspaceRole) => {
+    if (mutationInFlight.current) return;
+    mutationInFlight.current = true;
     setError(null);
     setPendingId(m.userId);
-    const previous = members;
-    setMembers((prev) =>
-      prev.map((x) => (x.userId === m.userId ? { ...x, role } : x)),
-    );
     try {
-      const res = await fetch(`/api/workspace/members/${m.userId}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ role }),
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `failed (${res.status})`);
-        setMembers(previous);
-      }
+      await onChangeRole(m, role);
+      setMembers((prev) =>
+        prev.map((x) => (x.userId === m.userId ? { ...x, role } : x)),
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to change this role. Try again.",
+      );
     } finally {
+      mutationInFlight.current = false;
       setPendingId(null);
     }
   };
 
-  const onRemove = async (m: WorkspaceMember) => {
-    if (!confirm(`Remove ${m.email ?? m.name ?? "this member"}?`)) return;
+  const removeMember = async (m: WorkspaceMember) => {
+    if (mutationInFlight.current) return;
+    mutationInFlight.current = true;
     setError(null);
     setPendingId(m.userId);
     try {
-      const res = await fetch(`/api/workspace/members/${m.userId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? `failed (${res.status})`);
-        return;
-      }
-      setMembers((prev) => prev.filter((x) => x.userId !== m.userId));
+      if (await onRemove(m))
+        setMembers((prev) => prev.filter((x) => x.userId !== m.userId));
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to remove this member. Try again.",
+      );
     } finally {
+      mutationInFlight.current = false;
       setPendingId(null);
     }
   };
@@ -103,6 +141,7 @@ export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
 
           {error ? (
             <Paper
+              role="alert"
               sx={{ p: 2, borderColor: "error.main", color: "error.main" }}
             >
               <Typography variant="body2">{error}</Typography>
@@ -141,9 +180,12 @@ export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
                     size="small"
                     value={m.role}
                     onChange={(e) =>
-                      onChangeRole(m, e.target.value as WorkspaceRole)
+                      void changeRole(m, e.target.value as WorkspaceRole)
                     }
-                    disabled={pendingId === m.userId}
+                    disabled={pendingId !== null}
+                    inputProps={{
+                      "aria-label": `Role for ${m.name ?? m.email ?? "member"}`,
+                    }}
                     sx={{ minWidth: 120, textTransform: "capitalize" }}
                   >
                     {WORKSPACE_ROLES.map((r) => (
@@ -160,9 +202,9 @@ export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
                     <span>
                       <IconButton
                         size="small"
-                        onClick={() => onRemove(m)}
-                        disabled={pendingId === m.userId}
-                        aria-label="Remove member"
+                        onClick={() => void removeMember(m)}
+                        disabled={pendingId !== null}
+                        aria-label={`Remove ${m.name ?? m.email ?? "member"}`}
                         sx={{ color: "text.secondary" }}
                       >
                         <DeleteOutlineIcon fontSize="small" />
@@ -188,11 +230,11 @@ export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
             <Stack spacing={0.5}>
               <RoleRow
                 role="owner"
-                desc="Manage members and the workspace itself, plus everything an editor can do."
+                desc="Manage workspace access, record release decisions, and publish reviews. Includes editor permissions."
               />
               <RoleRow
                 role="editor"
-                desc="Create, edit, and delete boards, screens, and regions. Mint and revoke share links."
+                desc="Maintain product mappings, assessments, checks, evidence, and visual boards. Manage visual share links."
               />
               <RoleRow
                 role="viewer"

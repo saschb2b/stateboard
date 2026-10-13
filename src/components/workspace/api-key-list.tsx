@@ -203,8 +203,8 @@ export function ApiKeyList({
                     <IconButton
                       size="small"
                       onClick={() => onRevoke(k)}
-                      disabled={pendingId === k.id}
-                      aria-label="Revoke API key"
+                      disabled={pendingId !== null}
+                      aria-label={`Revoke ${k.name}`}
                       sx={{ color: "text.secondary" }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
