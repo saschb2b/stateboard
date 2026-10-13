@@ -1,6 +1,6 @@
 ---
 title: Agents & API
-description: API keys, the REST API, and the built-in MCP server — let agents read and update boards without a browser.
+description: API keys, REST evidence submission, and the visual board tools exposed by the built-in MCP server.
 ---
 
 StateBoard's sign-in is OIDC, which only a human in a browser can complete. Agents, scripts, and CI get in with **API keys** instead. A key unlocks two surfaces, both served by your own instance with zero extra infrastructure:
@@ -8,13 +8,13 @@ StateBoard's sign-in is OIDC, which only a human in a browser can complete. Agen
 - the **REST API** — the same endpoints the editor itself uses, and
 - the **MCP server** at `/api/mcp` — so tools like Claude Code can work with boards natively.
 
-Nothing here phones home. The MCP server is implemented in-repo with no SDK dependency, and both surfaces work fully airgapped.
+Nothing here phones home. The MCP server is implemented in-repo with no SDK dependency, and both surfaces work fully airgapped. In the unreleased development build, REST also supports capabilities, dependencies, release assessments, checks, and evidence. Release decisions and publication require an owner browser session; API keys cannot perform them.
 
 ## Create a key
 
 Open your avatar menu → **API keys** (`/settings/api-keys`), name the key, pick a role, and copy the secret — it's shown exactly once. Keys look like `sbk_…`; only a hash is stored server-side.
 
-- A key **acts as you**, capped at the role you give it. Give an agent that only reads status a `viewer` key; give one that flips regions an `editor` key.
+- A key **acts as you**, capped at the role you give it. Give an agent that only reads status a `viewer` key; give one that maintains regions or appends release evidence an `editor` key. A key's owner role does not permit human-only release decisions or publication.
 - The effective role is the _lower_ of the key's role and your current role — if you're demoted or removed, your keys demote or die with you.
 - **Keys expire after 90 days by default.** Pick 30/60/90 days, a year, or — as an explicit choice — no expiration. An expired key simply stops resolving; the list warns "expires in N days" during the last two weeks. (Via the API, pass `expiresInDays` as a number or `null`.)
 - Revoke from the same page. Creation and revocation are written to the audit log, and every edit an agent makes is attributed to you with a `via: "mcp"` marker where applicable.
@@ -56,11 +56,13 @@ The server is a stateless Streamable HTTP endpoint (single JSON response per cal
 
 The archetypal agent session: `list_boards` → `get_board` → a few `update_region` calls as it verifies what actually shipped → `create_share_link` → post the link where stakeholders will see it.
 
+These MCP tools retain their visual board scope. They do not expose capabilities, release checks, evidence submission, or release decisions. Use the REST release endpoints for those records. Creating a visual board share link through MCP does not publish an internal release assessment.
+
 Adding a _screen_ needs image bytes, which MCP tools don't carry — use the REST API below for that.
 
 ## REST
 
-Every API route accepts `Authorization: Bearer sbk_…` in place of a session cookie, with the same role rules as the editor. The API speaks plain REST nouns; errors are always `{ "error": "…" }`.
+The visual board routes and ordinary release editing/evidence routes accept `Authorization: Bearer sbk_…` in place of a session cookie, with the same role rules as the editor. API key management, release decisions, and creating or revoking public release review links require a browser session. Release decisions and release publication additionally require current owner membership. The API speaks plain REST nouns; errors are always `{ "error": "…" }`.
 
 ```bash
 BASE=https://your-instance
@@ -84,8 +86,20 @@ curl -X POST -H "Authorization: Bearer $KEY" \
 
 Region coordinates are **normalized to `[0, 1]`** — `{"x":0.1,"y":0.2,"w":0.3,"h":0.15}` is a box at 10% from the left, 20% from the top. Never send pixels.
 
+## Release evidence in the development build
+
+The release readiness workflow is implemented in the current development build and is **unreleased**; it is not available in the latest published `2026.8.0` release.
+
+Read `/api/boards/BOARD_ID/product` for capabilities, components, declared relationships, screens, and release assessments. Read `/api/releases/RELEASE_ID` for an assessment with its active checks, evidence, product context, and calculated readiness. A `viewer` key can read these records; an `editor` key can maintain definitions and append evidence.
+
+Append a result with `POST /api/releases/RELEASE_ID/evidence`. Send the reviewed `expectedRevision`, check ID and definition revision, exact candidate/environment/audience/configuration, `pass`/`fail`/`inconclusive`, observation time in Unix milliseconds, source, run reference, and stable event identity. The [release readiness guide](/docs/release-readiness#submit-evidence-through-rest) includes the complete payload and retry rules.
+
+Store result links as references; StateBoard does not fetch them or execute the test. Submissions retain source, member, and credential attribution. A passing screenshot check or contract test establishes only its stated claim. It does not automatically verify the entire capability, change a visual region to `shipped`, or approve a release.
+
+An owner-scoped API key is still denied at `POST /api/releases/RELEASE_ID/decisions`, `POST /api/releases/RELEASE_ID/share-links`, and `DELETE /api/release-share-links/TOKEN`. A current owner must review and perform these actions in a signed-in browser. New release mutations made with session cookies also require the deployment's matching request origin.
+
 <Callout>
-  A `viewer` key can read every board in the workspace, including boards you
-  might consider sensitive — same as a viewer member in the app. Scope by
-  deploying separate instances, not by hoping.
+  A `viewer` key can read every board and release assessment in the workspace,
+  including internal dependencies and evidence — same as a viewer member in the
+  app. Use separate instances when groups need separate access boundaries.
 </Callout>

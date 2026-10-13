@@ -11,6 +11,14 @@ The canonical source is [`CHANGELOG.md`](https://github.com/saschb2b/stateboard/
 
 ## Unreleased
 
+### Release readiness MVP
+
+- Product capabilities and owners, optional visual anchors, workspace components and declared dependencies, immutable candidate/context assessments, and versioned acceptance checks.
+- Manual and API-submitted append-only evidence, with context matching, freshness, provenance, idempotency, and explainable readiness. Six views share the same assessment.
+- Human owner decisions with frozen definitions, selected evidence, visual wiring, and retained media. Private image uploads and curated revocable public decision links have separate authorization from legacy board sharing.
+- A permanent in-memory readiness example, usage guide, Postgres integration coverage, and component interaction tests. Board cards now open readiness, with a Screens shortcut for the visual editor.
+- **Three new migrations (`0008`–`0010`) — run `pnpm migrate` on upgrade.** Back up the private `release-assets` directory with Postgres and existing uploads. Ordinary board deletion now returns a conflict when release history exists.
+
 ### Breaking: OIDC redirect URI changed
 
 - **Better Auth 1.7** serves generic OAuth providers through its core social endpoints, so the Keycloak callback moved from `/api/auth/oauth2/callback/keycloak` to **`/api/auth/callback/keycloak`**. On upgrade, update the client's **Valid redirect URIs** in Keycloak (or your OIDC provider) to the new path, or sign-in fails with a redirect-URI error. The bundled realm import, Helm values, env examples, and the self-hosting guide already use the new path.

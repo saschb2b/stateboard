@@ -1,20 +1,19 @@
 ---
 title: StateBoard
-description: Status reporting for visual products. Show, don't tell.
+description: Assess product capabilities, dependencies, and verification evidence through views for each role.
 ---
 
-**StateBoard** turns screenshots of your webapp into a living status board. You mark regions on the screens, tag each one as `shipped`, `mock`, or `missing`, and share one read-only link your stakeholders can read in 30 seconds.
+**StateBoard** shows what works, what it depends on, and why a team believes a release is ready. Capabilities connect the outcomes a product must support to implementation dependencies and verification evidence. Product, frontend, backend, QA, operations, and release owners inspect the same assessment through views relevant to their work.
 
 These docs explain how to use it.
 
 ## Why this exists
 
-Every product team building a visual webapp eventually hits the same wall: the more carefully you write user-value stories, the worse they perform as status updates for non-technical leadership.
+An annotated screenshot makes a visible feature easy to judge. Backend developers also need its services, API operations, events, and data dependencies; QA needs acceptance claims and results; a release owner needs the complete scope and unresolved gates.
 
-> _"What's actually working right now? What's still mock data? What hasn't been built yet?"_
-> Every executive, in every quarterly review, ever
+StateBoard keeps that context connected. Capabilities can span several screens or have no UI. Evidence supports specific claims in an identified candidate, environment, audience, and configuration, and a human records the release decision.
 
-Roadmap tools answer "when will it ship." Demo tools answer "how does it work." Neither answers "what state is it in right now, screen by screen." StateBoard is the missing artifact.
+The visual editor remains available: mark screen regions as `shipped`, `mock`, or `missing`, then share the visual board. Release assessments add verification and preserved review artifacts without changing those visual delivery labels.
 
 ## What you'll find here
 
@@ -23,6 +22,11 @@ Roadmap tools answer "when will it ship." Demo tools answer "how does it work." 
     title="Getting started"
     href="/docs/getting-started"
     description="Create your first board, upload a screen, mark a region."
+  />
+  <Card
+    title="Release readiness"
+    href="/docs/release-readiness"
+    description="Define capabilities and dependencies, collect evidence, and record a decision through six views."
   />
   <Card
     title="Annotating"
@@ -52,7 +56,12 @@ Roadmap tools answer "when will it ship." Demo tools answer "how does it work." 
   <Card
     title="Roadmap"
     href="/docs/roadmap"
-    description="Where each upcoming feature sits on the v1.x / v2 / v3 timeline."
+    description="The adopted direction toward release readiness, and what remains planned."
+  />
+  <Card
+    title="Release-readiness MVP plan"
+    href="/docs/release-readiness-mvp"
+    description="The data model, readiness rules, and delivery contract behind the development implementation."
   />
   <Card
     title="Changelog"
@@ -63,7 +72,7 @@ Roadmap tools answer "when will it ship." Demo tools answer "how does it work." 
 
 ## The current release
 
-You're looking at **2026.8.0: team-ready**. The full feature list and what's intentionally not here yet lives in the [changelog](/docs/changelog). Highlights:
+The latest published release is **2026.8.0: team-ready**. Its full feature list lives in the [changelog](/docs/changelog). Highlights:
 
 - Manual screenshot upload, region tagging, three states (`shipped` / `mock` / `missing`)
 - Read-only public share links: revocable, multiple per board
@@ -71,7 +80,7 @@ You're looking at **2026.8.0: team-ready**. The full feature list and what's int
 - API keys and a built-in MCP server, so [agents can read and update boards](/docs/agents)
 - Postgres-backed, multi-replica safe, append-only audit log
 
-Headless capture, scheduled re-capture, diff view, and integrations (Jira / Slack / Notion) are explicitly on the roadmap. See the [roadmap](/docs/roadmap) for where each one sits.
+The **current development build** implements the release readiness workflow, including capabilities, dependencies, manual and REST evidence, six views, human decisions, retained media, and curated public reviews. This work is unreleased and is not part of `2026.8.0`. Follow the [release readiness guide](/docs/release-readiness) or explore the [example assessment](/share/demo/releases). The [roadmap](/docs/roadmap) describes the sequence and remaining backlog.
 
 ## License
 

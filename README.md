@@ -8,11 +8,11 @@
 
 📦 **Current release:** [`2026.8.0` (team-ready)](https://github.com/saschb2b/stateboard/releases/latest). See the [changelog](./CHANGELOG.md) for what shipped and what's intentionally not here yet.
 
-🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)**. Explore the example board, hover regions, try Present mode. The editor itself needs the self-hosted version (link below).
+🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)**. The published demo follows the current release. This working tree also includes a permanent readiness example at `/share/demo/releases`; deploy it to explore all six views. Editing needs the self-hosted version.
 
-> Status reporting for visual products, built around the screens stakeholders actually see, not the tickets engineers actually file.
+> Show what works, what it depends on, and why it is ready to release — with a view for everyone involved.
 
-**Show, don't tell.** Upload a screenshot of your app. Drag rectangles over the parts you want to talk about. Tag each one as `SHIPPED`, `MOCK`, or `MISSING`. Share one link. Your exec reads it in 30 seconds.
+**Show, don't tell.** Describe product capabilities, connect their dependencies, and assess a named candidate using matching verification evidence. Product, frontend, backend, QA, operations, and release owners inspect the same assessment through six views. Annotated screenshots remain the visual delivery view.
 
 Open source. Self-hosted. Airgap-ready (except for your own SSO). MIT.
 
@@ -28,18 +28,38 @@ This is `v1`, the cut you can deploy in a company.
 - Public read-only share links: revocable, multiple per board
 - **Multi-user via Keycloak / OIDC** (any OIDC-compliant IdP works; Keycloak is the documented default)
 - **Roles**: owner / editor / viewer
-- **Append-only audit log** of mutations (read directly from Postgres for now)
+- **Append-only audit log** of mutations, with owner-only workspace audit and per-board history
 - **Agent access**: per-member API keys + a built-in MCP server, so agents can read boards and flip region states — see [Agent access](#agent-access-api-keys--mcp) below
 - Postgres-backed, multi-replica safe (with `ReadWriteMany` for uploads)
 - One container + one Postgres. Zero outbound calls except to your IdP.
 
 What's not here yet (by design, see [the build plan](#roadmap)): headless capture, Jira sync, scheduled re-capture, diffs, journeys.
 
+## Release readiness MVP (implemented, unreleased)
+
+This working tree implements the full MVP; the latest published release remains `2026.8.0`.
+
+- Reusable capabilities and owners, including outcomes with no UI; optional links to screenshot regions
+- Workspace components, declared dependencies, focused navigation, and affected capabilities
+- Immutable candidate/environment/audience/configuration context, explicit capability scope, and versioned acceptance checks
+- Manual and REST-submitted evidence with context, provenance, idempotency, history, and freshness
+- Explainable `ready` / `blocked` / `needs_evidence` calculation, with mandatory failures and unknowns kept visible
+- Six views over one assessment, with a URL that preserves the selected view
+- Human owner approvals/holds with frozen definitions, evidence, wiring, rationale, and selected retained media
+- Private image uploads and curated public decision summaries with selected safe media and revocable tokens
+- An in-memory example at `/share/demo/releases`, without seeded workspace data
+
+Board cards open the readiness workspace; **Screens** opens the existing visual editor. Required functional acceptance checks determine readiness, while `shipped` / `mock` / `missing` retain their existing visual meanings. Approval records a decision and does not deploy a release.
+
+**Upgrade:** run `pnpm migrate` to apply `0008`–`0010`. Keep `STATEBOARD_DATA_DIR` persistent and backed up alongside Postgres, including both `uploads` and `release-assets`. Existing board images remain public/cached; confidential release images use the separate private directory. Boards with release history cannot be deleted through ordinary deletion.
+
+Read the [usage guide](./src/content/docs/release-readiness.mdx) and [implementation contract](./src/content/docs/release-readiness-mvp.mdx). The real team pilot and external GitHub milestone reconciliation are follow-up work.
+
 ## Agent access (API keys + MCP)
 
 Agents, scripts, and CI can't complete an OIDC sign-in — they authenticate with **API keys** instead (avatar menu → **API keys**). Keys are hash-only server-side, role-capped, expire after 90 days by default, and every edit they make lands in the audit log. Owners can inventory and revoke every key in the workspace. A key unlocks two surfaces:
 
-- **REST** — every `/api/*` route accepts `Authorization: Bearer sbk_…` with the same role rules as the editor.
+- **REST** — board editing and release definitions/evidence accept `Authorization: Bearer sbk_…` with the same role rules as the editor. Recording release decisions and publishing/revoking release links require a current owner browser session; API keys cannot perform them. Key management also requires a session.
 - **MCP** — a built-in, zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp` with tools to list and read boards, create and update regions, and mint share links. No SDK, no extra process, works airgapped.
 
 ```bash
@@ -108,24 +128,27 @@ A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up. Dis
 | UI           | React 19 + MUI 7        | Solid component library, small enough to skin        |
 | Persistence  | Postgres via `pg`       | Multi-replica safe; standard ops your team knows     |
 | Auth         | Better Auth + OIDC      | First-class Keycloak helper; sessions in the same DB |
-| File storage | Local filesystem        | RWX PVC for v1; S3-compatible adapter planned for v2 |
+| File storage | Local filesystem        | RWX PVC; S3-compatible adapter remains deferred      |
 | Telemetry    | None                    | Airgap by default, that's the point                  |
 
 Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/lib/auth.ts` (server) and `src/lib/auth-client.ts` (browser). Schema is plain SQL under `migrations/`, applied by `scripts/migrate.mjs`.
 
 ## Scripts
 
-| Command             | What it does                                        |
-| ------------------- | --------------------------------------------------- |
-| `pnpm dev`          | Run on `localhost:3000`                             |
-| `pnpm build`        | Production build                                    |
-| `pnpm start`        | Run the production build                            |
-| `pnpm migrate`      | Apply pending SQL migrations against `DATABASE_URL` |
-| `pnpm lint`         | ESLint                                              |
-| `pnpm typecheck`    | `tsc --noEmit`                                      |
-| `pnpm test`         | Unit tests on Node's built-in runner (`node:test`)  |
-| `pnpm format:check` | Prettier check                                      |
-| `pnpm format`       | Prettier write                                      |
+| Command                       | What it does                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------ |
+| `pnpm dev`                    | Run on `localhost:3000`                                                                    |
+| `pnpm build`                  | Production build                                                                           |
+| `pnpm start`                  | Run the production build                                                                   |
+| `pnpm migrate`                | Apply pending SQL migrations against `DATABASE_URL`                                        |
+| `pnpm lint`                   | ESLint                                                                                     |
+| `pnpm typecheck`              | `tsc --noEmit`                                                                             |
+| `pnpm test`                   | Unit tests on Node's built-in runner (`node:test`)                                         |
+| `pnpm test:stories`           | Component interaction tests in Chromium                                                    |
+| `pnpm test:integration`       | Release persistence tests; set `STATEBOARD_INTEGRATION_DB_URL` to a test Postgres          |
+| `pnpm cleanup:release-assets` | Dry-run of orphan media cleanup; `--delete` removes unreferenced files older than 24 hours |
+| `pnpm format:check`           | Prettier check                                                                             |
+| `pnpm format`                 | Prettier write                                                                             |
 
 ## Configuration
 
@@ -146,14 +169,16 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 ## Roadmap
 
 - **v0 (the wedge)** ✅: manual upload, region tagging, three states, share link, single user
-- **v1 (team-ready)** ✅ (you are here): multi-user, OIDC, audit log, Postgres
-- **v1.x (still scope-OK)**: headless capture from URL, Jira issue linking, custom states
-- **v2 (make it living)**: scheduled re-capture, time-travel / diff view, two-way Jira sync, Slack, Notion/Confluence embed
-- **v3 (defensible)**: DOM region-detection, journey views, portfolio rollup, SAML, audit-log UI, template gallery
+- **v1 (team-ready)** ✅: multi-user, OIDC, audit log, Postgres; audit UI shipped in `2026.7.0`, API keys + MCP in the current release `2026.8.0`
+- **v2 (release-readiness MVP)** — implemented in this working tree, unreleased: candidate-specific assessments, reusable capabilities, dependencies and owners, applicable evidence, explainable readiness, human decision snapshots, role view presets, and a curated public share view
+- **v2.x (keep evidence current)** — planned after the pilot: push evidence integrations, catalog imports, freshness/context comparison, and capability flow views
+- **v3 (broader impact and overview)** — planned later: architecture impact navigation, portfolio assessments, and reusable templates
 
-Full narrative in [`/docs/roadmap`](https://saschb2b.github.io/stateboard/docs/roadmap). Live status: [milestones](https://github.com/saschb2b/stateboard/milestones) for the per-issue rollup, or the [project board](https://github.com/users/saschb2b/projects/1) for a Kanban / Roadmap view.
+The adopted direction is **show what works, what it depends on, and why we believe it is ready**. Screenshots remain the visual view; capabilities connect them to backend work and verification. The visual states `shipped` / `mock` / `missing` stay separate from release readiness. The MVP records a human decision and does not automatically approve releases or grant exception waivers.
 
-The temptation will be to chase roadmap-tool features. We won't. The lane is **screens, regions, states, and the integrations that keep them honest**, and nothing else.
+Read the [roadmap source](./src/content/docs/roadmap.mdx) and [concrete MVP implementation plan](./src/content/docs/release-readiness-mvp.mdx). The published [roadmap](https://saschb2b.github.io/stateboard/docs/roadmap) updates after these docs are deployed. [GitHub milestones](https://github.com/saschb2b/stateboard/milestones) and the [project board](https://github.com/users/saschb2b/projects/1) still contain legacy scope; reconciliation is pending.
+
+Headless capture, custom states, Jira links/sync, scheduled capture, diffs, Slack, embeds, S3 storage, DOM region detection, SAML, and the template gallery remain in the reprioritized backlog. The MVP starts with manual evidence and pushes through the existing REST API-key model, preserving self-hosted operation and the runtime network boundary. StateBoard remains an assessment and sharing tool; it does not become a ticket tracker, full developer portal, test runner, or deployment system.
 
 ## License
 

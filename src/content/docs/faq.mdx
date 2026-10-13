@@ -3,35 +3,37 @@ title: FAQ
 description: The questions that come up most.
 ---
 
-## Why only three states? I want one for "in review."
+The readiness MVP is implemented in the development build and unreleased. The latest published release remains `2026.8.0`.
 
-Three states is the whole product. Four states is a different product (a roadmap tool, an issue tracker, a kanban board), and those tools already exist and are better at what they do. The reason `shipped` / `mock` / `missing` works is that an exec scanning your share link can fit each region into the correct bucket in under a second. Add nuance and that breaks.
+## Why only three visual states? I want one for "in review."
+
+The screenshot view keeps `shipped` / `mock` / `missing` so people can quickly distinguish a working production feature, a mock, and something absent. Release assessments use separate calculated states: `ready`, `blocked`, and `needs_evidence`. A review is a human decision supported by checks, rather than another visual state.
 
 The notes field is for nuance ("shipped, but only for new accounts after 2025-01-01"). The state stays blunt.
 
 ## Do my stakeholders need an account?
 
-No, and that's the point. Share links (`/share/{slug}`) are public and read-only by design, so an exec can open one and read the board in 30 seconds without a login. The **editor** is what's gated: creating and editing boards requires signing in through your OIDC provider (Keycloak is the documented default), with `owner` / `editor` / `viewer` roles. Because share links are open, treat a shared board like an "anyone with the link" doc — don't put anything in it you couldn't show the people you send it to.
+Public share links are read-only and need no account. Visual board links show the full board; release links show an explicitly curated recorded decision and selected images. Internal product and assessment views require OIDC sign-in with `owner` / `editor` / `viewer` permissions. A profession view is a presentation preset, not a permission boundary. Only publish content intended for the audience of the link.
 
 ## Can multiple people edit a board at the same time?
 
-Yes. v1 is multi-user on Postgres, so several editors can work across the workspace. There's no real-time collaboration (no live cursors, no merge): edits save independently, and in the rare case two people change the same field at once, last-write-wins. Real-time collab is intentionally out of scope — the use case is asynchronous review.
+Yes. Multiple editors can work in the workspace. Visual fields save independently. Assessment changes require the reviewed revision; a concurrent change returns a conflict and prompts a reload. Decisions recheck that revision, current owner membership, and fresh evidence in a transaction. Live cursors and automatic merging remain outside the scope.
 
 ## Can I reuse a board as a starting point?
 
-Yes — click **Duplicate** on any board's card in the overview. It deep-copies every screen and region into a new "… (copy)" board, with its own image files and share link, and opens it so you can change only what differs. Handy when each release or quarter is mostly the same board with a couple of screens swapped.
+Yes — click **Duplicate** on any board's card in the overview. It deep-copies every screen and region into a new "… (copy)" board, with its own image files and share link, and opens it so you can change only what differs. Duplication copies the visual board only; it does not copy capabilities, assessments, evidence, decisions, or private retained media. Reuse a product board and create another assessment for a new candidate.
 
 ## Why Postgres?
 
-v1 is the team-ready cut — multiple replicas, shared state — so it's Postgres-backed. (The v0 wedge used SQLite for a single-container demo.) Bring your own Postgres, or let the Helm chart run a bundled one. Uploaded screenshots live on a filesystem volume beside it; an S3-compatible adapter is planned for v2.
+v1 is the team-ready cut — multiple replicas, shared state — so it's Postgres-backed. (The v0 wedge used SQLite for a single-container demo.) Bring your own Postgres, or let the Helm chart run a bundled one. Uploaded screenshots live on a filesystem volume beside it; an S3-compatible adapter remains deferred.
 
 ## Will my data survive an upgrade?
 
-Yes, as long as your Postgres data and the uploads volume survive. Schema changes ship as numbered SQL migrations under `migrations/`, applied by `pnpm migrate` — the Docker Compose and Helm deploys run it for you on upgrade. Back up Postgres and the uploads volume together; see [Self-hosting → Backups](/docs/self-hosting#backups).
+Yes, as long as your Postgres data and the full data volume survive. Schema changes ship as numbered SQL migrations under `migrations/`, applied by `pnpm migrate` — the Docker Compose and Helm deploys run it for you on upgrade. Back up Postgres and both `uploads/` and `release-assets/` together; see [Self-hosting → Backups](/docs/self-hosting#backups).
 
 ## Can I host the screenshots on S3?
 
-Not yet. Uploads go to a local filesystem volume (`STATEBOARD_DATA_DIR`), separate from Postgres. An S3-compatible storage adapter is planned for v2; the data model already separates a screen's filename from where its bytes live, so the migration will be mechanical. For multi-replica deploys today, give the uploads volume `ReadWriteMany`.
+Not yet. Uploads go to a local filesystem volume (`STATEBOARD_DATA_DIR`), separate from Postgres. An S3-compatible storage adapter remains in the deferred backlog; any future adapter must preserve decision media integrity and access boundaries. For multi-replica deploys today, give the uploads volume `ReadWriteMany`.
 
 ## Does it phone home?
 
@@ -39,15 +41,15 @@ No. There's no analytics, no telemetry, no license server, no remote font fetchi
 
 ## Why isn't this a roadmap tool?
 
-Roadmap tools answer "when will it ship." StateBoard answers "what state is it in right now, screen by screen." Different question, different unit, different audience. Roadmap incumbents (Productboard, Aha!, Tempo) have already claimed the planning surface; StateBoard sits next to them, not on top.
+StateBoard assesses whether a candidate supports its required outcomes and preserves the evidence behind a release decision. It does not schedule delivery, manage tickets or sprints, execute tests, or deploy releases. Screenshots and declared architecture help explain the assessment.
 
 ## Can agents, scripts, or CI update boards?
 
-Yes. Members mint API keys (they expire after 90 days by default and are fully audited) that unlock the whole REST API plus a built-in MCP server at `/api/mcp` — so a coding agent can read a board, flip region states after verifying what shipped, and hand back the share link. There's also an installable agent skill that teaches the workflow. See [Agents & API](/docs/agents).
+Yes. Members mint API keys (they expire after 90 days by default and are fully audited) that unlock role-scoped REST editing and evidence ingestion plus a built-in visual-board MCP server at `/api/mcp` — so a coding agent can read a board, flip region states after verifying what shipped, and hand back the share link. Release decisions and release publication/revocation require a current human owner browser session. There's also an installable agent skill for the visual workflow. See [Agents & API](/docs/agents).
 
 ## Can I integrate Jira / Linear / Slack?
 
-Not as turnkey integrations yet. Jira issue linking on regions is slated for v1.x; two-way Jira sync and Slack notifications for v2. Integrations are staged deliberately so the core — screens, regions, states — stays solid first. See the [roadmap](/docs/roadmap) for where each one sits. (If you need something today, the [API](/docs/agents) can already drive boards from your own automation.)
+Turnkey provider integrations remain deferred. Internal tools can push verification evidence through the existing API-key REST surface; evidence links are stored without outbound fetching. The real team pilot will determine the next integration priorities. See the [roadmap](/docs/roadmap) and [evidence submission guide](/docs/release-readiness#submit-evidence-through-rest).
 
 ## Why MIT and not something more protective?
 

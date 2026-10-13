@@ -191,7 +191,7 @@ If your IdP is inside the same network as StateBoard (which it almost certainly 
 Two things to back up:
 
 1. **Postgres**: every board, screen, region, member, and audit row.
-2. **Uploads PVC** (`/data`): the screenshot files themselves. Filenames are recorded in the DB, so the two backups must restore in lockstep.
+2. **Data PVC** (`/data`): public board images under `uploads/`, plus confidential release images and immutable decision copies under `release-assets/`. Filenames and digests are recorded in the DB, so the two backups must restore in lockstep. Back up both directories; retaining only public uploads loses decision evidence.
 
 A typical screenshot is 0.5 to 2 MB. A team running quarterly reviews on 10 products with ~10 screens each will use well under 1 GiB per year.
 
@@ -205,6 +205,8 @@ helm upgrade stateboard ./deploy/helm/stateboard \
   --namespace stateboard --reuse-values \
   --set image.tag=NEW_VERSION
 ```
+
+The unreleased readiness MVP adds migrations `0008`–`0010`. Run them before serving the new application. Boards with release history reject ordinary deletion; historical evidence is preserved. `pnpm cleanup:release-assets` previews unreferenced private images older than 24 hours, and `--delete` removes only those orphaned files.
 
 The migrate Job runs automatically before the new pods come up. If you disabled it (`migrate.enabled=false`), run `pnpm migrate` against the database manually first.
 

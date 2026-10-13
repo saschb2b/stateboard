@@ -1,0 +1,144 @@
+---
+title: Release readiness
+description: Assess capabilities, dependencies, and verification evidence, then record and share a human release decision.
+---
+
+StateBoard connects the outcomes a product must support to their implementation and verification. A release assessment answers whether a particular candidate is ready for its intended users, what blocks it, and which evidence would resolve the gaps. Screenshots are one view of that assessment; capabilities such as processing a webhook or reconciling transactions can have no UI.
+
+<Callout>
+  This workflow is implemented in the current development build and is
+  unreleased. The latest published release, `2026.8.0`, provides the visual
+  board, team, and agent features. Upgrade to a release containing the readiness
+  workflow before expecting these controls on an existing deployment.
+</Callout>
+
+Explore the [example assessment](/share/demo/releases) to switch between all six views without creating sample data in your workspace.
+
+## Describe the product
+
+Open a board from the overview to enter its product workspace. From the screen editor, choose **Release readiness**. The workspace has **Release assessments**, **Capabilities**, **Components**, and **Connections** tabs.
+
+1. Add a capability with a name, observable outcome, and accountable owner. For example, **Export an invoice** could require an authorized finance user to download a valid PDF.
+2. Add the services, API operations, events, workers, data stores, or external dependencies that implement it. Components can be reused across boards in the workspace.
+3. Connect capabilities to components and components to their dependencies. Name the actual relationship, such as “calls POST /exports” or “consumes invoice.requested.”
+4. Link existing screen regions to capabilities where the visual interaction helps explain the outcome. Screens and regions remain optional.
+
+These relationships describe declared architecture and potential impact. A required dependency link does not automatically create a release gate or claim that StateBoard observed runtime traffic. Define the checks that verify the dependency's relevant behavior separately.
+
+## Define a release assessment
+
+Choose **New assessment** after adding capabilities. Give the candidate a readable name and a pinned reference, such as a commit SHA, image digest, or immutable component version manifest. Avoid mutable branches and `latest` tags.
+
+Set the **validation environment**, where verification runs, and the **target deployment environment**, where the release is intended to run. Also record the intended audience, configuration reference, accountable release owner, and included capabilities. Use a versioned configuration reference that captures relevant feature flags and permission assumptions.
+
+The candidate reference, environments, audience, and configuration are fixed after creation. Create another assessment when any of them changes. Scope and checks can be edited, with each change recorded and the assessment revision advanced. Excluding a capability requires a reason and archives its checks. Including it again requires new checks.
+
+The assessment keeps the capability outcome it started with. If the product outcome changes, **Edit scope** lets you explicitly adopt the latest definition. Adoption creates new check revisions so earlier evidence cannot verify the changed outcome. Review the claims and collect fresh evidence.
+
+## Add checks and evidence
+
+In **QA**, choose **Add check**. Every included capability needs at least one required check in the `functional` category. Express it as an observable claim, identify its owner and verification method, and set its environment and evidence lifetime. The default lifetime is 24 hours.
+
+Add integration, UX, data, security, or operational checks as needed. A check can target a capability, a linked component, or the entire release. For example, rollback rehearsal can be a required operational check for the release. A check expects either the validation or target environment; a staging pass does not become a claim of production verification.
+
+Choose **Record evidence** on a check to append a manual review. Record `pass`, `fail`, or `inconclusive`, describe the observation, and identify the source, run or review reference, and observation time. Optional supporting URLs remain links; StateBoard does not fetch their contents. CI and internal tools can append evidence through [REST](#submit-evidence-through-rest).
+
+Revising a check preserves its older definitions and results. Only evidence for the active check revision and exact candidate, environment, audience, and configuration can satisfy it.
+
+| Readiness        | Meaning                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ready`          | Every included capability has a required functional check, and every required check has a fresh matching pass.                                       |
+| `blocked`        | A required check's selected matching result failed. Other evidence gaps remain visible.                                                              |
+| `needs_evidence` | Required verification is absent, inconclusive, expired, or inapplicable, or the scope lacks a required functional check. Empty scope is never ready. |
+
+StateBoard selects the newest matching observation by verification time, with a deterministic tie break. A late-arriving older pass cannot clear a newer failure. A selected failure remains a blocker even after its evidence expires; optional failures remain warnings. The visual states `shipped`, `mock`, and `missing` keep their existing meanings and do not determine readiness.
+
+## Choose a view
+
+All six views use the same assessment. The selected view is preserved in the URL so a colleague can open the same perspective.
+
+| View                         | What to inspect                                                                                                             |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Release / product            | Outcomes in scope, exclusions, accountable owners, blockers, and evidence gaps.                                             |
+| Visual / frontend            | Screens, region links, capability outcomes, and relevant verification.                                                      |
+| Backend                      | Operations, events, jobs, data dependencies, and capabilities potentially affected by a component.                          |
+| QA                           | Acceptance checks, selected results, evidence history, and check definition history.                                        |
+| Operations / security / data | Required migration, recovery, security, and data claims with their evidence. Categories without checks remain unconfigured. |
+| Decision                     | Reviewed scope, required failures and gaps, optional warnings, recorded decisions, retained media, and public links.        |
+
+View names describe interests, not permissions. An accountable owner label also does not grant access.
+
+| Workspace role | Permissions                                                                                                                  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `viewer`       | Read internal product and release assessments throughout the workspace.                                                      |
+| `editor`       | Maintain capabilities, dependencies, scope, checks, and evidence.                                                            |
+| `owner`        | All editor permissions, plus record decisions and create or revoke public release links through a signed-in browser session. |
+
+API keys follow their effective role. Even an owner-scoped key cannot record a decision or publish or revoke a release review link. The existing visual board link and MCP tools retain their separate behavior.
+
+## Record and share a decision
+
+A workspace owner opens **Decision** and chooses **Record decision**. Approval is available only when calculated readiness is `ready`. A held decision can record blockers or gaps at any readiness. Both require a rationale. There is no gate waiver path, and recording approval does not deploy the product.
+
+Select the board screenshots and private supporting images to retain. StateBoard preserves independent image bytes and the reviewed scope, check definitions, evidence, dependencies, visual mappings, evaluation time, and rationale. Later edits, screenshot replacement, and member removal do not rewrite this record. If the assessment changes during review, reload it before recording the decision.
+
+For confidential supporting images, use **Supporting review images** in the **Decision** view. These PNG, JPEG, GIF, or WebP files are authenticated and can be up to 25 MB. Existing board screenshot URLs are publicly accessible when known; making a private retained copy does not undo that exposure.
+
+To share with customers or other people outside the workspace:
+
+1. Open a recorded decision and choose **Prepare public review link**.
+2. Write the public summary and review the public environment and audience labels. Select the outcomes to include and edit their public explanations.
+3. Explicitly choose retained images safe to disclose, then create the link. Internal architecture, checks, evidence URLs, run identifiers, member details, and private notes are excluded.
+4. Use **Revoke** under **Public review links** when access should end. Revocation blocks subsequent page and selected image reads; it cannot retract bytes someone already downloaded.
+
+Release review links show a preserved decision, not the mutable live assessment. Ordinary visual board links still show the full visual board and are managed separately. Boards with release history cannot be deleted through ordinary board deletion; archive reusable records when they are no longer needed.
+
+## Submit evidence through REST
+
+Use an editor-scoped API key and fetch the active assessment first:
+
+```bash
+curl -H "Authorization: Bearer $STATEBOARD_API_KEY" \
+  "$STATEBOARD_API_BASE/api/releases/RELEASE_ID"
+```
+
+The response includes `assessment`, `checks`, `evidence`, `product`, and `readiness`. Use `assessment.revision` for `expectedRevision`, the chosen check's `id` and `revision`, and its expected `environment`. Copy `candidateRef`, `audience`, and `configurationRef` exactly from the assessment.
+
+For example, save this payload as `evidence.json`, replacing the IDs, revision numbers, context, run details, and `observedAt` with the result you actually verified. `observedAt` is the verification time in Unix milliseconds, not the upload time.
+
+```json
+{
+  "expectedRevision": 7,
+  "checkId": "CHECK_ID",
+  "checkRevision": 2,
+  "candidateRef": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "environment": "staging",
+  "audience": "Finance pilot",
+  "configurationRef": "billing-config-v3",
+  "result": "pass",
+  "summary": "An authorized finance user downloaded a valid invoice PDF.",
+  "source": "billing-ci",
+  "runRef": "pipeline-184-attempt-1",
+  "eventId": "pipeline-184-invoice-pdf-attempt-1",
+  "observedAt": 1791878400000,
+  "referenceUrl": "https://ci.example.test/runs/184"
+}
+```
+
+```bash
+curl -X POST -H "Authorization: Bearer $STATEBOARD_API_KEY" \
+  -H "Content-Type: application/json" --data-binary @evidence.json \
+  "$STATEBOARD_API_BASE/api/releases/RELEASE_ID/evidence"
+```
+
+A successful submission returns the updated assessment workspace, including calculated readiness. Repeating the same event identity and payload with the same source and credential preserves the original evidence record, even when its submitted assessment revision is now older. Reusing that identity for different data returns `409`. For a new event, a stale assessment or check revision returns `409`; refresh and review the new definitions before retrying. A mismatched candidate, environment, audience, or configuration returns `400`, as does a malformed payload. Insufficient permissions return `403`.
+
+Evidence is append-only and attributed to the member and credential that submitted it. StateBoard records the result supplied by the producer; it does not run the test or automatically trust that result as proof of other claims.
+
+## Read freshness and history
+
+The live assessment recalculates evidence expiry as time passes. Use **Reload assessment** to see changes submitted by another person or tool. Updating a board or receiving an old result does not refresh its verification time.
+
+Recorded decisions remain historical assessments. Their reviewed date and evidence deadline distinguish the preserved result from current verification; a later passing result or expired check does not rewrite the earlier review. Public reviews make the same distinction. Remote evidence links can change or disappear, so retained summaries and selected media form the preserved baseline.
+
+StateBoard assesses explicit claims. A contract pass verifies that contract, and declared dependencies explain potential impact. Neither automatically verifies an entire business outcome. Keep the required checks aligned with the release your team actually intends to approve.

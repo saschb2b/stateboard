@@ -13,43 +13,43 @@ import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { AppHeader } from "@/components/app/app-header";
 import { LandingMockup } from "@/components/site/landing-mockup";
-import { StateChip } from "@/components/region/state-chip";
+import { ReadinessChip } from "@/components/release/readiness-summary";
 import { version } from "../../../package.json";
 
 const PROBLEMS = [
   {
-    title: "The prose problem",
-    body: '"As a returning user, I want to filter my dashboard by region" tells leadership nothing about whether the filter works, whether the data is real, or whether the chart next to it is even hooked up.',
+    title: "A screen shows only part of the product",
+    body: "A visible button cannot explain the API, worker, event, or data it depends on. Some critical capabilities have no screen at all.",
   },
   {
-    title: "The granularity problem",
-    body: "Jira shows 200 tickets across 14 epics. The exec wants to see 8 screens with 3 colors. Roll-ups hide failure; ticket lists overwhelm. Neither answers the question.",
+    title: "Different roles need different views",
+    body: "Product teams follow outcomes. Backend developers follow dependencies. QA follows acceptance checks. They need a shared assessment they can each inspect.",
   },
   {
-    title: "The medium mismatch",
-    body: "A visual product deserves visual reporting. Leadership sees screens in the demo. They should see the same screens in the status update, with state painted directly onto them.",
+    title: "A passing result needs context",
+    body: "Evidence belongs to a candidate, environment, audience, and check definition. A result from last week or another build cannot quietly make this release ready.",
   },
   {
-    title: "The maintenance tax",
-    body: "Teams that try to solve this by hand end up with a parallel tracking system in Confluence, Miro, or a custom tool. It works for 3 weeks, then drifts. Then nobody trusts it.",
+    title: "A decision needs a baseline",
+    body: "Keep the scope, evidence, rationale, and selected images that informed a review, so later edits cannot change what a release owner approved.",
   },
 ];
 
 const STEPS = [
   {
     n: "01",
-    title: "Capture",
-    body: "Upload a screenshot of your app: staging, prod, or a styled mock. v0 is manual; the headless capture pipeline lands in v1.",
+    title: "Define the release",
+    body: "Choose a candidate and its intended users. Describe the capabilities, owners, and dependencies that matter. Link screenshots where they help.",
   },
   {
     n: "02",
-    title: "Annotate",
-    body: "Drag rectangles over the parts that matter. Tag each one as shipped, mock, or missing. Add a label and notes if you want.",
+    title: "Verify the claims",
+    body: "Set acceptance checks and attach matching manual or API-submitted evidence. See failures and evidence gaps through the view relevant to your work.",
   },
   {
     n: "03",
-    title: "Share",
-    body: "Send one read-only link. Stakeholders see the same screens you demo, painted with state. No login, no Jira tour required.",
+    title: "Review and share",
+    body: "A release owner records an approval or hold with a preserved baseline. Publish a curated summary and explicitly selected safe images through a revocable link.",
   },
 ];
 
@@ -115,9 +115,9 @@ export default function LandingPage() {
           sx={{ textAlign: "center", mb: { xs: 6, md: 9 } }}
         >
           <Stack direction="row" spacing={1.25} alignItems="center">
-            <StateChip state="shipped" size="sm" />
-            <StateChip state="mock" size="sm" />
-            <StateChip state="missing" size="sm" />
+            <ReadinessChip state="ready" />
+            <ReadinessChip state="blocked" />
+            <ReadinessChip state="needs_evidence" />
           </Stack>
           <Typography
             variant="h1"
@@ -155,8 +155,8 @@ export default function LandingPage() {
               lineHeight: 1.55,
             }}
           >
-            Status reporting for visual products, built around the screens
-            stakeholders actually see, not the tickets engineers actually file.
+            See what works, what it depends on, and why it is ready to release.
+            One shared assessment, with a view for everyone involved.
           </Typography>
           <Stack
             direction={{ xs: "column", sm: "row" }}
@@ -175,18 +175,16 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link
-              href="https://github.com/saschb2b/stateboard"
-              target="_blank"
-              rel="noopener"
+              href="/share/demo/releases"
               style={{ textDecoration: "none" }}
             >
               <Button
                 size="large"
                 variant="outlined"
-                startIcon={<GitHubIcon />}
+                startIcon={<ArticleOutlinedIcon />}
                 sx={{ px: 3.5, py: 1.25 }}
               >
-                Read the source
+                Explore a release assessment
               </Button>
             </Link>
           </Stack>
@@ -203,8 +201,8 @@ export default function LandingPage() {
             fontStyle: "italic",
           }}
         >
-          A real screen, painted with state. One link. Updated by the team that
-          owns it.
+          Screenshots remain the visual view. Capabilities and evidence connect
+          them to the rest of the product.
         </Typography>
       </Container>
 
@@ -226,13 +224,12 @@ export default function LandingPage() {
               variant="h2"
               sx={{ fontSize: { xs: "2rem", md: "2.75rem" } }}
             >
-              Jira is for engineers. Execs need a different artifact.
+              Can everyone explain whether this release is ready?
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ pt: 1 }}>
-              Every product team building a visual webapp eventually hits the
-              same wall: the more carefully you write user-value-focused
-              stories, the worse they perform as status updates for
-              non-technical leadership.
+              A polished screen and a completed ticket each tell part of the
+              story. A release review also needs the working outcome, its
+              dependencies, and the verification behind it.
             </Typography>
             <Box
               sx={{
@@ -252,14 +249,14 @@ export default function LandingPage() {
                   fontWeight: 500,
                 }}
               >
-                &quot;What&apos;s actually working right now? What&apos;s still
-                mock data? What hasn&apos;t been built yet?&quot;
+                &quot;What works for these users? What blocks this candidate?
+                What evidence would change our decision?&quot;
               </Typography>
               <Typography
                 variant="caption"
                 sx={{ color: "text.secondary", mt: 1, display: "block" }}
               >
-                Every executive, in every quarterly review, ever
+                The questions a shared release assessment should answer
               </Typography>
             </Box>
           </Stack>
@@ -312,16 +309,16 @@ export default function LandingPage() {
               variant="h2"
               sx={{ fontSize: { xs: "2rem", md: "2.75rem" } }}
             >
-              The unit of truth is the{" "}
+              Start with a{" "}
               <Box component="span" sx={{ color: "primary.main" }}>
-                screen region
+                capability supported by evidence
               </Box>
-              , not the ticket.
+              .
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ pt: 1 }}>
-              Leadership doesn&apos;t think in epics. They think in journeys and
-              screens. The right primitive is &quot;this rectangle on this
-              screen, in this state.&quot;
+              Describe an outcome people can verify, such as exporting an
+              invoice or processing a partner event. Connect it to the screens,
+              services, checks, and owners that explain its current state.
             </Typography>
           </Stack>
 
@@ -406,12 +403,12 @@ export default function LandingPage() {
               <Highlight
                 icon={<CloudOffOutlinedIcon />}
                 title="Airgap by default"
-                body="Zero outbound calls. No license server, no phone-home, no analytics."
+                body="No outbound calls except to your configured identity provider. No license server, phone-home, or analytics."
               />
               <Highlight
                 icon={<LockOutlinedIcon />}
-                title="One container"
-                body="docker run stateboard, ready in under 60 seconds. SQLite by default, Postgres optional in v1."
+                title="One app + Postgres"
+                body="Run the app with Postgres, your OIDC provider, and local persistent file storage."
               />
               <Highlight
                 icon={<ArticleOutlinedIcon />}
@@ -446,8 +443,9 @@ export default function LandingPage() {
             color="text.secondary"
             sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
           >
-            Create your first board, drop in a screenshot, mark a region. The
-            link you get back is the deck you don&apos;t have to build.
+            Create a product board, define its critical capabilities, and assess
+            a candidate. Each person can inspect the evidence and dependencies
+            that matter to their work.
           </Typography>
           <Link href="/boards" style={{ textDecoration: "none" }}>
             <Button

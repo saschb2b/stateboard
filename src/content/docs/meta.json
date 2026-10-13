@@ -3,12 +3,14 @@
   "pages": [
     "index",
     "getting-started",
+    "release-readiness",
     "annotating",
     "sharing-and-presenting",
     "agents",
     "self-hosting",
     "faq",
     "roadmap",
+    "release-readiness-mvp",
     "changelog"
   ]
 }

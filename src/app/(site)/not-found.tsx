@@ -15,7 +15,7 @@ export default function NotFound() {
             404
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            That board doesn&apos;t exist, or its share link was rotated.
+            This page is unavailable, or its share link was revoked.
           </Typography>
           <Link href="/" style={{ textDecoration: "none" }}>
             <Button variant="contained" color="primary">

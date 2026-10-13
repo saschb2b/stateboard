@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s · StateBoard",
   },
   description:
-    "Status reporting for visual products. Mark regions on your screens as shipped, mock, or missing, then share one link execs can read in 30 seconds.",
+    "Release readiness for every role. Connect product capabilities, dependencies, evidence, and visual anchors in one shared assessment.",
   icons: { icon: `${BASE_PATH}/icon.svg` },
   // Self-hosted instances are private deployments and must never be indexed.
   // The GitHub Pages build is the project's public face (landing, docs, the
