@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   MenuItem,
   Paper,
@@ -18,16 +20,21 @@ import type {
   ProductContext,
   ReleaseDetail,
   ReleaseEvaluation,
+  ReleaseView,
 } from "@/lib/release-types";
 
 export function CapabilityVisualView({
   product,
   detail,
   readiness,
+  onReviewView,
+  screensHref,
 }: {
   product: ProductContext;
   detail: ReleaseDetail;
   readiness: ReleaseEvaluation;
+  onReviewView?: (view: ReleaseView) => void;
+  screensHref?: string;
 }) {
   const [capabilityId, setCapabilityId] = useState("all");
   const included = detail.scope.filter((item) => item.included);
@@ -137,6 +144,7 @@ export function CapabilityVisualView({
                           }
                         />
                         <ReadinessChip
+                          verification
                           state={
                             readiness.capabilities.find(
                               (item) => item.capabilityId === link.capabilityId,
@@ -151,10 +159,30 @@ export function CapabilityVisualView({
         </Paper>
       ))}
       {screens.length === 0 && (
-        <Typography color="text.secondary">
-          This capability has no visual anchors. Inspect its dependencies and
-          checks.
-        </Typography>
+        <Paper sx={{ p: 2 }}>
+          <Typography color="text.secondary">
+            {capabilityId === "all"
+              ? "No screenshots have been added to this product."
+              : "This capability has no linked screenshot regions."}
+          </Typography>
+          <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
+            {onReviewView && (
+              <>
+                <Button onClick={() => onReviewView("backend")}>
+                  Inspect dependencies
+                </Button>
+                <Button onClick={() => onReviewView("qa")}>
+                  Inspect checks
+                </Button>
+              </>
+            )}
+            {screensHref && (
+              <Button component={Link} href={screensHref}>
+                Open screens editor
+              </Button>
+            )}
+          </Stack>
+        </Paper>
       )}
       {noUI.length > 0 && (
         <Paper sx={{ p: 2 }}>

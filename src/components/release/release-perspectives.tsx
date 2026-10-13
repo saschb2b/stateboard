@@ -33,6 +33,7 @@ export function ReleasePerspectives({
   focusedCheckId,
   onClearFocus,
   onInspectCheck,
+  onReviewView,
   canRecord,
   record,
   publish,
@@ -54,6 +55,7 @@ export function ReleasePerspectives({
   focusedCheckId: string | null;
   onClearFocus: () => void;
   onInspectCheck: (checkId: string) => void;
+  onReviewView?: (view: ReleaseView) => void;
   canRecord: boolean;
   record: (input: DecisionInput) => Promise<void>;
   publish: (decisionId: string, values: PublicationValues) => Promise<void>;
@@ -77,6 +79,8 @@ export function ReleasePerspectives({
           detail={detail}
           product={product}
           readiness={readiness}
+          onReviewView={onReviewView}
+          screensHref={editable ? `/boards/${product.board.id}` : undefined}
         />
       )}
       {view === "backend" && (

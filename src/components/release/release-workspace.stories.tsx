@@ -120,6 +120,72 @@ export const FindingFocusAndClear: Story = {
     ).toBeVisible();
   },
 };
+export const ArchitectureSelectionReplacesLinkedCheckFocus: Story = {
+  args: { initialView: "qa" },
+  beforeEach: () => {
+    const originalUrl = window.location.href;
+    const originalState = window.history.state;
+    // Initialize a deep link while all assessment data remains prop-driven.
+    window.history.replaceState(
+      originalState,
+      "",
+      "/share/demo/releases?view=qa&check=check-recovery",
+    );
+    return () => window.history.replaceState(originalState, "", originalUrl);
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    let evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText("Recovery tokens expire and cannot be reused."),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Invoice CSV includes all tax fields."),
+    ).toBeNull();
+    await userEvent.click(canvas.getByRole("tab", { name: "Backend" }));
+    await expect(new URL(window.location.href).searchParams.get("check")).toBe(
+      "check-recovery",
+    );
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: "Focus on capability" }),
+    );
+    await userEvent.click(
+      within(canvasElement.ownerDocument.body).getByRole("option", {
+        name: "Export an invoice",
+      }),
+    );
+    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
+    await expect(
+      evidence.getByText("Invoice CSV includes all tax fields."),
+    ).toBeVisible();
+    await expect(
+      evidence.getByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Recovery tokens expire and cannot be reused."),
+    ).toBeNull();
+    await expect(
+      evidence.queryByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeNull();
+    await expect(canvas.getByRole("tab", { name: "Backend" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      new URL(window.location.href).searchParams.get("check"),
+    ).toBeNull();
+    await expect(new URL(window.location.href).searchParams.get("view")).toBe(
+      "backend",
+    );
+    await expect(
+      canvas.getByRole("heading", { name: "Blocked" }),
+    ).toBeVisible();
+  },
+};
 export const OperationsPerspective: Story = {
   args: { initialView: "operations" },
 };

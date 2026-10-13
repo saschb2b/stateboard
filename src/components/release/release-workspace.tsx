@@ -78,6 +78,10 @@ export function ReleaseWorkspace({
     setSubjectScope(null);
     changeView("qa");
   }
+  function selectCheckScope(scope: CheckSubjectScope | null) {
+    setCheckId(null);
+    setSubjectScope(scope);
+  }
   const { now, advance, anchor } = useServerClock(serverNow, demo);
   const [error, setError] = useState<string | null>(null);
   const [reloading, setReloading] = useState(false);
@@ -250,11 +254,12 @@ export function ReleaseWorkspace({
             mutate={mutate}
             now={now}
             loadCheckRevisions={loadCheckRevisions}
-            onCheckScopeChange={setSubjectScope}
+            onCheckScopeChange={selectCheckScope}
             subjectScope={subjectScope}
             focusedCheckId={focusedCheckId}
             onClearFocus={clearCheckFocus}
             onInspectCheck={inspectCheck}
+            onReviewView={selectView}
             canRecord={canRecord}
             record={record}
             publish={publish}
