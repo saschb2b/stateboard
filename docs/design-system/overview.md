@@ -3,7 +3,7 @@ type: Design System
 title: StateBoard review workspace
 description: A compact review interface that keeps the release conclusion and supporting evidence in view.
 status: stable
-generated: { by: codex/unversioned, at: 2026-10-13T22:20:11Z }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
   - resource: src/components/release/release-workspace.tsx
   - resource: docs/design-system/references/interface-research.md
@@ -28,6 +28,8 @@ The [supporting screen contracts](patterns/supporting-surfaces.md) cover boards,
 # Apply it
 
 Use one heading per page, stable view navigation, and aligned rows. Expand outcomes, evidence history, and candidate context when needed. Use labels alongside status colors. Keep production availability distinct from candidate verification.
+
+English and German share the same reading order and interaction model. Follow the [language behavior](behaviors/interaction.md#interface-language) and [technical glossary](../engineering/localization.md#technical-glossary). Translations must preserve readiness meanings and allow longer labels to wrap.
 
 MUI components consume the generated design tokens through `src/lib/theme.ts`. The foundation frontmatter owns the values. Generate the TypeScript and CSS projections together. Do not add a second palette to a component or copy values from a screenshot.
 

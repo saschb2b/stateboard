@@ -7,6 +7,8 @@ Start by creating a product board. The current development build opens its readi
 
 Use the [release readiness guide](/docs/release-readiness) for an assessment from candidate selection through evidence, decision, and curated sharing. The steps below also show how to add visual anchors and share a visual board.
 
+Use the language button in the header to choose **English** or **Deutsch**. The development build saves this preference in your browser. Switching language preserves open forms and the current view. Names, evidence, and other entered content keep their original language; these guides and API diagnostics remain in English.
+
 ## 1. Run StateBoard
 
 For a local spin-up, the repo ships a `docker-compose.yaml` with Postgres and a pre-seeded Keycloak (test users `alice` / `bob`, password = username):
@@ -19,7 +21,7 @@ pnpm migrate                # create the tables
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and click **Open workspace**. You'll be sent to sign in: choose **Continue with Keycloak** and log in as `alice` — the first sign-in becomes the workspace owner.
+Open [http://localhost:3000](http://localhost:3000) and click **Open workspace**. You'll be sent to sign in: choose **Continue with company account** and log in as `alice` — the first sign-in becomes the workspace owner.
 
 For a real deployment (your own Keycloak, via Docker Compose or Helm), see [Self-hosting](/docs/self-hosting).
 

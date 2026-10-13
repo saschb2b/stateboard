@@ -45,6 +45,8 @@ Save screenshots, recordings, profiles, and explicit state files under ignored `
 - [API](./docs/architecture/agent-api.md): REST and MCP share validation, roles, scope, evidence retry rules, and credential attribution. Use existing HTTP helpers. Preserve payload limits and matching-origin checks for cookie mutations.
 - [UI](./docs/design-system/overview.md): use MUI and Emotion with centralized theme tokens. Fumadocs alone uses scoped Tailwind. Keep conclusions and unresolved claims clear, with details on demand. Use in-memory examples, never sample records in a user's database.
 
+Use the [localization contract](./docs/engineering/localization.md) for all interface copy. Keep English and German catalogs complete, use typed `next-intl` keys and ICU plurals, and format displayed dates and numbers through the active locale. Preserve authored records, API identifiers, URLs, and form state when language changes. Check both languages at narrow widths.
+
 Read version-matched local Next.js guidance before Next-specific edits. Preserve strict TypeScript, `noUncheckedIndexedAccess`, `server-only` boundaries, awaited dynamic parameters, and loading/Suspense shells for request-dependent pages. Cache Components requires explicit caching.
 
 ## Keep knowledge and design current
@@ -55,6 +57,7 @@ Read version-matched local Next.js guidance before Next-specific edits. Preserve
 | Product scope or readiness semantics                     | Product concepts, MVP contract, roadmap/usage guide, implementation, and behavior tests.                                                              |
 | Persistence, access, REST/MCP, agent workflow            | Architecture concepts, API guide, packaged StateBoard skill, and boundary tests.                                                                      |
 | Tokens, layout, components, interaction or copy patterns | ODSF concepts/assets, generated tokens, MUI theme, implementation, and stories.                                                                       |
+| Interface copy, localization, or formatting              | Both locale catalogs, the technical glossary, affected stories, localization knowledge, and design interaction rules.                                 |
 | A concept's meaning or identity                          | Sources and author/date metadata, direct cross-links, affected index descriptions, and an append-only log entry. Remove obsolete verification claims. |
 
 Use [knowledge maintenance](./docs/engineering/knowledge-maintenance.md) for source ownership and the update procedure. Do not copy a contract into a second competing manual. Code and schemas define executable behavior. Published guides own user instructions. Knowledge concepts explain their relationships.
@@ -67,6 +70,7 @@ Before committing or reporting completion, run:
 pnpm typecheck
 pnpm lint
 pnpm format:check
+pnpm i18n:check
 pnpm test
 pnpm test:stories
 pnpm build

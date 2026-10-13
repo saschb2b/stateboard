@@ -1,5 +1,7 @@
 ## 2026-10-14
 
+- **Update**: Defined the English/Deutsch menu, selected-language semantics, stable forms and URLs, and German wrapping rules. Linked the technical glossary and locale checks without changing layout tokens.
+
 - **Verification**: Inspected the assessment wireframe before its styled example at 390px and 1440px. Checked the product specimen's category reload, keyboard clear, reset, preserved URL context, and 899px/900px capability reflow. No browser errors or horizontal overflow appeared in those checks.
 - **Update**: Aligned product and assessment contracts with the implemented 900px capability reflow, category deep links and visible reset, tab-panel relationships, and stable section history. Updated the published release and getting-started guides.
 - **Update**: Added seven inspected Dribbble references and NN/g hierarchy and disclosure guidance for the product overview. Recorded adoption decisions, source limits, and the proposed shared reading flow.

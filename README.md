@@ -58,6 +58,12 @@ Read the [usage guide](./src/content/docs/release-readiness.mdx) and [implementa
 
 The [persona iteration journal](./src/content/docs/persona-iteration.mdx) records local use of StateBoard to review its own Codex-assisted delivery, including simulated-role findings, refinements, validation and unresolved claims. It does not replace the external team pilot.
 
+## Interface language
+
+Use the language menu in the header to choose **English** or **Deutsch**. English is the default. StateBoard saves the selection in this browser and keeps shared URLs unchanged. Product names, claims, notes, and evidence remain in their authored language. Published documentation and API diagnostics remain in English.
+
+The interface uses `next-intl`, typed message catalogs, ICU plurals, and locale-aware formatting. Dates use UTC. See the [localization guide](./docs/engineering/localization.md) for the technical glossary and contribution rules.
+
 ## Agent access (API keys + MCP)
 
 Agents, scripts, and CI can't complete an OIDC sign-in — they authenticate with **API keys** instead (avatar menu → **API keys**). Keys are hash-only server-side, role-capped, expire after 90 days by default, and every edit they make lands in the audit log. Owners can inventory and revoke every key in the workspace. A key unlocks two surfaces:
@@ -133,14 +139,15 @@ A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up. Dis
 
 ## Architecture
 
-| Piece        | Choice                  | Why                                                  |
-| ------------ | ----------------------- | ---------------------------------------------------- |
-| Framework    | Next.js 16 (App Router) | One process serves UI + API + uploads                |
-| UI           | React 19 + MUI 7        | Solid component library, small enough to skin        |
-| Persistence  | Postgres via `pg`       | Multi-replica safe; standard ops your team knows     |
-| Auth         | Better Auth + OIDC      | First-class Keycloak helper; sessions in the same DB |
-| File storage | Local filesystem        | RWX PVC; S3-compatible adapter remains deferred      |
-| Telemetry    | None                    | Airgap by default, that's the point                  |
+| Piece        | Choice                  | Why                                                    |
+| ------------ | ----------------------- | ------------------------------------------------------ |
+| Framework    | Next.js 16 (App Router) | One process serves UI + API + uploads                  |
+| UI           | React 19 + MUI 7        | Solid component library, small enough to skin          |
+| Localization | `next-intl` + ICU       | English and German with typed messages and stable URLs |
+| Persistence  | Postgres via `pg`       | Multi-replica safe; standard ops your team knows       |
+| Auth         | Better Auth + OIDC      | First-class Keycloak helper; sessions in the same DB   |
+| File storage | Local filesystem        | RWX PVC; S3-compatible adapter remains deferred        |
+| Telemetry    | None                    | Airgap by default, that's the point                    |
 
 Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/lib/auth.ts` (server) and `src/lib/auth-client.ts` (browser). Schema is plain SQL under `migrations/`, applied by `scripts/migrate.mjs`.
 
@@ -163,6 +170,7 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 | `pnpm cleanup:release-assets` | Dry-run of orphan media cleanup; `--delete` removes unreferenced files older than 24 hours |
 | `pnpm format:check`           | Prettier check                                                                             |
 | `pnpm format`                 | Prettier write                                                                             |
+| `pnpm i18n:check`             | Validate matching English/German catalog keys, ICU messages, and interpolation arguments   |
 | `pnpm docs:check`             | Validate knowledge, design, links, token projections, and pinned repository skills         |
 | `pnpm design:generate`        | Regenerate design token outputs from the design-system foundations                         |
 

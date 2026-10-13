@@ -5,7 +5,7 @@ description: Update instructions, knowledge, design, and published guides with t
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T22:08:45Z
+  at: 2026-10-14
 sources:
   - id: request
     resource: "User request on 2026-10-13: central root docs, a cohesive design system, and same-change synchronization."
@@ -19,22 +19,25 @@ sources:
     resource: "package.json"
   - id: skill-sources
     resource: ".agents/skills/sources.json"
+  - id: locale-catalogs
+    resource: "src/i18n/catalog.ts"
   - id: browser-config
     resource: "agent-browser.json"
 ---
 
 Keep instructions, knowledge, design, and implementation consistent in the same change. This bundle is the central repository knowledge base. It explains how to work on StateBoard and points to the files that own executable behavior and published contracts.[^request]
 
-| Fact or rule                                                | Authoritative home                                | Update alongside it                                                         |
-| ----------------------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
-| Agent work loop, non-negotiable boundaries, skill selection | `AGENTS.md`                                       | Affected knowledge concepts. Keep `CLAUDE.md` as `@AGENTS.md`.              |
-| Product invariants and acceptance cases                     | `src/content/docs/release-readiness-mvp.mdx`      | Product concepts, implementation, tests, and usage guide.                   |
-| Adopted product scope and release state                     | `src/content/docs/roadmap.mdx`, README, changelog | Roadmap concept and any affected agent instructions.                        |
-| API schemas, access, persistence, readiness                 | Source modules and migrations                     | Architecture/product concepts, published guides, packaged skill, and tests. |
-| Design tokens, components, interaction rules                | `docs/design-system/`                             | Generated tokens, MUI theme, component implementations, and stories.        |
-| Commands, dependencies, checks                              | `package.json`, lockfile, CI                      | Development/verification concepts, README commands, and AGENTS gates.       |
-| External-agent maintenance procedure                        | `skills/stateboard/SKILL.md`                      | API guide, MCP instructions/catalog, and workflow tests.                    |
-| Upstream repository skills                                  | `.agents/skills/`                                 | AGENTS links and skill provenance when an upstream bundle changes.          |
+| Fact or rule                                                | Authoritative home                                | Update alongside it                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Agent work loop, non-negotiable boundaries, skill selection | `AGENTS.md`                                       | Affected knowledge concepts. Keep `CLAUDE.md` as `@AGENTS.md`.                   |
+| Product invariants and acceptance cases                     | `src/content/docs/release-readiness-mvp.mdx`      | Product concepts, implementation, tests, and usage guide.                        |
+| Adopted product scope and release state                     | `src/content/docs/roadmap.mdx`, README, changelog | Roadmap concept and any affected agent instructions.                             |
+| API schemas, access, persistence, readiness                 | Source modules and migrations                     | Architecture/product concepts, published guides, packaged skill, and tests.      |
+| Design tokens, components, interaction rules                | `docs/design-system/`                             | Generated tokens, MUI theme, component implementations, and stories.             |
+| Interface messages and technical translations               | `src/i18n/messages/`                              | Both languages, localization glossary, component stories, and interaction rules. |
+| Commands, dependencies, checks                              | `package.json`, lockfile, CI                      | Development/verification concepts, README commands, and AGENTS gates.            |
+| External-agent maintenance procedure                        | `skills/stateboard/SKILL.md`                      | API guide, MCP instructions/catalog, and workflow tests.                         |
+| Upstream repository skills                                  | `.agents/skills/`                                 | AGENTS links and skill provenance when an upstream bundle changes.               |
 
 `src/content/docs/` remains the published human usage and hosting documentation. This bundle explains engineering relationships without copying those guides in full. Avoid adding a second authoritative API schema or release history here.
 
@@ -43,6 +46,8 @@ Keep vendored skill files unchanged and record their upstream repository, revisi
 Agent Browser's checked-in skill discovers workflows from the pinned CLI. Update the dependency and discovery skill together after reviewing upstream changes.[^package]
 
 Keep project defaults in `agent-browser.json` and browser work artifacts under ignored `.agents/browser/`.[^browser-config] Refresh [local development](local-development.md) and [verification](verification.md) when its setup or work loop changes.
+
+English and German catalogs are a paired source. Follow [interface localization](localization.md) when interface wording, formatting, or locale behavior changes. Keep machine identifiers and authored product records outside translation catalogs.[^locale-catalogs]
 
 ## Update procedure
 
@@ -80,3 +85,5 @@ The knowledge check should catch broken links, missing source files, stale index
 [^skill-sources]: Pinned upstream sources, per-skill overrides, and file hashes.
 
 [^browser-config]: Shared browser defaults without machine settings or credentials.
+
+[^locale-catalogs]: Typed English and German message namespaces.

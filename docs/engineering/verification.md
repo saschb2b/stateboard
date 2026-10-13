@@ -5,7 +5,7 @@ description: Run the required gates and boundary-specific checks before commits 
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T22:08:45Z
+  at: 2026-10-14
 sources:
   - id: package
     resource: "package.json"
@@ -27,12 +27,13 @@ sources:
     resource: ".agents/skills/agent-browser/SKILL.md"
 ---
 
-Run focused checks while implementing. Before committing or reporting completion, run all six application gates and the knowledge check:[^package]
+Run focused checks while implementing. Before committing or reporting completion, run every application, localization, and knowledge gate:[^package]
 
 ```bash
 pnpm typecheck
 pnpm lint
 pnpm format:check
+pnpm i18n:check
 pnpm test
 pnpm test:stories
 pnpm build
@@ -43,15 +44,16 @@ Fix failures at their cause. Do not suppress a check to make the result pass. Fo
 
 `pnpm build` removes only the generated standalone copies of `.env` and `.env.production`, then rejects private storage, environment files, Git metadata, and agent inputs in production traces or the artifact. `pnpm build:check` repeats verification without changing files. The check also covers a custom storage directory recorded by Next at build time. Keep the source environment files and runtime media outside the deployment artifact.[^packaging]
 
-| Changed boundary                                                  | Additional verification                                                                                                                 |
-| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| UI or navigation                                                  | Exercise the real app at normal and narrow widths. Check applicable authenticated and public paths, keyboard access, focus, and errors. |
-| Significant component behavior                                    | Update colocated prop-driven stories. Use meaningful interaction assertions and shared router/theme mocks.                              |
-| Release persistence, access, REST/MCP, evidence, revisions, media | Run `STATEBOARD_INTEGRATION_DB_URL=postgres://… pnpm test:integration` against development/test Postgres.                               |
-| Runtime routes, docs, examples, static export                     | Run `PAGES_BUILD=1 pnpm build:pages` only in a disposable checkout or CI. Preparation deletes/replaces runtime source files.            |
-| Helm deployment                                                   | Follow the CI Helm job: dependency build, lint, kubeconform, multi-replica rendering, and missing-secret rejection.                     |
-| Packaged StateBoard skill                                         | Validate frontmatter and exercise a realistic setup/update task against the actual tool contract.                                       |
-| Knowledge or design system                                        | Run `pnpm docs:check`. After token edits, run `pnpm design:generate` and inspect the generated diff.                                    |
+| Changed boundary                                                  | Additional verification                                                                                                                                                    |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI or navigation                                                  | Exercise the real app at normal and narrow widths. Check applicable authenticated and public paths, keyboard access, focus, and errors.                                    |
+| Interface localization                                            | Follow [localization checks](localization.md#verification-and-maintenance): both languages, singular/plural counts, UTC dates, saved preference, unchanged forms and URLs. |
+| Significant component behavior                                    | Update colocated prop-driven stories. Use meaningful interaction assertions and shared router/theme mocks.                                                                 |
+| Release persistence, access, REST/MCP, evidence, revisions, media | Run `STATEBOARD_INTEGRATION_DB_URL=postgres://… pnpm test:integration` against development/test Postgres.                                                                  |
+| Runtime routes, docs, examples, static export                     | Run `PAGES_BUILD=1 pnpm build:pages` only in a disposable checkout or CI. Preparation deletes/replaces runtime source files.                                               |
+| Helm deployment                                                   | Follow the CI Helm job: dependency build, lint, kubeconform, multi-replica rendering, and missing-secret rejection.                                                        |
+| Packaged StateBoard skill                                         | Validate frontmatter and exercise a realistic setup/update task against the actual tool contract.                                                                          |
+| Knowledge or design system                                        | Run `pnpm docs:check`. After token edits, run `pnpm design:generate` and inspect the generated diff.                                                                       |
 
 Integration suites create and remove isolated schemas and media directories. Never reset the application schema or use production for test data. They cover persistence and MCP workflows, including actual key checks and concurrent history reads.[^integration]
 

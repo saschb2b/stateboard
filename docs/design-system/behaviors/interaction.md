@@ -3,13 +3,16 @@ type: Accessibility
 title: Review interactions
 description: Keyboard, status, disclosure, and responsive behavior for release review.
 status: stable
-generated: { by: codex/unversioned, at: 2026-10-13T22:27:18Z }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
   - resource: src/components/release/workspace-navigation.tsx
   - resource: src/components/release/use-release-view.ts
   - resource: src/components/release/use-product-section.ts
   - resource: src/components/release/use-check-focus.ts
   - resource: src/components/evidence/check-filters.tsx
+  - resource: src/i18n/language-switcher.tsx
+  - resource: src/i18n/provider.tsx
+  - resource: src/components/release/product-overview.stories.tsx
   - resource: src/lib/theme.ts
   - resource: src/lib/design-tokens.test.ts
 ---
@@ -30,6 +33,16 @@ Body, metadata, status, and primary-button text must reach a 4.5:1 contrast rati
 
 Async actions show pending state, reject duplicate submissions, and report errors next to the action. A failed save must not appear successful. Dialogs retain focus management from MUI. Respect reduced motion through the shared theme.
 
+# Interface language
+
+The header language control opens a labelled menu with **English** and **Deutsch** in their own languages. Use `menuitemradio` and `aria-checked` to identify the selected language. Retain MUI arrow-key selection, Escape dismissal, and focus return. Use text and a checkmark; flags do not identify languages.
+
+Language changes preserve open forms, their values, selected views, query parameters, and focus. The document language follows the interface. Locale persistence and deterministic English server rendering follow the [localization contract](../../engineering/localization.md).
+
+Keep the same hierarchy and layout in German. Let technical nouns, labels, and actions wrap inside their containers without clipping or page-wide horizontal overflow. Preserve visible status labels and the distinction between readiness, evidence, and human decisions. Authored names and claims remain unchanged.
+
 # Review
 
-Test keyboard navigation, loading and error states, 390px and desktop layouts, and both color schemes. Confirm the next action remains clear with missing evidence. The [control examples](../components/controls.md) show the token-based states. Real component stories test behavior.
+Test keyboard navigation, loading and error states, 390px and desktop layouts, both languages, and both color schemes. Confirm the next action remains clear with missing evidence. The [control examples](../components/controls.md) show the token-based states. Real component stories test behavior.
+
+Check zero, one, and multiple findings in both languages. Change language while a form contains unsaved values. Reload and open a shared assessment to confirm the saved preference and stable URL. The German product-overview story covers long names, optional warnings, disclosure, and category links.
