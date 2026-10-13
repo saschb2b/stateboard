@@ -55,4 +55,4 @@ const nextConfig = isPagesExport
       },
     };
 
-export default withMDX(nextConfig);
+export default withMDX({ ...nextConfig, reactCompiler: true });
