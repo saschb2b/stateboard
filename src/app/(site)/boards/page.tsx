@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { getBoardWithScreens, listBoards, listShareLinks } from "@/lib/db";
+import {
+  getBoardWithScreens,
+  listBoards,
+  listShareLinks,
+  readLatestReleaseOverviews,
+} from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
 import { timeAgo } from "@/lib/time";
 import { BoardList, type BoardListItem } from "@/components/board/board-list";
@@ -9,6 +14,10 @@ export const metadata: Metadata = { title: "Boards" };
 export default async function BoardsPage() {
   const member = await requirePageMember("viewer");
   const boards = await listBoards(member.workspaceId);
+  const overviews = await readLatestReleaseOverviews(
+    member.workspaceId,
+    boards.map((board) => board.id),
+  );
   // A dynamic server component renders once per request, so reading the
   // wall clock here is correct and stable — not the impure-render hazard the
   // purity rule guards against (which targets unpredictable client re-renders).
@@ -38,6 +47,7 @@ export default async function BoardsPage() {
         screens,
         totals,
         updatedLabel: timeAgo(b.updatedAt, now),
+        releaseOverview: overviews[b.id],
       };
     }),
   );

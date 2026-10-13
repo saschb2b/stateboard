@@ -95,6 +95,17 @@ export interface ReleaseAssessment {
   createdAt: number;
   updatedAt: number;
 }
+export interface ReleaseOverview {
+  assessment: ReleaseAssessment;
+  state: ReadinessState;
+  blockerCount: number;
+  gapCount: number;
+  evaluatedAt: number;
+  validUntil: number | null;
+  decision: "approved" | "held" | null;
+  decisionRevision: number | null;
+  decisionAt: number | null;
+}
 export interface ReleaseCapability {
   assessmentId: string;
   capabilityId: string;
@@ -240,6 +251,7 @@ export interface ProductContext {
   regionCapabilities: RegionCapability[];
   screens: ScreenWithRegions[];
   releases: ReleaseAssessment[];
+  releaseOverviews?: ReleaseOverview[];
 }
 export interface ReleaseDetail {
   assessment: ReleaseAssessment;

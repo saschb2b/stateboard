@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { getReleaseDemo } from "@/lib/release-demo";
+import { expect } from "storybook/test";
 import { BoardList } from "./board-list";
 
 const example = getReleaseDemo();
@@ -16,6 +17,17 @@ const meta = {
         shareToken: null,
         totals: { shipped: 6, mock: 3, missing: 3 },
         updatedLabel: "Today",
+        releaseOverview: {
+          assessment: example.detail.assessment,
+          state: example.readiness.state,
+          blockerCount: example.readiness.blockers.length,
+          gapCount: example.readiness.gaps.length,
+          evaluatedAt: example.readiness.evaluatedAt,
+          validUntil: example.readiness.validUntil,
+          decision: null,
+          decisionRevision: null,
+          decisionAt: null,
+        },
       },
     ],
     viewer: {
@@ -32,5 +44,11 @@ const meta = {
 } satisfies Meta<typeof BoardList>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const ProductOverview: Story = {};
+export const ProductOverview: Story = {
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/Latest candidate/)).toBeVisible();
+    await expect(canvas.getByText(/evidence gaps/)).toBeVisible();
+    await expect(canvas.getByText(/No recorded decision/)).toBeVisible();
+  },
+};
 export const FirstProduct: Story = { args: { initialItems: [] } };

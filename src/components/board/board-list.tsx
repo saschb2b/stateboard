@@ -32,6 +32,8 @@ import { STATE_META } from "@/lib/state-meta";
 import { REGION_STATES } from "@/lib/types";
 import type { Board, ScreenWithRegions } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
+import type { ReleaseOverview } from "@/lib/release-types";
+import { ReleaseOverviewSummary } from "@/components/release/release-overview-summary";
 
 export interface BoardListItem {
   board: Board;
@@ -43,6 +45,7 @@ export interface BoardListItem {
   totals: { shipped: number; mock: number; missing: number };
   /** Pre-formatted relative time the board was last touched, e.g. "3d ago". */
   updatedLabel: string;
+  releaseOverview?: ReleaseOverview;
 }
 
 interface BoardListProps {
@@ -524,6 +527,7 @@ function BoardCard({
             {board.description}
           </Typography>
         ) : null}
+        <ReleaseOverviewSummary overview={item.releaseOverview} showCandidate />
         {totalRegions > 0 ? (
           <Stack direction="row" spacing={1.25} sx={{ mb: 1.5 }}>
             {REGION_STATES.map((s) => (

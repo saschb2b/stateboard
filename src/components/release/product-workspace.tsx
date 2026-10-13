@@ -23,6 +23,7 @@ import { ComponentManager } from "@/components/dependency/component-manager";
 import { ProductConnections } from "@/components/dependency/product-connections";
 import { AssessmentCreateForm } from "./assessment-create-form";
 import { releaseRequest } from "./release-request";
+import { ReleaseOverviewSummary } from "./release-overview-summary";
 import type {
   ProductContext,
   ProductMutation,
@@ -179,6 +180,11 @@ export function ProductWorkspace({
                       <Typography variant="caption" color="text.secondary">
                         {release.ownerLabel} · {release.candidateRef}
                       </Typography>
+                      <ReleaseOverviewSummary
+                        overview={product.releaseOverviews?.find(
+                          (overview) => overview.assessment.id === release.id,
+                        )}
+                      />
                     </Stack>
                     <Button
                       component={Link}

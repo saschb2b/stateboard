@@ -255,6 +255,31 @@ test(
         actor,
       );
       const releaseId = detail.assessment.id;
+      const assertOverview = async (expectedState) => {
+        const [overview] = Object.values(
+          await db.readLatestReleaseOverviews("test", ["board-a", "absent"]),
+        );
+        assert.equal(overview.assessment.id, releaseId);
+        const full = evaluateRelease(
+          await db.readReleaseDetail(releaseId, "test"),
+          overview.evaluatedAt,
+        );
+        assert.equal(overview.state, expectedState);
+        assert.equal(overview.state, full.state);
+        assert.equal(overview.blockerCount, full.blockers.length);
+        assert.equal(overview.gapCount, full.gaps.length);
+        assert.equal(overview.validUntil, full.validUntil);
+        assert.equal("snapshot" in overview, false);
+        const product = await db.readProductContext("board-a", "test");
+        assert.equal(product.releaseOverviews[0].state, expectedState);
+        return overview;
+      };
+      assert.deepEqual(
+        await db.readLatestReleaseOverviews("other", ["board-a"]),
+        {},
+      );
+      assert.deepEqual(await db.readLatestReleaseOverviews("test", []), {});
+      await assertOverview("needs_evidence");
       assert.equal(await db.readReleaseDetail(releaseId, "other"), null);
       assert.equal(evaluateRelease(detail, Date.now()).state, "needs_evidence");
       assert.equal(await db.readReleaseWorkspace(releaseId, "other"), null);
@@ -345,6 +370,7 @@ test(
         actor,
       );
       assert.equal(evaluateRelease(detail, Date.now()).state, "ready");
+      await assertOverview("ready");
       const firstRevision = detail.assessment.revision;
       detail = await db.mutateRelease(
         "test",
@@ -414,6 +440,7 @@ test(
         "blocked",
         "late old pass cannot erase failure",
       );
+      await assertOverview("blocked");
       await assert.rejects(
         db.recordReleaseDecision(
           "test",
@@ -496,6 +523,7 @@ test(
         "needs_evidence",
         "old evidence cannot verify adopted outcome",
       );
+      await assertOverview("needs_evidence");
       assert.equal(
         (await db.readReleaseCheckRevisions("test", releaseId, checkId)).length,
         2,
@@ -952,6 +980,28 @@ test(
         null,
         "Unselected pending media is not attached to a decision",
       );
+      const decisionOverview = await assertOverview(
+        evaluateRelease(detail, Date.now()).state,
+      );
+      assert.equal(decisionOverview.decision, "held");
+      assert.equal(
+        decisionOverview.decisionRevision,
+        detail.assessment.revision,
+      );
+      assert.equal("assets" in decisionOverview, false);
+      const nextCandidate = await db.createReleaseAssessment(
+        "test",
+        "board-a",
+        { ...input, candidateRef: "git:next-overview-candidate" },
+        actor,
+      );
+      const latest = await db.readLatestReleaseOverviews("test", ["board-a"]);
+      assert.equal(
+        latest["board-a"].assessment.id,
+        nextCandidate.assessment.id,
+      );
+      assert.equal(latest["board-a"].state, "needs_evidence");
+      assert.equal(latest["board-a"].decision, null);
       const beforeRemoval = await db.readProductContext("board-a", "test");
       assert.equal(
         beforeRemoval.capabilities.find(

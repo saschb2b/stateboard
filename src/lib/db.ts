@@ -34,6 +34,7 @@ import {
   type ReleaseActor,
   type ReleaseSnapshot,
   type ReleaseWorkspace,
+  type ReleaseOverview,
 } from "./release-types";
 import type {
   ApiKey,
@@ -1447,6 +1448,7 @@ export async function readWorkspaceComponents(
 async function readProductContextInternal(
   boardId: string,
   workspaceId: string,
+  includeOverviews = true,
 ): Promise<ProductContext | null> {
   const board = await getBoard(boardId);
   if (!board || board.workspaceId !== workspaceId) return null;
@@ -1491,7 +1493,104 @@ async function readProductContextInternal(
     regionCapabilities,
     screens,
     releases,
+    ...(includeOverviews
+      ? { releaseOverviews: await readOverviewsForAssessments(releases) }
+      : {}),
   };
+}
+
+/** Overview data contains no snapshots or media and uses the same evaluator as a review. */
+async function readOverviewsForAssessments(
+  assessments: ReleaseAssessment[],
+): Promise<ReleaseOverview[]> {
+  if (assessments.length === 0) return [];
+  const ids = assessments.map((assessment) => assessment.id);
+  const now = Date.now();
+  const scope = (
+    await query(
+      `SELECT * FROM release_capabilities WHERE assessment_id=ANY($1::text[])`,
+      [ids],
+    )
+  ).map((row) => releaseMap<ReleaseCapability>(row));
+  const checks = (
+    await query(
+      `SELECT c.id,c.assessment_id,c.subject_type,c.subject_id,c.archived_at,d.revision,d.claim,d.category,d.required,d.owner_label,d.method,d.environment,d.max_age_ms FROM release_checks c JOIN release_check_revisions d ON d.check_id=c.id AND d.revision=c.active_revision WHERE c.assessment_id=ANY($1::text[])`,
+      [ids],
+    )
+  ).map((row) => releaseMap<ReleaseCheck>(row));
+  // Select only the latest applicable observation per check, never the latest pass.
+  // C collation matches the evaluator's ASCII ID tie break; sequence normally resolves it.
+  const evidence = (
+    await query(
+      `SELECT DISTINCT ON (e.check_id) e.* FROM release_evidence e JOIN release_assessments a ON a.id=e.assessment_id JOIN release_checks c ON c.id=e.check_id JOIN release_check_revisions d ON d.check_id=c.id AND d.revision=c.active_revision WHERE e.assessment_id=ANY($1::text[]) AND e.check_revision=c.active_revision AND e.candidate_ref=a.candidate_ref AND e.environment=d.environment AND e.audience=a.audience AND e.configuration_ref=a.configuration_ref AND e.observed_at<=$2 ORDER BY e.check_id,e.observed_at DESC,e.sequence DESC,e.id COLLATE "C" DESC`,
+      [ids, now],
+    )
+  ).map((row) => releaseMap<ReleaseEvidence>(row));
+  const decisions = (
+    await query(
+      `SELECT DISTINCT ON (assessment_id) assessment_id,revision,decision,created_at FROM release_decisions WHERE assessment_id=ANY($1::text[]) ORDER BY assessment_id,created_at DESC,id`,
+      [ids],
+    )
+  ).map((row) =>
+    releaseMap<
+      Pick<
+        ReleaseDecision,
+        "assessmentId" | "revision" | "decision" | "createdAt"
+      >
+    >(row),
+  );
+  return assessments.map((assessment) => {
+    const readiness = evaluateRelease(
+      {
+        assessment,
+        scope: scope.filter((item) => item.assessmentId === assessment.id),
+        checks: checks.filter((item) => item.assessmentId === assessment.id),
+        evidence: evidence.filter(
+          (item) => item.assessmentId === assessment.id,
+        ),
+        decisions: [],
+        assets: [],
+        shares: [],
+      },
+      now,
+    );
+    const decision = decisions.find(
+      (item) => item.assessmentId === assessment.id,
+    );
+    return {
+      assessment,
+      state: readiness.state,
+      blockerCount: readiness.blockers.length,
+      gapCount: readiness.gaps.length,
+      evaluatedAt: now,
+      validUntil: readiness.validUntil,
+      decision: decision?.decision ?? null,
+      decisionRevision: decision?.revision ?? null,
+      decisionAt: decision?.createdAt ?? null,
+    };
+  });
+}
+
+/** Latest means newest assessment, not a product-wide score or the most recent approval. */
+export async function readLatestReleaseOverviews(
+  workspaceId: string,
+  boardIds: string[],
+): Promise<Record<string, ReleaseOverview>> {
+  if (boardIds.length === 0) return {};
+  return inReleaseReadTransaction(async () => {
+    const assessments = (
+      await query(
+        `SELECT DISTINCT ON (r.board_id) r.* FROM release_assessments r JOIN boards b ON b.id=r.board_id WHERE b.workspace_id=$1 AND r.board_id=ANY($2::text[]) ORDER BY r.board_id,r.created_at DESC,r.id`,
+        [workspaceId, boardIds],
+      )
+    ).map((row) => releaseMap<ReleaseAssessment>(row));
+    return Object.fromEntries(
+      (await readOverviewsForAssessments(assessments)).map((overview) => [
+        overview.assessment.boardId,
+        overview,
+      ]),
+    );
+  });
 }
 
 async function readReleaseDetailInternal(
@@ -2228,9 +2327,10 @@ export async function mutateRelease(
             const component = await requireComponent(subjectId, workspaceId);
             if (component.archivedAt !== null)
               throw new ReleaseError(409, "Cannot check an archived component");
-            const context = (await readProductContext(
+            const context = (await readProductContextInternal(
               assessment.boardId,
               workspaceId,
+              false,
             ))!;
             const related = new Set(
               context.capabilityComponents
@@ -2520,9 +2620,10 @@ export async function recordReleaseDecision(
       await assertReleaseMember(workspaceId, actor, true);
       expectReleaseRevision(assessment, input.expectedRevision);
       const detail = (await readReleaseDetail(releaseId, workspaceId))!;
-      const context = (await readProductContext(
+      const context = (await readProductContextInternal(
         assessment.boardId,
         workspaceId,
+        false,
       ))!;
       const selected = (data.screenIds as string[]).map((id) => {
         const screen = context.screens.find((s) => s.id === id);
@@ -3040,6 +3141,7 @@ export async function readReleaseWorkspace(
     const product = await readProductContextInternal(
       detail.assessment.boardId,
       workspaceId,
+      false,
     );
     if (!product) return null;
     return {
