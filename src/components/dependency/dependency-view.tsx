@@ -23,6 +23,11 @@ import type {
 import { DependencyComponentRow } from "./dependency-component-row";
 import { dependencyFocus } from "./dependency-focus";
 
+export interface DependencySelection {
+  capabilityId: string | null;
+  componentId: string | null;
+}
+
 /** Both directions matter: outcome → its architecture, component → affected outcomes. */
 export function DependencyView({
   product,
@@ -30,24 +35,34 @@ export function DependencyView({
   readiness,
   onCheckScopeChange,
   initialCapabilityId,
+  focus: selectedFocus,
+  onFocusChange,
 }: {
   product: ProductContext;
   detail: ReleaseDetail;
   readiness: ReleaseEvaluation;
   onCheckScopeChange?: (scope: CheckSubjectScope | null) => void;
   initialCapabilityId?: string | null;
+  focus?: DependencySelection;
+  onFocusChange?: (focus: DependencySelection) => void;
 }) {
   const t = useTranslations("Product");
   const format = useFormatter();
-  const [capabilityId, setCapabilityId] = useState<string | null>(() =>
+  const [localCapabilityId, setCapabilityId] = useState<string | null>(() =>
     detail.scope.some(
       (item) => item.included && item.capabilityId === initialCapabilityId,
     )
       ? (initialCapabilityId ?? null)
       : null,
   );
-  const [componentId, setComponentId] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [localComponentId, setComponentId] = useState<string | null>(null);
+  const capabilityId = selectedFocus
+    ? selectedFocus.capabilityId
+    : localCapabilityId;
+  const componentId = selectedFocus
+    ? selectedFocus.componentId
+    : localComponentId;
+  const [expandedId, setExpandedId] = useState<string | null>(componentId);
   const summaryRefs = useRef(new Map<string, HTMLDivElement>());
   const scope = detail.scope.filter((item) => item.included);
   const focus = dependencyFocus(product, detail, capabilityId, componentId);
@@ -55,6 +70,7 @@ export function DependencyView({
     setCapabilityId(capability);
     setComponentId(component);
     setExpandedId(component);
+    onFocusChange?.({ capabilityId: capability, componentId: component });
     onCheckScopeChange?.(
       dependencyFocus(product, detail, capability, component).checkScope,
     );

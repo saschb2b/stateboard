@@ -16,7 +16,6 @@ import {
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
 import { dependencyFocus } from "@/components/dependency/dependency-focus";
-import type { CheckSubjectScope } from "@/components/evidence/check-scope";
 import { evaluateRelease } from "@/lib/readiness";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { ReadinessSummary, ReadinessChip } from "./readiness-summary";
@@ -25,12 +24,13 @@ import { ReleaseViewTabs } from "./release-view-tabs";
 import { releaseRequest } from "./release-request";
 import { ReleaseContext } from "./release-context";
 import { ReleasePerspectives } from "./release-perspectives";
-import { useReleaseView } from "./use-release-view";
-import { useCheckFocus, useCheckCategory } from "./use-check-focus";
+import { useReleaseNavigation } from "./use-release-navigation";
+import type { DependencySelection } from "@/components/dependency/dependency-view";
 import { useServerClock } from "./use-server-clock";
 import type { PublicationValues } from "./publication-form";
 import type {
   DecisionInput,
+  CheckCategory,
   ProductContext,
   ReleaseDetail,
   ReleaseCheck,
@@ -60,40 +60,57 @@ export function ReleaseWorkspace({
   demo?: boolean;
 }) {
   const t = useTranslations("Release");
+  const common = useTranslations("Common");
+  const productT = useTranslations("Product");
   const [detail, setDetail] = useState(initialDetail);
   const [product, setProduct] = useState(initialProduct);
-  const [view, changeView] = useReleaseView(initialView);
-  const [checkId, setCheckId] = useCheckFocus();
-  const [category, setCategory] = useCheckCategory();
-  const [focusedCapabilityId, setFocusedCapabilityId] = useState<string | null>(
-    null,
-  );
-  const [subjectScope, setSubjectScope] = useState<CheckSubjectScope | null>(
-    null,
-  );
+  const [location, navigate] = useReleaseNavigation({ view: initialView });
+  const { view, check: checkId, category } = location;
   const focusedCheckId = detail.checks.some(
     (check) => check.id === checkId && check.archivedAt === null,
   )
     ? checkId
     : null;
+  const focusedCapabilityId = detail.scope.some(
+    (item) => item.included && item.capabilityId === location.capability,
+  )
+    ? location.capability
+    : null;
+  const focusedComponentId = dependencyFocus(
+    product,
+    detail,
+  ).assessmentComponents.some((item) => item.id === location.component)
+    ? location.component
+    : null;
+  const subjectScope =
+    view === "backend" || view === "qa"
+      ? dependencyFocus(
+          product,
+          detail,
+          focusedCapabilityId,
+          focusedComponentId,
+        ).checkScope
+      : null;
   function selectView(next: ReleaseView) {
-    clearCheckFocus();
-    changeView(next);
+    navigate({
+      view: next,
+      check: null,
+      category: null,
+      capability: null,
+      component: null,
+    });
   }
   function reviewView(next: ReleaseView, capabilityId?: string) {
     const capability = detail.scope.find(
       (item) => item.included && item.capabilityId === capabilityId,
     );
-    const id = capability?.capabilityId ?? null;
-    setCheckId(null);
-    setFocusedCapabilityId(id);
-    setCategory(null);
-    setSubjectScope(
-      id && (next === "backend" || next === "qa")
-        ? dependencyFocus(product, detail, id).checkScope
-        : null,
-    );
-    changeView(next);
+    navigate({
+      view: next,
+      check: null,
+      category: null,
+      capability: capability?.capabilityId ?? null,
+      component: null,
+    });
   }
   function inspectCheck(id: string) {
     if (
@@ -102,24 +119,28 @@ export function ReleaseWorkspace({
       )
     )
       return;
-    setSubjectScope(null);
-    setFocusedCapabilityId(null);
-    changeView("qa");
-    setCheckId(id);
+    navigate({ view: "qa", check: id });
   }
   function clearCheckFocus() {
-    setCheckId(null);
-    setCategory(null);
-    setSubjectScope(null);
-    setFocusedCapabilityId(null);
+    navigate({
+      check: null,
+      category: null,
+      capability: null,
+      component: null,
+    });
   }
   function reviewChecks() {
-    clearCheckFocus();
-    changeView("qa");
+    selectView("qa");
   }
-  function selectCheckScope(scope: CheckSubjectScope | null) {
-    setCheckId(null);
-    setSubjectScope(scope);
+  function selectDependencyFocus(focus: DependencySelection) {
+    navigate({
+      check: null,
+      capability: focus.capabilityId,
+      component: focus.componentId,
+    });
+  }
+  function setCategory(next: CheckCategory | null) {
+    navigate({ category: next });
   }
   const { now, advance, anchor } = useServerClock(serverNow, demo);
   const [error, setError] = useState<string | null>(null);
@@ -194,28 +215,34 @@ export function ReleaseWorkspace({
     <>
       <AppHeader
         homeHref={demo ? "/share/demo" : "/boards"}
-        crumb={product.board.name}
+        breadcrumbs={
+          demo
+            ? undefined
+            : [
+                { label: common("boards"), href: "/boards" },
+                {
+                  label: product.board.name,
+                  href: `/boards/${product.board.id}/releases`,
+                },
+                {
+                  label: productT("assessments"),
+                  href: `/boards/${product.board.id}/releases?section=releases`,
+                },
+                { label: assessment.candidateLabel },
+              ]
+        }
         actions={
           demo ? (
             <Button component={Link} href="/share/demo">
               {t("workspace.visualExample")}
             </Button>
           ) : (
-            <>
-              <Button
-                color="inherit"
-                component={Link}
-                href={`/boards/${product.board.id}/releases`}
-                size="small"
-              >
-                {t("workspace.productOverview")}
-              </Button>
-              {viewer && <UserMenu user={viewer.user} role={viewer.role} />}
-            </>
+            viewer && <UserMenu user={viewer.user} role={viewer.role} />
           )
         }
       />
       <WorkspaceFrame
+        breadcrumbs={!demo}
         header={
           <Stack spacing={1.5}>
             {demo && <Alert severity="info">{t("workspace.example")}</Alert>}
@@ -340,10 +367,11 @@ export function ReleaseWorkspace({
               mutate={mutate}
               now={now}
               loadCheckRevisions={loadCheckRevisions}
-              onCheckScopeChange={selectCheckScope}
+              onDependencyFocusChange={selectDependencyFocus}
               subjectScope={subjectScope}
               focusedCheckId={focusedCheckId}
               focusedCapabilityId={focusedCapabilityId}
+              focusedComponentId={focusedComponentId}
               category={category}
               onCategoryChange={setCategory}
               onClearFocus={clearCheckFocus}

@@ -21,7 +21,7 @@ const meta = {
     publish: fn(async () => {}),
     revoke: fn(async () => {}),
     upload: fn(async () => {}),
-    onCheckScopeChange: fn(),
+    onDependencyFocusChange: fn(),
     onClearFocus: fn(),
     onInspectCheck: fn(),
   },

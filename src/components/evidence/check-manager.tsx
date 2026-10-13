@@ -8,10 +8,12 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  IconButton,
   Paper,
   Stack,
   Typography,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { CheckEditor } from "./check-editor";
 import { EvidenceForm } from "./evidence-form";
 import { CheckRow } from "./check-row";
@@ -44,6 +46,7 @@ export function CheckManager({
   focusedCheckId,
   onClearFocus,
   initialCategory,
+  category,
   onCategoryChange,
 }: {
   detail: ReleaseDetail;
@@ -61,18 +64,34 @@ export function CheckManager({
   focusedCheckId?: string | null;
   onClearFocus?: () => void;
   initialCategory?: CheckCategory | null;
+  category?: CheckCategory | null;
   onCategoryChange?: (category: CheckCategory | null) => void;
 }) {
   const t = useTranslations("Release");
   const [editing, setEditing] = useState<ReleaseCheck | "new" | null>(null);
   const [reviewing, setReviewing] = useState<ReleaseCheck | null>(null);
-  const [filters, setFilters] = useState<CheckFilterValues>({
+  const [dialogPending, setDialogPending] = useState(false);
+  async function saveDialog(
+    mutation: Omit<ReleaseMutation, "expectedRevision">,
+  ) {
+    setDialogPending(true);
+    try {
+      await mutate(mutation);
+    } finally {
+      setDialogPending(false);
+    }
+  }
+  const [localFilters, setFilters] = useState<CheckFilterValues>({
     needsAttention: false,
     result: "all",
     category: initialCategory ?? "all",
     query: "",
     includeFunctional: false,
   });
+  const filters =
+    category === undefined
+      ? localFilters
+      : { ...localFilters, category: category ?? ("all" as const) };
   const scopeFilters = {
     subjectScope,
     operationsOnly,
@@ -92,7 +111,7 @@ export function CheckManager({
     ...scopeFilters,
     focusedCheckId,
   });
-  function resetFilters() {
+  function resetFilters(notifyCategory = true) {
     setFilters({
       includeFunctional: filters.includeFunctional,
       needsAttention: false,
@@ -100,7 +119,7 @@ export function CheckManager({
       category: "all",
       query: "",
     });
-    onCategoryChange?.(null);
+    if (notifyCategory) onCategoryChange?.(null);
   }
   function changeFilters(patch: Partial<CheckFilterValues>) {
     setFilters((current) => ({ ...current, ...patch }));
@@ -139,7 +158,7 @@ export function CheckManager({
             <Button
               size="small"
               onClick={() => {
-                resetFilters();
+                resetFilters(false);
                 onClearFocus();
               }}
             >
@@ -165,7 +184,7 @@ export function CheckManager({
             <Button
               size="small"
               onClick={() => {
-                resetFilters();
+                resetFilters(false);
                 onClearFocus();
               }}
             >
@@ -178,7 +197,7 @@ export function CheckManager({
         <CheckFilters
           filters={filters}
           onChange={changeFilters}
-          onReset={resetFilters}
+          onReset={() => resetFilters()}
           operationsOnly={operationsOnly}
           total={scopedChecks.length}
           shown={checks.length}
@@ -227,14 +246,29 @@ export function CheckManager({
       </Paper>
       <Dialog
         open={editing !== null}
-        onClose={() => setEditing(null)}
+        onClose={dialogPending ? undefined : () => setEditing(null)}
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+          }}
+        >
           {editing === "new"
             ? t("check.addAcceptance")
             : t("check.reviseAcceptance")}
+          <IconButton
+            aria-label={t("common.close")}
+            onClick={() => setEditing(null)}
+            disabled={dialogPending}
+            sx={{ flexShrink: 0 }}
+          >
+            <CloseIcon />
+          </IconButton>
         </DialogTitle>
         <DialogContent>
           {editing && (
@@ -242,7 +276,7 @@ export function CheckManager({
               detail={detail}
               product={product}
               check={editing === "new" ? null : editing}
-              onSave={mutate}
+              onSave={saveDialog}
               onCancel={() => setEditing(null)}
             />
           )}
@@ -250,18 +284,35 @@ export function CheckManager({
       </Dialog>
       <Dialog
         open={reviewing !== null}
-        onClose={() => setReviewing(null)}
+        onClose={dialogPending ? undefined : () => setReviewing(null)}
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>{t("check.recordVerification")}</DialogTitle>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+          }}
+        >
+          {t("check.recordVerification")}
+          <IconButton
+            aria-label={t("common.close")}
+            onClick={() => setReviewing(null)}
+            disabled={dialogPending}
+            sx={{ flexShrink: 0 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
         <DialogContent>
           {reviewing && (
             <EvidenceForm
               assessment={detail.assessment}
               check={reviewing}
               now={now}
-              onSave={mutate}
+              onSave={saveDialog}
               onCancel={() => setReviewing(null)}
             />
           )}

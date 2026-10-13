@@ -5,7 +5,10 @@ import { useTranslations } from "next-intl";
 import { Stack } from "@mui/material";
 import { ReleaseScope } from "@/components/capability/release-scope";
 import { CapabilityVisualView } from "@/components/capability/capability-visual-view";
-import { DependencyView } from "@/components/dependency/dependency-view";
+import {
+  DependencyView,
+  type DependencySelection,
+} from "@/components/dependency/dependency-view";
 import { CheckManager } from "@/components/evidence/check-manager";
 import type { CheckSubjectScope } from "@/components/evidence/check-scope";
 import { DecisionPanel } from "./decision-panel";
@@ -31,10 +34,11 @@ export function ReleasePerspectives({
   mutate,
   now,
   loadCheckRevisions,
-  onCheckScopeChange,
+  onDependencyFocusChange,
   subjectScope,
   focusedCheckId,
   focusedCapabilityId,
+  focusedComponentId,
   category,
   onCategoryChange,
   onClearFocus,
@@ -56,10 +60,11 @@ export function ReleasePerspectives({
   ) => Promise<void>;
   now: number;
   loadCheckRevisions?: (checkId: string) => Promise<ReleaseCheck[]>;
-  onCheckScopeChange: (scope: CheckSubjectScope | null) => void;
+  onDependencyFocusChange?: (focus: DependencySelection) => void;
   subjectScope: CheckSubjectScope | null;
   focusedCheckId: string | null;
   focusedCapabilityId?: string | null;
+  focusedComponentId?: string | null;
   category?: CheckCategory | null;
   onCategoryChange?: (category: CheckCategory | null) => void;
   onClearFocus: () => void;
@@ -96,19 +101,26 @@ export function ReleasePerspectives({
       )}
       {view === "backend" && (
         <DependencyView
-          key={focusedCapabilityId ?? "all"}
+          focus={
+            onDependencyFocusChange
+              ? {
+                  capabilityId: focusedCapabilityId ?? null,
+                  componentId: focusedComponentId ?? null,
+                }
+              : undefined
+          }
           initialCapabilityId={focusedCapabilityId}
+          onFocusChange={onDependencyFocusChange}
           detail={detail}
           product={product}
           readiness={readiness}
-          onCheckScopeChange={onCheckScopeChange}
         />
       )}
       {(view === "backend" || view === "qa" || view === "operations") && (
         <Stack component="section" aria-label={t("workspace.checkEvidence")}>
           <CheckManager
-            key={`${view}:${focusedCapabilityId ?? "all"}:${category ?? "all"}`}
-            initialCategory={category}
+            key={`${view}:${focusedCapabilityId ?? "all"}:${focusedComponentId ?? "all"}`}
+            category={category}
             onCategoryChange={onCategoryChange}
             detail={detail}
             product={product}

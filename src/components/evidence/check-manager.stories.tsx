@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import type { ComponentProps } from "react";
+import GlobalStyles from "@mui/material/GlobalStyles";
 import { getReleaseDemo } from "@/lib/release-demo";
 import { evaluateRelease } from "@/lib/readiness";
 import {
@@ -190,6 +191,49 @@ export const ExpandCheckDetails: Story = {
     await waitFor(() =>
       expect(canvas.queryByText(check.method)).not.toBeInTheDocument(),
     );
+  },
+};
+
+export const ShortDialogDismissal: Story = {
+  args: { editable: true, focusedCheckId: "check-export" },
+  decorators: [
+    (Story) => (
+      <>
+        <GlobalStyles
+          styles={{ ".MuiDialog-root .MuiDialog-paper": { maxHeight: 320 } }}
+        />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, args }) => {
+    const page = within(document.body);
+    const record = canvas.getByRole("button", { name: "Record evidence" });
+    await userEvent.click(record);
+    const dialog = page.getByRole("dialog");
+    const close = within(dialog).getByRole("button", { name: "Close" });
+    await waitFor(() => expect(close).toBeVisible());
+    const content = dialog.querySelector(".MuiDialogContent-root");
+    if (!content)
+      throw new Error("Evidence dialog needs a scrolling content region.");
+    await expect(content.scrollHeight).toBeGreaterThan(content.clientHeight);
+    await expect(close.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      content.getBoundingClientRect().top,
+    );
+    await userEvent.click(close);
+    await waitFor(() =>
+      expect(page.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await expect(record).toHaveFocus();
+    const add = canvas.getByRole("button", { name: "Add check" });
+    await userEvent.click(add);
+    const checkDialog = within(page.getByRole("dialog"));
+    await userEvent.click(checkDialog.getByRole("button", { name: "Close" }));
+    await waitFor(() =>
+      expect(page.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    await expect(add).toHaveFocus();
+    await expect(args.mutate).not.toHaveBeenCalled();
   },
 };
 
