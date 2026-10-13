@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { BoardShare } from "@/components/board/board-share";
 import { getDemoBoard } from "@/lib/demo-data";
-import Link from "next/link";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { SiteLink } from "@/components/site/site-link";
 
 /**
  * Permanent example board, served from memory at /share/demo.
@@ -28,20 +29,30 @@ export const metadata: Metadata = {
 export default function DemoBoardPage() {
   const { board, screens } = getDemoBoard();
   return (
-    <>
-      <Box
-        sx={{
-          textAlign: "center",
-          py: 1,
-          borderBottom: 1,
-          borderColor: "divider",
-        }}
-      >
-        <Link href="/share/demo/releases" style={{ textDecoration: "none" }}>
-          <Button>Explore the release-readiness example →</Button>
-        </Link>
-      </Box>
-      <BoardShare board={board} screens={screens} />
-    </>
+    <BoardShare
+      board={board}
+      screens={screens}
+      notice={
+        <Stack
+          key="demo-notice"
+          direction="row"
+          alignItems="center"
+          gap={1}
+          sx={{ flexWrap: "wrap", pt: 1 }}
+        >
+          <Typography key="label" variant="caption" color="text.secondary">
+            Read-only example
+          </Typography>
+          <SiteLink
+            key="release-demo"
+            href="/share/demo/releases"
+            size="small"
+            endIcon={<ArrowForwardIcon />}
+          >
+            Explore release readiness
+          </SiteLink>
+        </Stack>
+      }
+    />
   );
 }

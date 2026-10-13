@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import Box from "@mui/material/Box";
+import { expect, within } from "storybook/test";
 import { RegionOverlay } from "./region-overlay";
 import type { Region, RegionState } from "@/lib/types";
 
@@ -58,7 +59,7 @@ const meta = {
           position: "relative",
           width: 720,
           aspectRatio: "16 / 10",
-          bgcolor: "#101418",
+          bgcolor: "background.default",
           border: 1,
           borderColor: "divider",
           borderRadius: 1,
@@ -86,4 +87,74 @@ export const InteractiveSelected: Story = {
 /** State filter active: everything that isn't `shipped` dims away. */
 export const FilteredToShipped: Story = {
   args: { regions: REGIONS, filterState: "shipped" },
+};
+
+function readColor(color: string) {
+  const [red, green, blue, opacity = 1] =
+    color.match(/[\d.]+/g)?.map(Number) ?? [];
+  if (red === undefined || green === undefined || blue === undefined) {
+    throw new Error(`Cannot measure the rendered color: ${color}`);
+  }
+  const linear = (channel: number) => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  return {
+    opacity,
+    luminance:
+      0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue),
+  };
+}
+
+/** Labels must remain readable over arbitrary screenshots in both themes. */
+export const ThemeContrast: Story = {
+  args: { regions: REGIONS },
+  render: () => (
+    <Box sx={{ display: "grid", gap: 2 }}>
+      {(["light", "dark"] as const).map((mode) => (
+        <Box
+          key={mode}
+          component="section"
+          aria-label={`${mode} theme`}
+          className={mode}
+          sx={{
+            position: "relative",
+            height: 200,
+            bgcolor: "background.default",
+          }}
+        >
+          <RegionOverlay
+            regions={[
+              region(
+                "contrast",
+                [0.05, 0.18, 0.85, 0.58],
+                "shipped",
+                "Revenue chart",
+              ),
+            ]}
+          />
+        </Box>
+      ))}
+    </Box>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const backgrounds = [];
+    for (const mode of ["light", "dark"]) {
+      const section = canvas.getByRole("region", { name: `${mode} theme` });
+      const label = within(section).getByText("Revenue chart");
+      await expect(label).toBeVisible();
+      const style = getComputedStyle(label);
+      const foreground = readColor(style.color);
+      const background = readColor(style.backgroundColor);
+      // An opaque label keeps its contrast independent of the screenshot.
+      await expect(background.opacity).toBe(1);
+      const contrast =
+        (Math.max(foreground.luminance, background.luminance) + 0.05) /
+        (Math.min(foreground.luminance, background.luminance) + 0.05);
+      await expect(contrast).toBeGreaterThanOrEqual(4.5);
+      backgrounds.push(style.backgroundColor);
+    }
+    await expect(backgrounds[0]).not.toBe(backgrounds[1]);
+  },
 };

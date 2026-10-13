@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -28,6 +28,7 @@ interface BoardShareProps {
    * are fictional.
    */
   updatedLabel?: string | null;
+  notice?: ReactNode;
 }
 
 /**
@@ -37,30 +38,34 @@ interface BoardShareProps {
  * no upload, no draw, no delete. Tooltips on regions remain so the
  * label/notes can still be read on hover.
  */
-export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
+export function BoardShare({
+  board,
+  screens,
+  updatedLabel,
+  notice,
+}: BoardShareProps) {
+  const tabId = useId();
   const [activeId, setActiveId] = useState<string | null>(
     screens[0]?.id ?? null,
   );
   const [presenting, setPresenting] = useState(false);
 
-  const active = useMemo(
-    () => screens.find((s) => s.id === activeId) ?? null,
-    [screens, activeId],
-  );
-
-  const totals = useMemo(() => {
-    const counts = { shipped: 0, mock: 0, missing: 0 };
-    for (const s of screens) {
-      for (const r of s.regions) counts[r.state]++;
-    }
-    return counts;
-  }, [screens]);
+  const active = screens.find((screen) => screen.id === activeId) ?? screens[0];
+  const totals = { shipped: 0, mock: 0, missing: 0 };
+  for (const screen of screens) {
+    for (const region of screen.regions) totals[region.state]++;
+  }
 
   // global "P" hotkey for presentation mode
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "p" && e.key !== "P") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest("input, textarea, select, [contenteditable=true]")
+      )
+        return;
       if (presenting || screens.length === 0) return;
       e.preventDefault();
       setPresenting(true);
@@ -75,7 +80,7 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
         crumb={board.name}
         actions={
           screens.length > 0 ? (
-            <Tooltip title="Present (P)">
+            <Tooltip title="Present (P)" describeChild>
               <Button
                 size="small"
                 variant="contained"
@@ -89,57 +94,55 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
           ) : null
         }
       />
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {board.description ? (
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ mb: 3, maxWidth: 720 }}
-          >
-            {board.description}
+      <Container component="main" maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
+        <Stack component="header" spacing={1} sx={{ mb: 3, maxWidth: 800 }}>
+          <Typography variant="overline" color="text.secondary">
+            Visual review
           </Typography>
-        ) : null}
+          <Typography
+            component="h1"
+            variant="h4"
+            sx={{ overflowWrap: "anywhere" }}
+          >
+            {board.name}
+          </Typography>
+          {board.description ? (
+            <Typography variant="body2" color="text.secondary">
+              {board.description}
+            </Typography>
+          ) : null}
+          {notice}
+        </Stack>
 
         <Stack
           direction="row"
-          spacing={1.5}
-          useFlexGap
+          gap={2}
           alignItems="center"
-          sx={{ mb: 3, flexWrap: "wrap" }}
+          sx={{ mb: 2, flexWrap: "wrap" }}
         >
-          {REGION_STATES.map((s) => (
-            <Stack
-              key={s}
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{
-                px: 1.5,
-                py: 0.75,
-                border: 1,
-                borderColor: "divider",
-                borderRadius: 1,
-              }}
-            >
-              <StateChip state={s} size="sm" />
-              <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                {totals[s]}
-              </Typography>
-              <Box sx={{ width: "1px", height: 14, bgcolor: "divider" }} />
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ whiteSpace: "nowrap" }}
+          {REGION_STATES.map((state) => (
+            <Tooltip key={state} title={STATE_META[state].description}>
+              <Stack
+                direction="row"
+                spacing={0.75}
+                alignItems="center"
+                aria-label={`${totals[state]} ${state}: ${STATE_META[state].summary}`}
               >
-                {STATE_META[s].summary}
-              </Typography>
-            </Stack>
+                <StateChip state={state} size="sm" />
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}
+                >
+                  {totals[state]}
+                </Typography>
+              </Stack>
+            </Tooltip>
           ))}
           {updatedLabel ? (
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ ml: "auto", whiteSpace: "nowrap" }}
+              sx={{ ml: { sm: "auto" } }}
             >
               Updated {updatedLabel}
             </Typography>
@@ -147,8 +150,8 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
         </Stack>
 
         {screens.length === 0 ? (
-          <Paper sx={{ p: 6, textAlign: "center" }}>
-            <Typography variant="h6" sx={{ mb: 0.5 }}>
+          <Paper sx={{ p: { xs: 3, sm: 5 } }}>
+            <Typography component="h2" variant="subtitle1" sx={{ mb: 0.5 }}>
               No screens yet
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -158,8 +161,9 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
         ) : (
           <Paper sx={{ overflow: "hidden" }}>
             <Tabs
-              value={activeId}
-              onChange={(_, v) => setActiveId(v as string)}
+              value={active?.id ?? false}
+              onChange={(_, value: string) => setActiveId(value)}
+              aria-label="Screens"
               variant="scrollable"
               scrollButtons="auto"
               sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}
@@ -168,12 +172,19 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
                 <Tab
                   key={s.id}
                   value={s.id}
+                  id={`${tabId}-${s.id}`}
+                  aria-controls={`${tabId}-panel`}
                   label={s.label || `Screen ${i + 1}`}
                   sx={{ textTransform: "none", fontWeight: 600 }}
                 />
               ))}
             </Tabs>
-            <Box sx={{ p: 2.5 }}>
+            <Box
+              role="tabpanel"
+              id={`${tabId}-panel`}
+              aria-labelledby={active ? `${tabId}-${active.id}` : undefined}
+              sx={{ p: { xs: 1.5, sm: 2.5 } }}
+            >
               {active ? (
                 <Box
                   sx={{
@@ -204,6 +215,13 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
                   <RegionOverlay regions={active.regions} interactive />
                 </Box>
               ) : null}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: { xs: "block", sm: "none" }, mt: 1.5 }}
+              >
+                Tap a region for details.
+              </Typography>
             </Box>
           </Paper>
         )}
@@ -214,7 +232,7 @@ export function BoardShare({ board, screens, updatedLabel }: BoardShareProps) {
           screens={screens}
           initialIndex={Math.max(
             0,
-            screens.findIndex((s) => s.id === activeId),
+            screens.findIndex((s) => s.id === active?.id),
           )}
           onClose={() => setPresenting(false)}
         />

@@ -1,6 +1,7 @@
 "use client";
 
 import Box from "@mui/material/Box";
+import { alpha } from "@mui/material/styles";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { STATE_META } from "@/lib/state-meta";
@@ -181,7 +182,8 @@ export function RegionOverlay({
                   maxWidth: "calc(100% + 4px)",
                   borderRadius: 1,
                   overflow: "hidden",
-                  boxShadow: "0 1px 2px rgba(0,0,0,0.45)",
+                  boxShadow: (theme) =>
+                    `0 1px 2px ${alpha(theme.palette.common.black, 0.45)}`,
                 }}
               >
                 <StateChip state={r.state} size="sm" />
@@ -189,11 +191,11 @@ export function RegionOverlay({
                   <Box
                     component="span"
                     sx={{
-                      display: "inline-flex",
+                      display: { xs: "none", sm: "inline-flex" },
                       alignItems: "center",
                       px: 0.75,
-                      bgcolor: "rgba(0,0,0,0.85)",
-                      color: "#fff",
+                      bgcolor: "background.paper",
+                      color: "text.primary",
                       fontSize: 11,
                       fontWeight: 600,
                       maxWidth: 200,
@@ -224,9 +226,11 @@ export function RegionOverlay({
                         width: 12,
                         height: 12,
                         bgcolor: meta.color,
-                        border: "1.5px solid rgba(255,255,255,0.92)",
+                        border: (theme) =>
+                          `1.5px solid ${alpha(theme.palette.common.white, 0.92)}`,
                         borderRadius: "2px",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
+                        boxShadow: (theme) =>
+                          `0 1px 2px ${alpha(theme.palette.common.black, 0.5)}`,
                         cursor: CORNER_CURSOR[corner],
                         pointerEvents: "auto",
                         zIndex: 3,

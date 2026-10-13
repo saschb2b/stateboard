@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Dialog from "@mui/material/Dialog";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -12,7 +14,6 @@ import FullscreenIcon from "@mui/icons-material/Fullscreen";
 import FullscreenExitIcon from "@mui/icons-material/FullscreenExit";
 import { RegionOverlay } from "@/components/region/region-overlay";
 import { StateChip } from "@/components/region/state-chip";
-import { MONO_FONT } from "@/lib/theme";
 import { REGION_STATES, type ScreenWithRegions } from "@/lib/types";
 
 interface PresentModeProps {
@@ -22,16 +23,19 @@ interface PresentModeProps {
   onClose: () => void;
 }
 
-/**
- * Fullscreen, clutter-free presentation surface.
- *
- * One screen at a time, painted with regions, no editor chrome. Designed
- * for showing to non-technical stakeholders without explaining what an
- * "edit panel" is. Keyboard-driven like Google Slides:
- *   ← / →  prev / next
- *   Esc    exit
- *   F      toggle browser fullscreen
- */
+async function toggleBrowserFullscreen(): Promise<string | null> {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+    return null;
+  } catch {
+    return "Fullscreen is unavailable. Continue presenting in this window.";
+  }
+}
+
 export function PresentMode({
   boardName,
   screens,
@@ -44,238 +48,169 @@ export function PresentMode({
   );
   const [index, setIndex] = useState(safeInitial);
   const [fullscreen, setFullscreen] = useState(false);
-  const [chromeVisible, setChromeVisible] = useState(true);
+  const [fullscreenError, setFullscreenError] = useState<string | null>(null);
 
   const active = screens[index];
-  const totals = useMemo(() => {
-    const counts = { shipped: 0, mock: 0, missing: 0 };
-    if (active) for (const r of active.regions) counts[r.state]++;
-    return counts;
-  }, [active]);
+  const totals = { shipped: 0, mock: 0, missing: 0 };
+  if (active) for (const region of active.regions) totals[region.state]++;
 
-  const next = useCallback(
-    () => setIndex((i) => Math.min(i + 1, screens.length - 1)),
-    [screens.length],
-  );
-  const prev = useCallback(() => setIndex((i) => Math.max(i - 1, 0)), []);
-
-  const toggleFullscreen = useCallback(async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch {
-      // user agent refused — silently ignore, esc still works to close
-    }
-  }, []);
-
-  // keyboard shortcuts
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case "Escape":
-          if (document.fullscreenElement) {
-            void document.exitFullscreen();
-          } else {
-            onClose();
-          }
-          break;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      // Focused controls keep their native Space/Enter action.
+      if (
+        event.key === " " &&
+        event.target instanceof HTMLElement &&
+        event.target.closest("button, a, input, textarea, select")
+      )
+        return;
+      switch (event.key) {
         case "ArrowRight":
         case " ":
         case "PageDown":
-          e.preventDefault();
-          next();
+          event.preventDefault();
+          setIndex((current) => Math.min(current + 1, screens.length - 1));
           break;
         case "ArrowLeft":
         case "PageUp":
-          e.preventDefault();
-          prev();
+          event.preventDefault();
+          setIndex((current) => Math.max(current - 1, 0));
           break;
         case "f":
         case "F":
-          if (!e.metaKey && !e.ctrlKey) {
-            e.preventDefault();
-            void toggleFullscreen();
-          }
+          event.preventDefault();
+          void toggleBrowserFullscreen().then(setFullscreenError);
           break;
         case "Home":
-          e.preventDefault();
+          event.preventDefault();
           setIndex(0);
           break;
         case "End":
-          e.preventDefault();
-          setIndex(screens.length - 1);
+          event.preventDefault();
+          setIndex(Math.max(0, screens.length - 1));
           break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [next, prev, onClose, toggleFullscreen, screens.length]);
+  }, [screens.length]);
 
-  // track browser fullscreen state for the icon
   useEffect(() => {
-    const onChange = () => setFullscreen(!!document.fullscreenElement);
+    const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
-  }, []);
-
-  // auto-hide chrome after 2.5s of mouse stillness
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const ping = () => {
-      setChromeVisible(true);
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => setChromeVisible(false), 2500);
-    };
-    ping();
-    window.addEventListener("mousemove", ping);
-    window.addEventListener("keydown", ping);
-    return () => {
-      window.removeEventListener("mousemove", ping);
-      window.removeEventListener("keydown", ping);
-      if (timer) clearTimeout(timer);
-    };
-  }, []);
-
-  // lock body scroll while presenting
-  useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prevOverflow;
-    };
   }, []);
 
   if (!active) return null;
 
   return (
-    <Box
-      role="dialog"
-      aria-label="Presentation mode"
-      sx={{
-        position: "fixed",
-        inset: 0,
-        zIndex: (t) => t.zIndex.modal + 10,
-        bgcolor: "#0A0F12",
-        color: "#ECECEC",
-        display: "flex",
-        flexDirection: "column",
-        cursor: chromeVisible ? "default" : "none",
+    <Dialog
+      open
+      fullScreen
+      onClose={(_, reason) => {
+        if (reason === "escapeKeyDown" && document.fullscreenElement) {
+          void toggleBrowserFullscreen().then(setFullscreenError);
+        } else {
+          onClose();
+        }
+      }}
+      sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
+      slotProps={{
+        paper: {
+          "aria-label": "Presentation mode",
+          sx: {
+            bgcolor: "background.default",
+            color: "text.primary",
+            borderRadius: 0,
+            backgroundImage: "none",
+            overflow: "hidden",
+          },
+        },
       }}
     >
-      {/* Top chrome — board name + counter + controls */}
       <Stack
+        component="header"
         direction="row"
         alignItems="center"
-        spacing={2}
+        gap={2}
         sx={{
-          px: 3,
+          px: { xs: 2, md: 3 },
           py: 1.5,
-          opacity: chromeVisible ? 1 : 0,
-          transition: "opacity 240ms ease",
-          pointerEvents: chromeVisible ? "auto" : "none",
+          borderBottom: 1,
+          borderColor: "divider",
         }}
       >
-        <Stack direction="row" alignItems="center" spacing={1.25}>
-          <Box
-            aria-hidden
-            sx={{
-              width: 12,
-              height: 12,
-              bgcolor: "primary.main",
-              borderRadius: 0.5,
-            }}
-          />
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="subtitle2" noWrap>
+            {boardName}
+          </Typography>
           <Typography
             variant="caption"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              color: "rgba(255,255,255,0.6)",
-            }}
+            color="text.secondary"
+            noWrap
+            component="p"
           >
-            STATEBOARD
+            {active.label ?? `Screen ${index + 1}`}
           </Typography>
+        </Box>
+        <Stack direction="row" gap={0.5} sx={{ flexShrink: 0 }}>
+          <IconButton
+            onClick={() =>
+              void toggleBrowserFullscreen().then(setFullscreenError)
+            }
+            size="small"
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {fullscreen ? (
+              <FullscreenExitIcon fontSize="small" />
+            ) : (
+              <FullscreenIcon fontSize="small" />
+            )}
+          </IconButton>
+          <IconButton
+            onClick={onClose}
+            size="small"
+            aria-label="Exit presentation"
+            autoFocus
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Stack>
-        <Typography
-          variant="subtitle1"
-          noWrap
-          sx={{ fontWeight: 600, color: "rgba(255,255,255,0.9)" }}
-        >
-          {boardName}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          {REGION_STATES.map((s) => (
-            <Stack key={s} direction="row" alignItems="center" spacing={0.75}>
-              <StateChip state={s} size="sm" />
-              <Typography
-                variant="body2"
-                sx={{ fontWeight: 600, color: "rgba(255,255,255,0.8)" }}
-              >
-                {totals[s]}
-              </Typography>
-            </Stack>
-          ))}
-        </Stack>
-        <IconButton
-          onClick={() => void toggleFullscreen()}
-          size="small"
-          sx={{ color: "rgba(255,255,255,0.7)" }}
-          aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        >
-          {fullscreen ? (
-            <FullscreenExitIcon fontSize="small" />
-          ) : (
-            <FullscreenIcon fontSize="small" />
-          )}
-        </IconButton>
-        <IconButton
-          onClick={onClose}
-          size="small"
-          sx={{ color: "rgba(255,255,255,0.7)" }}
-          aria-label="Exit presentation"
-        >
-          <CloseIcon fontSize="small" />
-        </IconButton>
       </Stack>
 
-      {/* Stage — current screen, fitted, regions painted */}
+      {fullscreenError && (
+        <Alert
+          severity="info"
+          sx={{ mx: 2, mt: 1 }}
+          onClose={() => setFullscreenError(null)}
+        >
+          {fullscreenError}
+        </Alert>
+      )}
+
       <Box
         sx={{
           flex: 1,
           minHeight: 0,
-          position: "relative",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           px: { xs: 2, md: 6 },
-          pb: 6,
+          py: 2,
         }}
       >
         <Box
           sx={{
             position: "relative",
-            // Fit-letterbox: cap each dimension so the aspect ratio is
-            // preserved inside the available stage area without overflowing.
-            width:
-              active.width / active.height > 1
-                ? "min(100%, calc((100vh - 160px) * " +
-                  active.width +
-                  " / " +
-                  active.height +
-                  "))"
-                : "min(100%, calc(100vw - 96px))",
+            width: `min(100%, calc((100dvh - 200px) * ${active.width} / ${active.height}))`,
             aspectRatio: `${active.width} / ${active.height}`,
             maxWidth: "100%",
-            maxHeight: "calc(100vh - 160px)",
-            margin: "0 auto",
-            boxShadow: "0 30px 80px rgba(0,0,0,0.6)",
+            maxHeight: "100%",
+            border: 1,
+            borderColor: "divider",
             borderRadius: 1,
             overflow: "hidden",
-            bgcolor: "#000",
+            bgcolor: "background.paper",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -292,90 +227,85 @@ export function PresentMode({
           />
           <RegionOverlay regions={active.regions} interactive />
         </Box>
-
-        {/* Side nav arrows */}
-        {index > 0 ? (
-          <IconButton
-            onClick={prev}
-            aria-label="Previous screen"
-            sx={{
-              position: "absolute",
-              left: { xs: 4, md: 16 },
-              top: "50%",
-              transform: "translateY(-50%)",
-              bgcolor: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.85)",
-              opacity: chromeVisible ? 1 : 0,
-              transition: "opacity 240ms ease",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.14)" },
-            }}
-            size="large"
-          >
-            <ChevronLeftIcon fontSize="large" />
-          </IconButton>
-        ) : null}
-        {index < screens.length - 1 ? (
-          <IconButton
-            onClick={next}
-            aria-label="Next screen"
-            sx={{
-              position: "absolute",
-              right: { xs: 4, md: 16 },
-              top: "50%",
-              transform: "translateY(-50%)",
-              bgcolor: "rgba(255,255,255,0.06)",
-              color: "rgba(255,255,255,0.85)",
-              opacity: chromeVisible ? 1 : 0,
-              transition: "opacity 240ms ease",
-              "&:hover": { bgcolor: "rgba(255,255,255,0.14)" },
-            }}
-            size="large"
-          >
-            <ChevronRightIcon fontSize="large" />
-          </IconButton>
-        ) : null}
       </Box>
 
-      {/* Bottom chrome — screen label + counter + hint */}
       <Stack
-        direction="row"
-        alignItems="center"
+        component="footer"
+        gap={1.5}
         sx={{
-          px: 3,
-          pb: 2,
-          opacity: chromeVisible ? 1 : 0,
-          transition: "opacity 240ms ease",
-          pointerEvents: chromeVisible ? "auto" : "none",
+          px: { xs: 2, md: 3 },
+          py: 1.5,
+          borderTop: 1,
+          borderColor: "divider",
         }}
       >
-        <Typography
-          variant="body2"
-          sx={{ color: "rgba(255,255,255,0.85)", fontWeight: 500, flex: 1 }}
-          noWrap
+        <Stack
+          direction="row"
+          alignItems="center"
+          justifyContent="space-between"
+          gap={2}
         >
-          {active.label ?? `Screen ${index + 1}`}
-        </Typography>
+          <Stack
+            direction="row"
+            gap={{ xs: 1, sm: 2 }}
+            alignItems="center"
+            sx={{ flexWrap: "wrap" }}
+          >
+            {REGION_STATES.map((state) => (
+              <Stack
+                key={state}
+                direction="row"
+                alignItems="center"
+                spacing={0.5}
+              >
+                <StateChip state={state} size="sm" />
+                <Typography variant="caption" color="text.secondary">
+                  {totals[state]}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.5}
+            sx={{ flexShrink: 0 }}
+          >
+            <IconButton
+              onClick={() => setIndex((current) => Math.max(current - 1, 0))}
+              disabled={index === 0}
+              aria-label="Previous screen"
+              size="small"
+            >
+              <ChevronLeftIcon fontSize="small" />
+            </IconButton>
+            <Typography
+              variant="caption"
+              aria-live="polite"
+              sx={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
+            >
+              {index + 1} / {screens.length}
+            </Typography>
+            <IconButton
+              onClick={() =>
+                setIndex((current) => Math.min(current + 1, screens.length - 1))
+              }
+              disabled={index === screens.length - 1}
+              aria-label="Next screen"
+              size="small"
+            >
+              <ChevronRightIcon fontSize="small" />
+            </IconButton>
+          </Stack>
+        </Stack>
         <Typography
           variant="caption"
-          sx={{
-            color: "rgba(255,255,255,0.45)",
-            fontFamily: MONO_FONT,
-            mx: 2,
-          }}
+          color="text.secondary"
+          sx={{ display: { xs: "none", sm: "block" } }}
         >
-          ← → navigate · F fullscreen · Esc exit
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: "rgba(255,255,255,0.7)",
-            fontWeight: 600,
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {index + 1} / {screens.length}
+          Arrow keys to move · F for fullscreen · Esc to exit
         </Typography>
       </Stack>
-    </Box>
+    </Dialog>
   );
 }

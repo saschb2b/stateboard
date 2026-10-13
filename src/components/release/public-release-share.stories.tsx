@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, within } from "storybook/test";
+import Box from "@mui/material/Box";
 import { PublicReleaseShare } from "./public-release-share";
 const meta = {
   component: PublicReleaseShare,
@@ -79,4 +80,52 @@ export const ReadableReviewTimes: Story = {
       ),
     ).toBeVisible();
   },
+};
+
+export const MultipleOutcomes: Story = {
+  args: {
+    projection: {
+      ...meta.args.projection,
+      capabilities: [
+        ...meta.args.projection.capabilities,
+        {
+          name: "Export invoices",
+          outcome: "Download a complete invoice for the selected account.",
+          state: "blocked",
+          explanation: "The export omitted the billing address.",
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("heading", { level: 1, name: "October release · RC 3" }),
+    ).toBeVisible();
+    const outcomes = within(
+      canvas.getByRole("region", { name: "Outcomes in this review" }),
+    );
+    await expect(outcomes.getAllByRole("heading", { level: 3 })).toHaveLength(
+      2,
+    );
+    await expect(
+      outcomes.getAllByText(
+        "Check verification at this review; availability requires deployment verification.",
+      ),
+    ).toHaveLength(1);
+  },
+};
+export const NarrowReview: Story = {
+  args: {
+    projection: {
+      ...meta.args.projection,
+      candidateLabel:
+        "StateBoard release readiness and agent maintenance · candidate 12",
+    },
+  },
+  render: (args) => (
+    <Box sx={{ width: 390, maxWidth: "100%" }}>
+      <PublicReleaseShare {...args} />
+    </Box>
+  ),
 };
