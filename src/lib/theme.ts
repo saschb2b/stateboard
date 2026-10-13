@@ -1,116 +1,138 @@
 "use client";
 
 import { createTheme } from "@mui/material/styles";
+import { designTokens as tokens } from "./design-tokens";
 
-/**
- * Type stacks. Geist (sans + mono) is loaded once in the root layout via
- * next/font and exposed as CSS variables on <html> — see src/lib/fonts.ts.
- *
- * The fallbacks matter more than they look: if `--font-geist` is ever
- * undefined (a surface that forgot to load the fonts), CSS treats the whole
- * `font-family` declaration as invalid and drops to the browser default —
- * Times. Naming real system faces after the variable keeps that failure
- * mode at "slightly different grotesque" instead of "newspaper".
- */
-export const SANS_FONT =
-  'var(--font-geist), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+export const SANS_FONT = tokens.typography.sans;
+export const MONO_FONT = tokens.typography.mono;
 
-/**
- * Use this instead of the bare `monospace` keyword, which resolves to
- * Courier New on Windows. Every ID, token, and coordinate readout in the
- * app should render in Geist Mono, the companion face we already ship.
- */
-export const MONO_FONT =
-  'var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
+function palette(mode: "light" | "dark") {
+  const color = tokens.colors[mode];
+  return {
+    background: { default: color.canvas, paper: color.surface },
+    primary: { main: color.primary, contrastText: color.onPrimary },
+    secondary: { main: color.text, contrastText: color.canvas },
+    success: { main: color.success, contrastText: color.canvas },
+    warning: { main: color.warning, contrastText: color.canvas },
+    error: { main: color.error, contrastText: color.canvas },
+    info: { main: color.info, contrastText: color.canvas },
+    text: { primary: color.text, secondary: color.muted },
+    divider: color.border,
+  };
+}
 
-/**
- * StateBoard's product theme.
- *
- * The pitch is dark-first with a warm-orange accent (the "show, don't tell"
- * brand color from the deck). Light mode is supported but secondary —
- * stakeholders and operators are expected to read these on screens at low
- * brightness during reviews.
- */
+/** ODSF foundations own the values; this file maps them to MUI roles. */
 const theme = createTheme({
   cssVariables: { colorSchemeSelector: "class" },
   colorSchemes: {
-    light: {
-      palette: {
-        background: { default: "#FAF8F5", paper: "#FFFFFF" },
-        primary: { main: "#E25A22", contrastText: "#FFFFFF" },
-        secondary: { main: "#1A1A1A", contrastText: "#FFFFFF" },
-        success: { main: "#1F8A53", contrastText: "#FFFFFF" },
-        warning: { main: "#D4A11A", contrastText: "#1A1A1A" },
-        error: { main: "#C8412B", contrastText: "#FFFFFF" },
-        text: { primary: "#1A1A1A", secondary: "#5A5A5A" },
-        divider: "#E4E0DA",
-      },
-    },
-    dark: {
-      palette: {
-        background: { default: "#0E1418", paper: "#141B20" },
-        primary: { main: "#F26B2D", contrastText: "#FFFFFF" },
-        secondary: { main: "#E8E8E8", contrastText: "#0E1418" },
-        success: { main: "#3DBE6D", contrastText: "#0E1418" },
-        warning: { main: "#E9BB36", contrastText: "#0E1418" },
-        error: { main: "#E26A50", contrastText: "#FFFFFF" },
-        text: { primary: "#ECECEC", secondary: "#9AA3A8" },
-        divider: "#1E272D",
-      },
+    light: { palette: palette("light") },
+    dark: { palette: palette("dark") },
+  },
+  spacing: Number.parseFloat(tokens.spacing.unit),
+  breakpoints: {
+    values: {
+      xs: 0,
+      sm: Number.parseFloat(tokens.breakpoints.compact),
+      md: Number.parseFloat(tokens.breakpoints.medium),
+      lg: Number.parseFloat(tokens.breakpoints.workspace),
+      xl: Number.parseFloat(tokens.breakpoints.wide),
     },
   },
-  /**
-   * Sizes are left at MUI's defaults on purpose — call sites already tune
-   * them per surface. What's set here is the part that reads as "designed":
-   * optical tracking that tightens as type grows, leading that's roomy for
-   * prose and tight for headlines, and one weight step between levels.
-   */
   typography: {
     fontFamily: SANS_FONT,
-    h1: { fontWeight: 700, letterSpacing: "-0.035em", lineHeight: 1.08 },
-    h2: { fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.12 },
-    h3: { fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.18 },
-    h4: { fontWeight: 700, letterSpacing: "-0.022em", lineHeight: 1.22 },
-    h5: { fontWeight: 600, letterSpacing: "-0.018em", lineHeight: 1.3 },
-    h6: { fontWeight: 600, letterSpacing: "-0.014em", lineHeight: 1.4 },
-    subtitle1: { fontWeight: 600, letterSpacing: "-0.011em" },
-    subtitle2: { fontWeight: 600, letterSpacing: "-0.006em" },
-    body1: { letterSpacing: "-0.011em", lineHeight: 1.6 },
-    body2: { letterSpacing: "-0.006em", lineHeight: 1.6 },
-    // Small text needs the opposite treatment: a hair of positive tracking
-    // keeps 11–12px legible instead of clotting together.
-    caption: { letterSpacing: "0.01em", lineHeight: 1.5 },
-    overline: { fontWeight: 600, letterSpacing: "0.08em" },
-    button: {
+    h1: { fontWeight: 650, letterSpacing: "-0.04em", lineHeight: 1.1 },
+    h2: { fontWeight: 650, letterSpacing: "-0.035em", lineHeight: 1.15 },
+    h3: { fontWeight: 650, letterSpacing: "-0.03em", lineHeight: 1.2 },
+    h4: { fontWeight: 650, letterSpacing: "-0.025em", lineHeight: 1.25 },
+    h5: {
+      fontSize: tokens.typography.title,
       fontWeight: 600,
+      letterSpacing: "-0.03em",
+      lineHeight: 1.3,
+    },
+    h6: {
+      fontSize: "1.125rem",
+      fontWeight: 600,
+      letterSpacing: "-0.02em",
+      lineHeight: 1.4,
+    },
+    subtitle1: {
+      fontSize: tokens.typography.section,
+      fontWeight: 600,
+      letterSpacing: "-0.015em",
+    },
+    subtitle2: {
+      fontSize: tokens.typography.body,
+      fontWeight: 600,
+      letterSpacing: "-0.01em",
+    },
+    body1: {
+      fontSize: tokens.typography.body,
+      letterSpacing: "-0.005em",
+      lineHeight: 1.65,
+    },
+    body2: {
+      fontSize: tokens.typography.detail,
+      letterSpacing: "-0.003em",
+      lineHeight: 1.6,
+    },
+    caption: { fontSize: tokens.typography.caption, lineHeight: 1.5 },
+    overline: {
+      fontSize: tokens.typography.caption,
+      fontWeight: 600,
+      letterSpacing: "0.08em",
+    },
+    button: {
+      fontSize: tokens.typography.detail,
+      fontWeight: 550,
       textTransform: "none",
-      letterSpacing: "-0.006em",
+      letterSpacing: "-0.005em",
     },
   },
-  shape: { borderRadius: 8 },
+  shape: { borderRadius: Number.parseFloat(tokens.radius.control) },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
         body: {
           minHeight: "100vh",
-          // Geist is drawn for screens; grayscale antialiasing is what keeps
-          // it from looking chunky against the dark-first background. Without
-          // this, subpixel rendering fattens light-on-dark text noticeably.
           WebkitFontSmoothing: "antialiased",
           MozOsxFontSmoothing: "grayscale",
           textRendering: "optimizeLegibility",
         },
-        // Anything genuinely tabular — ids, tokens, counts, coordinates —
-        // in the mono face with fixed-width figures so columns line up.
         "code, kbd, samp, pre": {
           fontFamily: MONO_FONT,
           fontVariantNumeric: "tabular-nums",
+        },
+        "a:focus-visible, button:focus-visible, summary:focus-visible": {
+          outline: "2px solid var(--mui-palette-primary-main)",
+          outlineOffset: 3,
+          borderRadius: tokens.radius.control,
+        },
+        "@media (prefers-reduced-motion: reduce)": {
+          "*, *::before, *::after": {
+            scrollBehavior: "auto !important",
+            animationDuration: "0.01ms !important",
+            transitionDuration: "0.01ms !important",
+          },
         },
       },
     },
     MuiButton: {
       defaultProps: { disableElevation: true },
-      styleOverrides: { root: { textTransform: "none", fontWeight: 600 } },
+      styleOverrides: {
+        root: { minHeight: 34, paddingInline: 14 },
+        sizeSmall: { minHeight: 30, paddingInline: 10 },
+      },
+    },
+    MuiButtonBase: {
+      styleOverrides: {
+        root: {
+          "&.Mui-focusVisible": {
+            outline: "2px solid var(--mui-palette-primary-main)",
+            outlineOffset: 3,
+          },
+        },
+      },
     },
     MuiPaper: {
       defaultProps: { elevation: 0 },
@@ -118,6 +140,28 @@ const theme = createTheme({
         root: {
           backgroundImage: "none",
           border: "1px solid var(--mui-palette-divider)",
+          borderRadius: tokens.radius.panel,
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: { root: { fontSize: tokens.typography.body } },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          fontSize: tokens.typography.detail,
+          fontWeight: 550,
+          minHeight: 44,
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: tokens.radius.control,
+          fontSize: tokens.typography.caption,
+          fontWeight: 500,
         },
       },
     },
@@ -127,7 +171,9 @@ const theme = createTheme({
         root: {
           backgroundColor: "var(--mui-palette-background-default)",
           color: "var(--mui-palette-text-primary)",
+          border: 0,
           borderBottom: "1px solid var(--mui-palette-divider)",
+          borderRadius: 0,
           backgroundImage: "none",
         },
       },

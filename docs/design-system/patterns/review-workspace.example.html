@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>StateBoard review workspace</title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <link rel="stylesheet" href="../styles/components.css" />
+  </head>
+  <body>
+    <header class="app-bar">
+      <strong class="app-bar__brand">StateBoard</strong
+      ><span class="app-bar__context">Codex-assisted delivery</span
+      ><a class="app-bar__actions" href="#capabilities">Capabilities</a>
+    </header>
+    <div class="workspace">
+      <nav class="workspace__nav" aria-label="Assessment perspective">
+        <a href="#overview" aria-current="page">Overview</a
+        ><a href="#capabilities">Capabilities</a
+        ><a href="#attention">Checks needing attention</a>
+      </nav>
+      <header class="workspace__header">
+        <span class="meta">Release assessment · Design specimen</span>
+        <h1>StateBoard delivery</h1>
+        <p class="meta">Target · self-hosted production · Illustrative data</p>
+        <details>
+          <summary class="meta">Candidate details</summary>
+          <p class="meta">
+            This specimen demonstrates layout. Read the live assessment for
+            current results.
+          </p>
+        </details>
+      </header>
+      <main class="workspace__content" id="overview">
+        <section>
+          <h2><span class="status status--missing">Needs evidence</span></h2>
+          <p class="meta">0 blockers · 2 evidence gaps</p>
+          <p class="meta">Validation · local development</p>
+          <a class="review__decision" href="#decision">Review decision →</a>
+          <h3 id="attention">Needs attention</h3>
+          <div class="rows">
+            <div class="row">
+              <p>
+                A coordinated database and private-media backup can be restored.
+              </p>
+              <span class="status status--missing">Missing evidence</span>
+              <div class="meta">Data operations</div>
+            </div>
+            <div class="row">
+              <p>
+                An external reviewer can distinguish local verification from
+                production availability.
+              </p>
+              <span class="status status--missing">Inconclusive</span>
+              <div class="meta">Product maintainer</div>
+            </div>
+          </div>
+          <details id="decision">
+            <summary>Decision context</summary>
+            <p>
+              Evidence gaps remain visible. An owner reviews the assessment
+              before deciding.
+            </p>
+          </details>
+        </section>
+        <section id="capabilities">
+          <h2>Capabilities <span class="meta">3 shown</span></h2>
+          <div class="rows">
+            <details class="row">
+              <summary>
+                <span
+                  ><strong>Preserve a reviewed baseline</strong
+                  ><span class="meta" style="display: block"
+                    >Release owner</span
+                  ></span
+                ><span class="status status--ready">Ready · checks</span>
+              </summary>
+              <p class="row__detail">
+                Retained scope, evidence, wiring, and media remain inspectable
+                after the live product changes.
+              </p>
+            </details>
+            <details class="row">
+              <summary>
+                <span
+                  ><strong>Record verification without hiding failures</strong
+                  ><span class="meta" style="display: block"
+                    >QA maintainer</span
+                  ></span
+                ><span class="status status--ready">Ready · checks</span>
+              </summary>
+              <p class="row__detail">
+                Evidence belongs to the exact candidate and active check
+                revision.
+              </p>
+            </details>
+            <details class="row">
+              <summary>
+                <span
+                  ><strong>Share a comprehensible review</strong
+                  ><span class="meta" style="display: block"
+                    >Product maintainer</span
+                  ></span
+                ><span class="status status--missing"
+                  >Needs evidence · checks</span
+                >
+              </summary>
+              <p class="row__detail">
+                The example has no independent human usability evidence.
+              </p>
+            </details>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+body,
+button,
+.btn--primary,
+.rows,
+.workspace__nav [aria-current],
+.swatch {
+  background: white;
+  color: black;
+  border-color: gray;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: monospace;
+}
+.workspace > *,
+.workspace__content > *,
+.row,
+.app-bar > * {
+  outline: 1px dashed gray;
+}
+.meta,
+.muted,
+.status,
+h2 .status,
+h2 .status::before,
+.workspace__nav a {
+  color: black;
+}
