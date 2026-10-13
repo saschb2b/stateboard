@@ -48,19 +48,22 @@ The MVP is designed to let a product manager, backend developer, QA specialist, 
 - **A defined release assessment.** Keep a board as the product boundary. Assess an immutable candidate reference or artifact manifest against a validation environment, target deployment environment, audience, and configuration. A new candidate or assessment context requires its own assessment.
 - **Reusable capabilities.** Describe outcomes such as "Export an invoice" or "Process a partner webhook," with owners and required acceptance checks. Link capabilities to screens and regions where useful; a capability can exist without a UI.
 - **Lightweight dependencies.** Record components, owners, and meaningful relationships such as calls, consumes, or requires. Show the dependencies relevant to a capability and the capabilities affected by a component.
-- **Applicable evidence.** Attach manual reviews and test results to versioned checks. Evidence is append-only and identifies its candidate, environment, audience/configuration, result, author/source, time, and freshness window. Start with manual entry and push submissions through the existing REST API-key model.
+- **Applicable evidence.** Attach manual reviews and test results to versioned checks. Evidence is append-only and identifies its candidate, environment, audience/configuration, result, author/source, time, and freshness window. Agents and CI push observations through REST or MCP; human entry remains available.
+- **AI-maintained product context.** Coding agents inspect the project, reconcile existing capabilities/components and declared dependencies, maintain scope/checks, and submit actual verification for the exact candidate. MCP and REST expose the same ordinary readiness operations; the packaged skill teaches this workflow. People review release intent, unresolved claims, and decisions rather than transcribing the repository.
 - **Explainable readiness.** Calculate `ready`, `blocked`, or `needs_evidence` from required checks and applicable evidence. Show individual failures and unknowns; a percentage must never hide a critical blocker. Keep `shipped` / `mock` / `missing` as separate visual delivery states.
 - **Recorded human decisions.** Preserve the assessed scope, applicable evidence, readiness result, actor, time, and rationale in a decision snapshot. Passing checks do not automatically approve a release. Exception waivers are outside the MVP.
 - **Six view presets over the same records.** Release / product, Visual / frontend, Backend, QA, Operations / security / data, and Decision. People choose the view that answers their question; these presets are not access roles.
 - **A curated public projection.** Explicitly select public-safe outcome summaries and visual media, retain the media needed by a published decision, and enforce an allowlist on the server. Raw internal dependencies, evidence references, and identities stay authenticated.
 
-All six implementation slices are present, including private media, retained decisions, curated publication, and a permanent example at `/share/demo/releases`. Upgrade with migrations `0008`–`0010`. The [implementation plan](./release-readiness-mvp) covers the schema, API, readiness rules, and acceptance criteria. Pilot one real release with roughly 5–10 critical capabilities before broadening the model; team usability validation remains pending.
+The original six implementation slices are present, including private media, retained decisions, curated publication, and a permanent example at `/share/demo/releases`. The adopted AI completion adds full ordinary readiness maintenance through MCP and the updated agent skill (RR7). Upgrade with migrations `0008`–`0010`. The [implementation plan](./release-readiness-mvp) covers the schema, API, readiness rules, and acceptance criteria. Pilot one real release with roughly 5–10 critical capabilities before broadening the model; team usability validation remains pending.
 
 The [local persona iteration](./persona-iteration) uses StateBoard's own Codex-assisted delivery as a real case. It added candidate readiness to the overview, actionable verification findings, scoped architecture/checks, QA attention filters, and explicit verification/availability context. Six simulated professions and actual UI retests informed these changes; external human usability and production restoration remain unverified.
 
-## v2.x: keep evidence current · planned after the pilot
+Connected agents can already reconcile the affected records after an authorized code change, and CI can push completed verification runs. StateBoard does not host an LLM, execute tests, or install a background scheduler. Source-derived wiring is declared context, while readiness depends on actual evidence; human owner decisions and curated publication remain session-only.
 
-- **Evidence integration recipes** for existing CI, test, and internal systems, using push submissions through API keys first. StateBoard makes no new runtime outbound calls.
+## v2.x: extend evidence sources · planned after the pilot
+
+- **Additional evidence integration recipes** for the CI, test, and internal systems observed in the pilot, building on the existing REST/MCP push workflow. StateBoard makes no new runtime outbound calls.
 - **Catalog and architecture imports** that reuse existing component identities and owners rather than require a second catalog to be maintained by hand.
 - **Freshness and context comparison** that make stale evidence and differences between assessed candidates, environments, audiences, or configuration visible.
 - **Capability flow views** that connect visual steps and non-visual work into a complete user or business outcome.
@@ -95,7 +98,7 @@ These previously planned features are retained, but are not prerequisites for th
 
 ## What we won't build
 
-The full operating guardrails live in `CLAUDE.md`'s [What not to build](https://github.com/saschb2b/stateboard/blob/main/CLAUDE.md#what-not-to-build) section. This direction does not turn StateBoard into:
+The repository's [operating manual](https://github.com/saschb2b/stateboard/blob/main/AGENTS.md#scope) records the implementation boundaries. This direction does not turn StateBoard into:
 
 - A ticket, sprint, or roadmap management tool
 - A full developer portal, service catalog, or observability platform

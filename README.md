@@ -42,7 +42,8 @@ This working tree implements the full MVP; the latest published release remains 
 - Reusable capabilities and owners, including outcomes with no UI; optional links to screenshot regions
 - Workspace components, declared dependencies, focused navigation, and affected capabilities
 - Immutable candidate/environment/audience/configuration context, explicit capability scope, and versioned acceptance checks
-- Manual and REST-submitted evidence with context, provenance, idempotency, history, and freshness
+- Manual, REST, and MCP-submitted evidence with context, provenance, idempotency, history, and freshness
+- AI-maintained capabilities, dependencies, scope, and checks through REST/MCP and the packaged agent skill
 - Explainable `ready` / `blocked` / `needs_evidence` calculation, with mandatory failures and unknowns kept visible
 - Six views over one assessment, with a URL that preserves the selected view
 - Human owner approvals/holds with frozen definitions, evidence, wiring, rationale, and selected retained media
@@ -62,7 +63,7 @@ The [persona iteration journal](./src/content/docs/persona-iteration.mdx) record
 Agents, scripts, and CI can't complete an OIDC sign-in — they authenticate with **API keys** instead (avatar menu → **API keys**). Keys are hash-only server-side, role-capped, expire after 90 days by default, and every edit they make lands in the audit log. Owners can inventory and revoke every key in the workspace. A key unlocks two surfaces:
 
 - **REST** — board editing and release definitions/evidence accept `Authorization: Bearer sbk_…` with the same role rules as the editor. Recording release decisions and publishing/revoking release links require a current owner browser session; API keys cannot perform them. Key management also requires a session.
-- **MCP** — a built-in, zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp` with tools to list and read boards, create and update regions, and mint share links. No SDK, no extra process, works airgapped.
+- **MCP** — a built-in, zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp`. The development build adds product context, capabilities, dependencies, assessments, scope, versioned checks, evidence submission, history, and calculated readiness to the existing visual tools. No SDK, extra process, or server-side LLM is needed.
 
 ```bash
 # Connect Claude Code to your instance
@@ -70,11 +71,15 @@ claude mcp add --transport http stateboard https://your-instance/api/mcp \
   --header "Authorization: Bearer sbk_your_key"
 
 # Teach any coding agent the StateBoard workflow
-# (three states, normalized coordinates, verify-before-shipped)
+# (repository reconciliation, exact-candidate evidence, truthful visual status)
 npx skills@latest add saschb2b/stateboard
 ```
 
-The typical agent session: read the board, verify what actually shipped, flip regions, hand back the share link. Full guide: [Agents & API](https://saschb2b.github.io/stateboard/docs/agents); skill source: [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md).
+After a member creates a key, an agent can inspect the project, reuse or create the relevant capabilities and components, connect their dependencies, define a candidate and checks, run verification, and submit the results. On later changes it reconciles those same records rather than asking people to enter the data again. CI can push new observations through REST. The agent returns the release conclusion, unresolved claims, and an assessment link for human review.
+
+Source-derived wiring is declared context; only actual observations support checks. The server calculates readiness, and a human owner records the release decision and controls publication. Maintenance runs in the connected agent or CI; StateBoard does not run a background AI service or fetch evidence URLs. The latest published `2026.8.0` build still exposes only the visual MCP tools; the expanded surface is unreleased.
+
+Full guide: [Agents & API](./src/content/docs/agents.mdx); skill source: [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md). Agents developing StateBoard itself use [`AGENTS.md`](./AGENTS.md); `CLAUDE.md` imports that single operating manual rather than maintaining a second copy.
 
 ## Quick start (local dev)
 
@@ -180,7 +185,7 @@ The adopted direction is **show what works, what it depends on, and why we belie
 
 Read the [roadmap source](./src/content/docs/roadmap.mdx) and [concrete MVP implementation plan](./src/content/docs/release-readiness-mvp.mdx). The published [roadmap](https://saschb2b.github.io/stateboard/docs/roadmap) updates after these docs are deployed. [GitHub milestones](https://github.com/saschb2b/stateboard/milestones) and the [project board](https://github.com/users/saschb2b/projects/1) still contain legacy scope; reconciliation is pending.
 
-Headless capture, custom states, Jira links/sync, scheduled capture, diffs, Slack, embeds, S3 storage, DOM region detection, SAML, and the template gallery remain in the reprioritized backlog. The MVP starts with manual evidence and pushes through the existing REST API-key model, preserving self-hosted operation and the runtime network boundary. StateBoard remains an assessment and sharing tool; it does not become a ticket tracker, full developer portal, test runner, or deployment system.
+Headless capture, custom states, Jira links/sync, scheduled capture, diffs, Slack, embeds, S3 storage, DOM region detection, SAML, and the template gallery remain in the reprioritized backlog. The MVP supports agent-maintained definitions and evidence pushes through REST and MCP, preserving self-hosted operation and the runtime network boundary. StateBoard remains an assessment and sharing tool; it does not become a ticket tracker, full developer portal, test runner, or deployment system.
 
 ## License
 

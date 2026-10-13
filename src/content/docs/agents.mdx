@@ -1,105 +1,146 @@
 ---
 title: Agents & API
-description: API keys, REST evidence submission, and the visual board tools exposed by the built-in MCP server.
+description: Let coding agents and CI maintain product capabilities, dependencies, release checks, and verification evidence through REST and MCP.
 ---
 
-StateBoard's sign-in is OIDC, which only a human in a browser can complete. Agents, scripts, and CI get in with **API keys** instead. A key unlocks two surfaces, both served by your own instance with zero extra infrastructure:
+StateBoard can be maintained by the coding agent already working on your project. After you connect it, the agent reads the repository and the existing board, maps meaningful capabilities to their implementation, defines checks, and submits results from real verification. People review the release conclusion, gaps, and decisions instead of entering every record by hand.
 
-- the **REST API** — the same endpoints the editor itself uses, and
-- the **MCP server** at `/api/mcp` — so tools like Claude Code can work with boards natively.
+Both **REST** and the built-in **MCP server** at `/api/mcp` expose ordinary release maintenance. The expanded MCP tools are in the **unreleased development build**; the latest published `2026.8.0` build supports visual boards and regions only. A current human owner still records release decisions and controls curated release publication.
 
-Nothing here phones home. The MCP server is implemented in-repo with no SDK dependency, and both surfaces work fully airgapped. In the unreleased development build, REST also supports capabilities, dependencies, release assessments, checks, and evidence. Release decisions and publication require an owner browser session; API keys cannot perform them.
+StateBoard does not host an LLM, execute tests, poll repositories, or fetch evidence URLs. The connected agent or CI does that work within its own environment and permissions, then pushes records to your instance. Both StateBoard surfaces work without a third-party service or new runtime network access; an external agent's own hosting requirements are separate.
 
 ## Create a key
 
-Open your avatar menu → **API keys** (`/settings/api-keys`), name the key, pick a role, and copy the secret — it's shown exactly once. Keys look like `sbk_…`; only a hash is stored server-side.
+Sign in through your configured OIDC provider, then open your avatar menu → **API keys** (`/settings/api-keys`). Name the key, select its role, and copy the secret — it is shown exactly once. Keys look like `sbk_…`; only a hash is stored server-side.
 
-- A key **acts as you**, capped at the role you give it. Give an agent that only reads status a `viewer` key; give one that maintains regions or appends release evidence an `editor` key. A key's owner role does not permit human-only release decisions or publication.
-- The effective role is the _lower_ of the key's role and your current role — if you're demoted or removed, your keys demote or die with you.
-- **Keys expire after 90 days by default.** Pick 30/60/90 days, a year, or — as an explicit choice — no expiration. An expired key simply stops resolving; the list warns "expires in N days" during the last two weeks. (Via the API, pass `expiresInDays` as a number or `null`.)
-- Revoke from the same page. Creation and revocation are written to the audit log, and every edit an agent makes is attributed to you with a `via: "mcp"` marker where applicable.
-- **Owners see every key in the workspace** (with its owner) on the same page and can revoke any of them — a credential nobody can inventory is a liability.
-- Keys can't manage keys: minting and revoking requires a browser session, so a leaked key can't multiply itself.
+- Use an **editor** key for an agent that maintains the product and appends evidence. A **viewer** key supports read-only assessment.
+- A key acts as its creator, capped at the lower of its assigned role and the creator's current role. Demotion or removal restricts the key too.
+- Keys expire after **90 days by default**. You can choose 30/60/90 days, a year, or explicitly no expiration. Via the key API, `expiresInDays` accepts a number or `null`.
+- Creation and revocation require a browser session. Owners can inventory and revoke every key in the workspace.
+- Writes are audited. Evidence retains member, source, and credential attribution; a supplied result is not a guarantee that its claim is true.
 
-## Teach your agent the workflow
+Keep the secret in the agent's environment or CI secret store, never in the repository. Even an owner-scoped API key cannot record a release decision or publish/revoke a release review.
 
-The repo ships an installable [agent skill](https://skills.sh) that carries the working knowledge an agent needs in the repos where it does the shipping — how to connect, the three-state semantics, normalized coordinates, and the "verify before you flip to shipped" discipline:
+## Connect and teach the workflow
+
+Point an MCP client at `https://your-instance/api/mcp` with the key as a bearer token. For example, with the URL and secret in environment variables:
 
 ```bash
+claude mcp add --transport http stateboard "$STATEBOARD_URL/api/mcp" \
+  --header "Authorization: Bearer $STATEBOARD_API_KEY"
+
 npx skills@latest add saschb2b/stateboard
 ```
 
-The MCP server also self-describes (tool descriptions plus server instructions), so a connected client gets the mechanics automatically; the skill adds the setup steps and the judgment.
+The packaged [StateBoard skill](https://github.com/saschb2b/stateboard/blob/main/skills/stateboard/SKILL.md) teaches repository reconciliation, exact-candidate evidence, revision conflicts, and visual status semantics. Install the skill from the same source revision as an unreleased deployment. MCP also describes its available tools and fields at connection time.
 
-## MCP
+A useful initial request is:
 
-Point any MCP client at `https://your-instance/api/mcp` with the key as a bearer token. Claude Code, for example:
+> Set up StateBoard for this project. Inspect the existing board and repository, reuse its capabilities and components, map the critical outcomes and their dependencies, and assess this candidate for our agreed release context. Run the relevant checks and record their actual results. Leave unsupported claims visible and return the assessment for review.
 
-```bash
-claude mcp add --transport http stateboard https://your-instance/api/mcp \
-  --header "Authorization: Bearer sbk_your_key_here"
+Give the agent the intended target environment, audience, configuration, and any release requirements that are not discoverable from the project. It can infer grounded implementation details and maintain them without field-by-field approval. When a material requirement is genuinely unknown, it should surface that question rather than invent an answer.
+
+## How maintenance works
+
+1. **Read before writing.** `list_boards` finds the product; `get_product` returns its capabilities, components, declared relationships, regions, and assessments. Reuse existing IDs instead of creating a new catalog on every run.
+2. **Reconcile the change.** Inspect source, interfaces, tests, and deployment configuration. Update affected outcomes and wiring, with concise references explaining the basis for each relationship. Declared architecture is context, not verified runtime behavior. Dependencies upsert by consumer ID, provider ID, and exact relation text. Preserve the relation for description-only updates and retries; a deliberate semantic replacement creates a new edge and deletes the obsolete edge by ID.
+3. **Assess an exact candidate.** Reuse a matching assessment or create one for the immutable candidate, validation and target environments, audience, and configuration. `create_release` starts with no checks. Reconcile all still-applicable prior capability, component, and release requirements into new check IDs, preserving required status, claim, method, environment, and freshness where applicable. Explain changes for the new scope/context, include each capability's required functional acceptance check, and copy no evidence.
+4. **Verify and append.** Run actual checks in the agent's development or CI environment. Submit `pass`, `fail`, or `inconclusive` observations tied to that check revision and exact context. Unattempted claims remain missing. Builds, source inspection, and simulated reviewers do not establish unrelated outcomes or human approval.
+5. **Read the conclusion.** Fetch readiness and return the authenticated assessment link with blockers, missing verification, and accountable owners. A human owner reviews and records the decision.
+
+For ongoing use, ask the coding agent to update the affected StateBoard records when it completes a change, or add evidence submission to an existing CI run. These are bounded updates using the same records. Connecting MCP alone does not install a scheduler or start a background agent. A new candidate gets a new assessment; old observations remain with the candidate they verified.
+
+## MCP tools
+
+The endpoint is stateless Streamable HTTP: one JSON response per call, without SSE or MCP sessions. Discover the exact schemas from the connected instance.
+
+| Tools                                                          | Role   | Purpose                                                                                                                       |
+| -------------------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `list_boards`, `get_board`                                     | viewer | Find boards; read screens, regions, coordinates, visual states, and notes.                                                    |
+| `get_product`                                                  | viewer | Read capabilities, workspace components, relationships, regions, and assessments for a board.                                 |
+| `get_release`                                                  | viewer | Read the complete assessment workspace, current revision, product context, and readiness.                                     |
+| `get_release_readiness`                                        | viewer | Read current context and readiness, check findings, capabilities missing acceptance checks, latest decision, and review path. |
+| `get_check_history`                                            | viewer | Inspect a check's definitions and past observations.                                                                          |
+| `create_board`, `update_board`                                 | editor | Create or describe the product board.                                                                                         |
+| `create_region`, `update_region`, `delete_region`              | editor | Maintain visual annotations.                                                                                                  |
+| `list_share_links`, `create_share_link`                        | editor | Manage existing visual board share links, separate from release publication.                                                  |
+| `create_capability`, `update_capability`, `archive_capability` | editor | Maintain reusable outcomes and ownership.                                                                                     |
+| `create_component`, `update_component`, `archive_component`    | editor | Maintain implementation references and owners.                                                                                |
+| `link_capability_component`, `unlink_capability_component`     | editor | Map outcomes to their implementation.                                                                                         |
+| `create_dependency`, `delete_dependency`                       | editor | Maintain declared consumer/provider relationships.                                                                            |
+| `link_region_capability`, `unlink_region_capability`           | editor | Connect optional visual anchors to outcomes.                                                                                  |
+| `create_release`, `set_release_scope`                          | editor | Create a candidate assessment; explicitly include/exclude or adopt capability definitions.                                    |
+| `create_check`, `revise_check`, `archive_check`                | editor | Maintain acceptance definitions without rewriting their history.                                                              |
+| `submit_evidence`                                              | editor | Append an attributed observation with safe retry semantics.                                                                   |
+
+Product mutations use `board_id` and, where applicable, a top-level `capability_id`, `component_id`, or `dependency_id`. Release mutations use `release_id`, top-level `expected_revision`, and `check_id` for check edits. New or changed fields go in a nested `data` object using the REST field names in camelCase. Capability updates also include the current `definitionRevision` in `data`.
+
+For example, `create_check` takes:
+
+```json
+{
+  "release_id": "RELEASE_ID",
+  "expected_revision": 3,
+  "data": {
+    "subjectType": "capability",
+    "subjectId": "CAPABILITY_ID",
+    "claim": "An authorized reviewer can inspect the candidate and identify its missing required evidence.",
+    "category": "functional",
+    "required": true,
+    "ownerLabel": "Product team",
+    "method": "Exercise the release overview with a candidate containing a missing required result.",
+    "environment": "local-development",
+    "maxAgeMs": 86400000
+  }
+}
 ```
 
-The server is a stateless Streamable HTTP endpoint (single JSON response per call — no SSE, no sessions) and exposes these tools:
+Replace the IDs, revision, owner, and environment with the actual assessment's values. A successful product write returns refreshed product context. A release write returns the updated workspace, including `assessment.revision` and calculated `readiness`. Results are available as JSON text and under `structuredContent.data`. Release tool errors set `isError` and include `structuredContent.error` with a code and message.
 
-| Tool                | Role   | What it does                                                    |
-| ------------------- | ------ | --------------------------------------------------------------- |
-| `list_boards`       | viewer | Every board with shipped / mock / missing region counts         |
-| `get_board`         | viewer | One board in full: screens, regions, rectangles, states, notes  |
-| `create_board`      | editor | New board (a share link is minted automatically)                |
-| `update_board`      | editor | Rename / re-describe a board                                    |
-| `create_region`     | editor | Draw a status rectangle on a screen (normalized `[0,1]` coords) |
-| `update_region`     | editor | Change state, rectangle, label, or notes                        |
-| `delete_region`     | editor | Remove a region                                                 |
-| `list_share_links`  | editor | A board's share links                                           |
-| `create_share_link` | editor | Mint the read-only link stakeholders view                       |
+Use the returned revision for the next release write; refresh after shared product edits because changes to wiring can advance affected assessment revisions. On `conflict`, fetch the current workspace and reconcile before retrying. Do not blindly repeat a stale edit, overwrite changed acceptance criteria, or weaken a failed gate to obtain a ready result. Creates are not universally idempotent. If the outcome is unknown, re-read and reconcile matching records rather than blindly retrying; surface ambiguous concurrent duplicates instead of choosing one without a basis.
 
-The archetypal agent session: `list_boards` → `get_board` → a few `update_region` calls as it verifies what actually shipped → `create_share_link` → post the link where stakeholders will see it.
+## REST and file uploads
 
-These MCP tools retain their visual board scope. They do not expose capabilities, release checks, evidence submission, or release decisions. Use the REST release endpoints for those records. Creating a visual board share link through MCP does not publish an internal release assessment.
+The same bearer key works on visual and release editing routes. REST returns resources directly and errors as `{ "error": "…" }`. Useful entry points are:
 
-Adding a _screen_ needs image bytes, which MCP tools don't carry — use the REST API below for that.
-
-## REST
-
-The visual board routes and ordinary release editing/evidence routes accept `Authorization: Bearer sbk_…` in place of a session cookie, with the same role rules as the editor. API key management, release decisions, and creating or revoking public release review links require a browser session. Release decisions and release publication additionally require current owner membership. The API speaks plain REST nouns; errors are always `{ "error": "…" }`.
+| Purpose             | Route                                    |
+| ------------------- | ---------------------------------------- |
+| Product context     | `GET /api/boards/BOARD_ID/product`       |
+| Complete assessment | `GET /api/releases/RELEASE_ID`           |
+| Fresh readiness     | `GET /api/releases/RELEASE_ID/readiness` |
+| Evidence history    | `GET /api/releases/RELEASE_ID/evidence`  |
+| Append evidence     | `POST /api/releases/RELEASE_ID/evidence` |
 
 ```bash
-BASE=https://your-instance
-KEY="sbk_your_key_here"
+curl -H "Authorization: Bearer $STATEBOARD_API_KEY" \
+  "$STATEBOARD_URL/api/releases/RELEASE_ID"
 
-# What exists?
-curl -H "Authorization: Bearer $KEY" $BASE/api/boards
-
-# The deep view of one board (screens + regions)
-curl -H "Authorization: Bearer $KEY" $BASE/api/boards/BOARD_ID
-
-# Flip a region to shipped
-curl -X PATCH -H "Authorization: Bearer $KEY" -H "content-type: application/json" \
-  -d '{"state":"shipped"}' $BASE/api/regions/REGION_ID
-
-# Add a screenshot to a board as a new screen (multipart, ≤ 25 MB)
-curl -X POST -H "Authorization: Bearer $KEY" \
-  -F "file=@dashboard.png" -F "label=Dashboard" \
-  $BASE/api/boards/BOARD_ID/screens
+curl -X POST -H "Authorization: Bearer $STATEBOARD_API_KEY" \
+  -H "Content-Type: application/json" --data-binary @evidence.json \
+  "$STATEBOARD_URL/api/releases/RELEASE_ID/evidence"
 ```
 
-Region coordinates are **normalized to `[0, 1]`** — `{"x":0.1,"y":0.2,"w":0.3,"h":0.15}` is a box at 10% from the left, 20% from the top. Never send pixels.
+The [release readiness guide](/docs/release-readiness#submit-evidence-through-rest) gives the complete evidence payload. MCP's `submit_evidence` uses the same fields inside `data`, with `expected_revision` at the top level instead of REST's `expectedRevision`.
 
-## Release evidence in the development build
+Screenshots and private release assets use multipart REST uploads rather than MCP image arguments:
 
-The release readiness workflow is implemented in the current development build and is **unreleased**; it is not available in the latest published `2026.8.0` release.
+- `POST /api/boards/BOARD_ID/screens`, with `file` and `label`, creates a visual screen. PNG/JPEG/WebP/GIF, up to 25 MB. These legacy board images are public visual content.
+- `POST /api/releases/RELEASE_ID/assets` uploads a confidential release image through authenticated storage.
 
-Read `/api/boards/BOARD_ID/product` for capabilities, components, declared relationships, screens, and release assessments. Read `/api/releases/RELEASE_ID` for an assessment with its active checks, evidence, product context, and calculated readiness. A `viewer` key can read these records; an `editor` key can maintain definitions and append evidence.
+Region coordinates `x`, `y`, `w`, `h` are normalized fractions in `[0, 1]`, never pixels. Visual `shipped` means working in production; local/staging checks do not set it automatically. `mock` and `missing` keep their existing meanings. Evidence belongs in check records, even when a short region note also explains the visual status.
 
-Append a result with `POST /api/releases/RELEASE_ID/evidence`. Send the reviewed `expectedRevision`, check ID and definition revision, exact candidate/environment/audience/configuration, `pass`/`fail`/`inconclusive`, observation time in Unix milliseconds, source, run reference, and stable event identity. The [release readiness guide](/docs/release-readiness#submit-evidence-through-rest) includes the complete payload and retry rules.
+## Evidence, conflicts, and boundaries
 
-Store result links as references; StateBoard does not fetch them or execute the test. Submissions retain source, member, and credential attribution. A passing screenshot check or contract test establishes only its stated claim. It does not automatically verify the entire capability, change a visual region to `shipped`, or approve a release.
+Pin and preserve the exact source snapshot, built artifact, or manifest and relevant configuration before running verification. Dirty-worktree results cannot use the base commit or `HEAD` as their tested identity. If that snapshot was not preserved, rerun against a pinned candidate; retain and report earlier failure logs as unattributed observations without fabricating evidence or requiring a commit.
 
-An owner-scoped API key is still denied at `POST /api/releases/RELEASE_ID/decisions`, `POST /api/releases/RELEASE_ID/share-links`, and `DELETE /api/release-share-links/TOKEN`. A current owner must review and perform these actions in a signed-in browser. New release mutations made with session cookies also require the deployment's matching request origin.
+Evidence must identify the active check revision and exact candidate, expected environment, audience, and configuration. `observedAt` is the actual verification time in Unix milliseconds, not the upload time. Use a stable event identity and retain the source/run reference. A source-derived mapping or passing supporting test cannot verify a broader capability by itself.
+
+Retry an uncertain submission with the same event identity and identical payload. That returns the original observation even if the assessment revision has since advanced. Reusing the identity for changed data conflicts. For a new event with a stale revision, refresh and review the definitions before retrying; an old observation may no longer verify the changed claim. A failed or inconclusive result remains part of the evidence history.
+
+API keys are denied at `POST /api/releases/RELEASE_ID/decisions`, `POST /api/releases/RELEASE_ID/share-links`, and `DELETE /api/release-share-links/TOKEN`. A current owner uses a signed-in browser for those actions. Session-authenticated release mutations also require the deployment's matching request origin. Visual board sharing through MCP does not publish the private release assessment.
 
 <Callout>
-  A `viewer` key can read every board and release assessment in the workspace,
-  including internal dependencies and evidence — same as a viewer member in the
-  app. Use separate instances when groups need separate access boundaries.
+  A viewer key can read every board and release assessment in the workspace,
+  including internal dependencies and evidence, just like a viewer member. Use
+  separate instances when groups need separate access boundaries.
 </Callout>
