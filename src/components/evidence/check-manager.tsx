@@ -20,6 +20,7 @@ import {
 } from "./check-scope";
 import { CheckFilters } from "./check-filters";
 import type {
+  CheckCategory,
   ProductContext,
   ReleaseCheck,
   ReleaseDetail,
@@ -40,6 +41,8 @@ export function CheckManager({
   subjectLabel,
   focusedCheckId,
   onClearFocus,
+  initialCategory,
+  onCategoryChange,
 }: {
   detail: ReleaseDetail;
   product: ProductContext;
@@ -55,13 +58,15 @@ export function CheckManager({
   subjectLabel?: string;
   focusedCheckId?: string | null;
   onClearFocus?: () => void;
+  initialCategory?: CheckCategory | null;
+  onCategoryChange?: (category: CheckCategory | null) => void;
 }) {
   const [editing, setEditing] = useState<ReleaseCheck | "new" | null>(null);
   const [reviewing, setReviewing] = useState<ReleaseCheck | null>(null);
   const [filters, setFilters] = useState<CheckFilterValues>({
     needsAttention: false,
     result: "all",
-    category: "all",
+    category: initialCategory ?? "all",
     query: "",
     includeFunctional: false,
   });
@@ -92,6 +97,12 @@ export function CheckManager({
       category: "all",
       query: "",
     });
+    onCategoryChange?.(null);
+  }
+  function changeFilters(patch: Partial<CheckFilterValues>) {
+    setFilters((current) => ({ ...current, ...patch }));
+    if (patch.category !== undefined)
+      onCategoryChange?.(patch.category === "all" ? null : patch.category);
   }
   function subject(check: ReleaseCheck) {
     return check.subjectType === "release"
@@ -165,9 +176,7 @@ export function CheckManager({
       {!focusedCheckId && (
         <CheckFilters
           filters={filters}
-          onChange={(patch) =>
-            setFilters((current) => ({ ...current, ...patch }))
-          }
+          onChange={changeFilters}
           onReset={resetFilters}
           operationsOnly={operationsOnly}
           total={scopedChecks.length}

@@ -58,6 +58,20 @@ export const ResultAndCategory: Story = {
     await expect(
       canvas.getByRole("button", { name: "Reset filters" }),
     ).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Hide filters" }));
+    const category = canvas.getByRole("button", {
+      name: "Clear operational category filter",
+    });
+    await expect(category).toBeVisible();
+    category.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onChange).toHaveBeenCalledWith({ category: "all" });
+    await expect(
+      canvas.queryByText("Category: operational"),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("button", { name: "Reset filters" }),
+    ).toBeVisible();
   },
 };
 export const OperationsCoverage: Story = { args: { operationsOnly: true } };

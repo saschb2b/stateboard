@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Button,
   Checkbox,
+  Chip,
   Collapse,
   FormControlLabel,
   MenuItem,
@@ -78,6 +79,19 @@ export function CheckFilters({
           {expanded ? "Hide filters" : "More filters"}
         </Button>
       </Stack>
+      {filters.category && filters.category !== "all" && (
+        <Stack direction="row">
+          <Chip
+            size="small"
+            variant="outlined"
+            label={`Category: ${filters.category}`}
+            aria-label={`Clear ${filters.category} category filter`}
+            disabled={disabled}
+            onClick={() => onChange({ category: "all" })}
+            onDelete={() => onChange({ category: "all" })}
+          />
+        </Stack>
+      )}
       <Collapse in={expanded}>
         <Stack direction={{ xs: "column", sm: "row" }} gap={1.5}>
           <TextField

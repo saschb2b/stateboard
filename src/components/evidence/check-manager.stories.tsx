@@ -3,7 +3,10 @@ import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import type { ComponentProps } from "react";
 import { getReleaseDemo } from "@/lib/release-demo";
 import { evaluateRelease } from "@/lib/readiness";
-import { useCheckFocus } from "@/components/release/use-check-focus";
+import {
+  useCheckCategory,
+  useCheckFocus,
+} from "@/components/release/use-check-focus";
 import { CheckManager } from "./check-manager";
 const example = getReleaseDemo();
 const meta = {
@@ -187,5 +190,152 @@ export const ExpandCheckDetails: Story = {
     await waitFor(() =>
       expect(canvas.queryByText(check.method)).not.toBeInTheDocument(),
     );
+  },
+};
+
+function CategoryHarness(args: ComponentProps<typeof CheckManager>) {
+  const [category, setCategory] = useCheckCategory(
+    args.initialCategory ?? undefined,
+  );
+  const [checkId, setCheckId] = useCheckFocus(args.focusedCheckId ?? undefined);
+  return (
+    <CheckManager
+      {...args}
+      key={category ?? "all"}
+      initialCategory={category}
+      focusedCheckId={checkId}
+      onCategoryChange={(next) => {
+        setCategory(next);
+        args.onCategoryChange?.(next);
+      }}
+      onClearFocus={() => {
+        setCheckId(null);
+        setCategory(null);
+      }}
+    />
+  );
+}
+
+export const CategoryFilter: Story = {
+  args: { initialCategory: "operational", onCategoryChange: fn() },
+  render: (args) => <CategoryHarness {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Category: operational")).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: "More filters" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      canvas.getByText(example.detail.checks[5]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[0]!.claim),
+    ).not.toBeInTheDocument();
+    const reset = canvas.getByRole("button", { name: "Reset filters" });
+    reset.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onCategoryChange).toHaveBeenCalledWith(null);
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText("Category: operational"),
+    ).not.toBeInTheDocument();
+  },
+};
+
+export const EmptyCategoryFilter: Story = {
+  args: { initialCategory: "integration" },
+  render: (args) => <CategoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText("No matching checks. Try another filter."),
+    ).toBeVisible();
+    await expect(canvas.getByText("Category: integration")).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Clear integration category filter",
+      }),
+    );
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+  },
+};
+
+export const FocusedCheckOverridesCategory: Story = {
+  args: { initialCategory: "operational", focusedCheckId: "check-export" },
+  render: (args) => <CategoryHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.method),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[5]!.claim),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Clear check focus" }),
+    );
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(example.detail.checks[5]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText("Category: operational"),
+    ).not.toBeInTheDocument();
+  },
+};
+
+export const CategoryLocationAndHistory: Story = {
+  render: (args) => <CategoryHarness {...args} />,
+  beforeEach: () => {
+    const originalUrl = window.location.href;
+    const originalState = window.history.state;
+    window.history.replaceState(
+      originalState,
+      "",
+      "/share/demo/releases?view=qa&category=operational&other=kept#evidence",
+    );
+    return () => window.history.replaceState(originalState, "", originalUrl);
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Category: operational")).toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Reset filters" }),
+    );
+    const location = new URL(window.location.href);
+    await expect(location.searchParams.has("category")).toBe(false);
+    await expect(location.searchParams.get("view")).toBe("qa");
+    await expect(location.searchParams.get("other")).toBe("kept");
+    await expect(location.hash).toBe("#evidence");
+    location.searchParams.set("category", "security");
+    window.history.replaceState(null, "", location);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await waitFor(() =>
+      expect(canvas.getByText("Category: security")).toBeVisible(),
+    );
+    await expect(
+      canvas.getByText(example.detail.checks[6]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[0]!.claim),
+    ).not.toBeInTheDocument();
+    location.searchParams.set("category", "unknown-category");
+    window.history.replaceState(null, "", location);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    await waitFor(() =>
+      expect(canvas.getByText(example.detail.checks[0]!.claim)).toBeVisible(),
+    );
+    await expect(
+      canvas.queryByText("Category: security"),
+    ).not.toBeInTheDocument();
   },
 };

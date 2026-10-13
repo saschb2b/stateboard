@@ -4,7 +4,8 @@ import type { CheckEvaluation, ReleaseCheck } from "../../lib/release-types";
 import { evaluateRelease } from "../../lib/readiness.ts";
 import { releaseFixture, TEST_NOW } from "../../lib/release-test-data.ts";
 import { filterChecks } from "./check-scope.ts";
-import { checkFocusUrl } from "../release/use-check-focus.ts";
+import { checkCategoryUrl, checkFocusUrl } from "../release/use-check-focus.ts";
+import { CHECK_CATEGORIES } from "../../lib/release-types.ts";
 
 const base = releaseFixture().checks[0]!;
 const check = (
@@ -211,6 +212,46 @@ describe("check focus location", () => {
       "https://stateboard.example/releases/one?view=qa&check=previous";
     for (const id of ["a".repeat(129), "../other", "check with spaces", ""]) {
       assert.equal(checkFocusUrl(href, id), "/releases/one?view=qa");
+    }
+  });
+});
+
+describe("check category location", () => {
+  it("preserves check focus, view, unrelated parameters, and the fragment", () => {
+    const href =
+      "https://stateboard.example/boards/board/releases/release?view=qa&check=check-1&other=kept#evidence";
+    const filtered = checkCategoryUrl(href, "security");
+    assert.equal(
+      filtered,
+      "/boards/board/releases/release?view=qa&check=check-1&other=kept&category=security#evidence",
+    );
+    assert.equal(
+      checkCategoryUrl(new URL(filtered, href).href, null),
+      "/boards/board/releases/release?view=qa&check=check-1&other=kept#evidence",
+    );
+  });
+
+  it("accepts each declared category and replaces previous category values", () => {
+    for (const category of CHECK_CATEGORIES) {
+      const result = checkCategoryUrl(
+        "https://stateboard.example/releases/one?category=security&category=data",
+        category,
+      );
+      assert.equal(result, `/releases/one?category=${category}`);
+    }
+  });
+
+  it("removes unknown, malformed, and unbounded categories", () => {
+    const href =
+      "https://stateboard.example/releases/one?view=qa&category=previous";
+    for (const category of [
+      "all",
+      "Security",
+      "../other",
+      "a".repeat(129),
+      "",
+    ]) {
+      assert.equal(checkCategoryUrl(href, category), "/releases/one?view=qa");
     }
   });
 });

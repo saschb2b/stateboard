@@ -11,6 +11,7 @@ import { ReleaseAssetUploader } from "./release-asset-uploader";
 import type { PublicationValues } from "./publication-form";
 import type {
   DecisionInput,
+  CheckCategory,
   ProductContext,
   ReleaseCheck,
   ReleaseDetail,
@@ -32,6 +33,8 @@ export function ReleasePerspectives({
   subjectScope,
   focusedCheckId,
   focusedCapabilityId,
+  category,
+  onCategoryChange,
   onClearFocus,
   onInspectCheck,
   onReviewView,
@@ -55,6 +58,8 @@ export function ReleasePerspectives({
   subjectScope: CheckSubjectScope | null;
   focusedCheckId: string | null;
   focusedCapabilityId?: string | null;
+  category?: CheckCategory | null;
+  onCategoryChange?: (category: CheckCategory | null) => void;
   onClearFocus: () => void;
   onInspectCheck: (checkId: string) => void;
   onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
@@ -99,7 +104,9 @@ export function ReleasePerspectives({
       {(view === "backend" || view === "qa" || view === "operations") && (
         <Stack component="section" aria-label="Check evidence">
           <CheckManager
-            key={`${view}:${focusedCapabilityId ?? "all"}`}
+            key={`${view}:${focusedCapabilityId ?? "all"}:${category ?? "all"}`}
+            initialCategory={category}
+            onCategoryChange={onCategoryChange}
             detail={detail}
             product={product}
             readiness={readiness}
