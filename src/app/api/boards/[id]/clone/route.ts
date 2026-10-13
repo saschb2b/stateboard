@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -26,7 +27,7 @@ interface Ctx {
  * a fresh share link. Handy when a new board is mostly the same as an old one
  * and only a screen or two needs swapping.
  */
-export async function POST(_req: NextRequest, { params }: Ctx) {
+async function postHandler(_req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -111,3 +112,5 @@ export async function POST(_req: NextRequest, { params }: Ctx) {
 
   return created(board);
 }
+
+export const POST = withReleaseErrors(postHandler);

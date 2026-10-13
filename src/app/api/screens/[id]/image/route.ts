@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -32,7 +33,7 @@ interface Ctx {
  * id, label, position, and all its regions. The new file gets a fresh name so
  * the image URL changes (no stale browser cache), and the old file is removed.
  */
-export async function PUT(req: NextRequest, { params }: Ctx) {
+async function putHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -105,3 +106,5 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
   const regions = await listRegions(id);
   return ok({ ...updated, regions });
 }
+
+export const PUT = withReleaseErrors(putHandler);

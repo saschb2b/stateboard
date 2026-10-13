@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -33,7 +34,7 @@ async function loadOwnedScreen(id: string, workspaceId: string) {
   return screen;
 }
 
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+async function patchHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -76,7 +77,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   return ok(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+async function deleteHandler(_req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -103,3 +104,6 @@ export async function DELETE(_req: NextRequest, { params }: Ctx) {
 
   return noContent();
 }
+
+export const PATCH = withReleaseErrors(patchHandler);
+export const DELETE = withReleaseErrors(deleteHandler);

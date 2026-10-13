@@ -18,6 +18,8 @@ import { getSessionCookie } from "better-auth/cookies";
  *   - /sign-in               Keycloak entry point
  *   - /api/auth/*            Better Auth's own routes
  *   - /api/uploads/*         screen images (referenced from /share/*)
+ *   - /api/release-share-links/*  curated projection / selected media;
+ *                                 mutations enforce owner sessions in handlers
  *   - /api/search            docs search index
  */
 export function proxy(request: NextRequest) {
@@ -51,5 +53,10 @@ export const config = {
     "/api/share-links/:path*",
     "/api/workspace/:path*",
     "/api/api-keys/:path*",
+    "/api/capabilities/:path*",
+    "/api/components/:path*",
+    "/api/releases/:path*",
+    "/api/checks/:path*",
+    "/api/release-assets/:path*",
   ],
 };

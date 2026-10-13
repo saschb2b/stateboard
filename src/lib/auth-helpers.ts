@@ -6,6 +6,48 @@ import { bearerApiKey, hashApiKey } from "./api-keys";
 import { getCurrentMember, type CurrentMember } from "./auth";
 import { findMemberByApiKeyHash } from "./db";
 import { meetsRole, minRole, type WorkspaceRole } from "./types";
+import { forbidden, unauthorized } from "./http";
+import { isTrustedMutationOrigin } from "./release-security";
+
+export interface ReleaseApiMember extends CurrentMember {
+  credentialKind: "session" | "api_key";
+  credentialId: string | null;
+}
+
+/** Reuse live membership checks, while requiring browser sessions for decisions. */
+export async function requireReleaseApiMember(
+  request: Request,
+  required: WorkspaceRole = "viewer",
+  humanOnly = false,
+): Promise<ReleaseApiMember | NextResponse> {
+  const authorization = request.headers.get("authorization");
+  if (humanOnly && authorization !== null) {
+    return forbidden(
+      "A current owner browser session is required for this action",
+    );
+  }
+  const key = bearerApiKey(authorization);
+  if (authorization !== null && !key)
+    return unauthorized("Invalid API credential");
+  const member = await requireApiMember(required);
+  if (member instanceof NextResponse) return member;
+  const credentialKind = member.credentialKind;
+  if (
+    request.method !== "GET" &&
+    request.method !== "HEAD" &&
+    credentialKind === "session" &&
+    !isTrustedMutationOrigin(
+      request.url,
+      request.headers,
+      process.env.STATEBOARD_BASE_URL ?? process.env.BETTER_AUTH_URL,
+    )
+  ) {
+    return forbidden(
+      "Mutation origin does not match this StateBoard deployment",
+    );
+  }
+  return { ...member, credentialKind };
+}
 
 /**
  * Helpers shared between server components and API routes.
@@ -49,7 +91,7 @@ export async function requirePageMember(
  */
 export async function requireApiMember(
   required: WorkspaceRole = "viewer",
-): Promise<CurrentMember | NextResponse> {
+): Promise<ReleaseApiMember | NextResponse> {
   const headers = await nextHeaders();
 
   // A request carrying one of our keys authenticates by the key alone — no
@@ -77,7 +119,11 @@ export async function requireApiMember(
         { status: 403 },
       );
     }
-    return member;
+    return {
+      ...member,
+      credentialKind: "api_key",
+      credentialId: principal.apiKeyId,
+    };
   }
 
   const member = await getCurrentMember(headers);
@@ -90,5 +136,5 @@ export async function requireApiMember(
       { status: 403 },
     );
   }
-  return member;
+  return { ...member, credentialKind: "session", credentialId: null };
 }

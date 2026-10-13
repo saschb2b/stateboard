@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -26,7 +27,7 @@ interface Ctx {
  * Regions are intentionally NOT copied — you're reusing the picture, not the
  * annotations. Source screens must belong to the caller's workspace.
  */
-export async function POST(req: NextRequest, { params }: Ctx) {
+async function postHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -103,3 +104,5 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   return created(added);
 }
+
+export const POST = withReleaseErrors(postHandler);

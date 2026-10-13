@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -29,7 +30,7 @@ interface Ctx {
   params: Promise<{ id: string }>;
 }
 
-export async function POST(req: NextRequest, { params }: Ctx) {
+async function postHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
 // Reorder a board's screens from a fully-specified id list (drag-and-drop in
 // the editor). The body is { order: string[] } listing every screen once.
-export async function PATCH(req: NextRequest, { params }: Ctx) {
+async function patchHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -150,3 +151,6 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
   return ok(screens);
 }
+
+export const POST = withReleaseErrors(postHandler);
+export const PATCH = withReleaseErrors(patchHandler);

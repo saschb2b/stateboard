@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import path from "node:path";
@@ -31,7 +32,7 @@ interface Ctx {
  * this screen. The screen's id, label, position, and regions are kept; the
  * old file is removed. Both screens must belong to the caller's workspace.
  */
-export async function POST(req: NextRequest, { params }: Ctx) {
+async function postHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -108,3 +109,5 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const regions = await listRegions(id);
   return ok({ ...updated, regions });
 }
+
+export const POST = withReleaseErrors(postHandler);

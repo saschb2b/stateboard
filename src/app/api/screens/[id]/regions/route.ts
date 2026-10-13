@@ -1,3 +1,4 @@
+import { withReleaseErrors } from "@/lib/release-api";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import {
@@ -42,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   return ok(await listRegions(id));
 }
 
-export async function POST(req: NextRequest, { params }: Ctx) {
+async function postHandler(req: NextRequest, { params }: Ctx) {
   const member = await requireApiMember("editor");
   if (member instanceof NextResponse) return member;
 
@@ -119,3 +120,5 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   return created(region);
 }
+
+export const POST = withReleaseErrors(postHandler);

@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 export const ok = <T>(data: T, init?: ResponseInit) =>
   NextResponse.json(data, init);
 
-export const created = <T>(data: T) => NextResponse.json(data, { status: 201 });
+export const created = <T>(data: T, init?: ResponseInit) =>
+  NextResponse.json(data, { ...init, status: 201 });
 
 export const noContent = () => new NextResponse(null, { status: 204 });
 
@@ -13,6 +14,15 @@ export const notFound = (message = "Not found") =>
 
 export const badRequest = (message: string) =>
   NextResponse.json({ error: message }, { status: 400 });
+
+export const unauthorized = (message = "Sign-in required") =>
+  NextResponse.json({ error: message }, { status: 401 });
+
+export const forbidden = (message = "Access denied") =>
+  NextResponse.json({ error: message }, { status: 403 });
+
+export const conflict = (message: string) =>
+  NextResponse.json({ error: message }, { status: 409 });
 
 export const payloadTooLarge = (message = "Request body too large") =>
   NextResponse.json({ error: message }, { status: 413 });
