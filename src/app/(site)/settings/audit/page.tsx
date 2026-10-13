@@ -23,9 +23,6 @@ export default async function AuditPage() {
       pageSize={PAGE_SIZE}
       listEndpoint="/api/workspace/audit"
       exportEndpoint="/api/workspace/audit/export"
-      crumb="Audit log"
-      heading="Audit log"
-      subtitle="Changes across this workspace, newest first. Visible to owners."
     />
   );
 }

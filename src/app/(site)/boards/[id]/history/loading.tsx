@@ -1,3 +1,5 @@
+"use client";
+import { useTranslations } from "next-intl";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Paper from "@mui/material/Paper";
@@ -7,6 +9,7 @@ import { AppHeader } from "@/components/app/app-header";
 
 /** Shell for a board's history while its audit entries stream in. */
 export default function BoardHistoryLoading() {
+  const t = useTranslations("Common");
   return (
     <>
       <AppHeader />
@@ -15,7 +18,7 @@ export default function BoardHistoryLoading() {
         maxWidth="lg"
         sx={{ py: { xs: 3, md: 4 } }}
         aria-busy="true"
-        aria-label="Loading product history"
+        aria-label={t("loadingHistory")}
       >
         <Stack spacing={3}>
           <Box>

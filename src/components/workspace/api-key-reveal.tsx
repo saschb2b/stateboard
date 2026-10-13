@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState } from "react";
 import Box from "@mui/material/Box";
@@ -16,6 +17,7 @@ interface ApiKeyRevealProps {
 
 /** Show-once panel for a freshly minted key, with copy-to-clipboard. */
 export function ApiKeyReveal({ secret }: ApiKeyRevealProps) {
+  const t = useTranslations("Common");
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
 
@@ -32,7 +34,7 @@ export function ApiKeyReveal({ secret }: ApiKeyRevealProps) {
   return (
     <Paper sx={{ p: 2.5, borderColor: "primary.main" }}>
       <Typography variant="subtitle2" sx={{ mb: 1 }}>
-        Copy your key now — it won&apos;t be shown again
+        {t("copyKeyWarning")}
       </Typography>
       <Stack direction="row" spacing={1} alignItems="center">
         <Box
@@ -50,15 +52,19 @@ export function ApiKeyReveal({ secret }: ApiKeyRevealProps) {
         >
           {secret}
         </Box>
-        <Tooltip title={copied ? "Copied" : "Copy to clipboard"}>
-          <IconButton size="small" onClick={onCopy} aria-label="Copy API key">
+        <Tooltip title={copied ? t("copied") : t("copyClipboard")}>
+          <IconButton
+            size="small"
+            onClick={onCopy}
+            aria-label={t("copyApiKey")}
+          >
             <ContentCopyIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       </Stack>
       {copyFailed && (
         <Typography role="alert" variant="caption" color="error">
-          Clipboard access failed. Select and copy the key text manually.
+          {t("copyFailed")}
         </Typography>
       )}
     </Paper>

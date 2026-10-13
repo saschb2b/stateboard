@@ -255,3 +255,53 @@ export const NewSecretSurvivesEarlierRevocation: Story = {
     await expect(canvas.getByText("sbk_second_fixture_only")).toBeVisible();
   },
 };
+
+export const GermanKeyExpiryAndCreation: Story = {
+  parameters: { locale: "de" },
+  args: {
+    viewer: viewer("owner"),
+    initialKeys: [
+      key("one-day", "tomorrow-agent", { expiresAt: NOW + DAY }),
+      key("five-days", "weekly-agent", { expiresAt: NOW + 5 * DAY }),
+    ],
+    initialWorkspaceKeys: null,
+    createKey: fn<CreateKey>(async (input) => ({
+      ...key("new-german-key", input.name, { role: input.role }),
+      key: "sbk_german_fixture_only",
+    })),
+  },
+  play: async ({ canvas, args }) => {
+    await expect(canvas.getByText("Läuft in 1 Tag ab")).toBeVisible();
+    await expect(canvas.getByText("Läuft in 5 Tagen ab")).toBeVisible();
+    const role = canvas.getByRole("combobox", { name: "Schlüsselrolle" });
+    await expect(role).toHaveTextContent("Bearbeitung");
+    await userEvent.click(role);
+    await userEvent.click(
+      within(document.body).getByRole("option", { name: "Lesen" }),
+    );
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: "Gültigkeitsdauer des Schlüssels" }),
+    );
+    await userEvent.click(
+      within(document.body).getByRole("option", { name: "60 Tage" }),
+    );
+    await userEvent.type(
+      canvas.getByRole("textbox", { name: "Schlüsselname" }),
+      "release-bot",
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Schlüssel erstellen" }),
+    );
+    await expect(args.createKey).toHaveBeenCalledWith({
+      name: "release-bot",
+      role: "viewer",
+      expiresInDays: 60,
+    });
+    await expect(
+      canvas.findByText("sbk_german_fixture_only"),
+    ).resolves.toBeVisible();
+    await expect(
+      canvas.getByRole("textbox", { name: "Schlüsselname" }),
+    ).toHaveValue("");
+  },
+};

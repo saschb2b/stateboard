@@ -1,3 +1,5 @@
+"use client";
+import { useTranslations } from "next-intl";
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
@@ -5,6 +7,7 @@ import { AppHeader } from "@/components/app/app-header";
 import { SiteLink } from "@/components/site/site-link";
 
 export default function NotFound() {
+  const t = useTranslations("Common");
   return (
     <>
       <AppHeader />
@@ -18,13 +21,13 @@ export default function NotFound() {
             404
           </Typography>
           <Typography component="h1" variant="h5" sx={{ mb: 1 }}>
-            Page not found
+            {t("pageNotFound")}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            This page is unavailable, or its share link was revoked.
+            {t("pageUnavailable")}
           </Typography>
           <SiteLink href="/" variant="contained" color="primary">
-            Back to StateBoard
+            {t("backStateboard")}
           </SiteLink>
         </Box>
       </Container>

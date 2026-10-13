@@ -1,4 +1,5 @@
 "use client";
+import { useFormatter, useTranslations } from "next-intl";
 
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
@@ -24,8 +25,6 @@ import {
   AUDIT_ACTIONS,
   AUDIT_EXPORT_CAP,
   AUDIT_TARGET_TYPES,
-  auditActionLabel,
-  formatAuditTime,
   summarizeMeta,
   type AuditCursor,
   type AuditEntry,
@@ -46,9 +45,7 @@ interface AuditLogProps {
   /** API base for the CSV export, mirroring `listEndpoint`'s scope. */
   exportEndpoint: string;
   /** Header breadcrumb + page heading. */
-  crumb: string;
-  heading: string;
-  subtitle: string;
+  boardName?: string;
   /** Where the header's home link points (defaults to the board list). */
   backHref?: string;
 }
@@ -82,11 +79,27 @@ export function AuditLog({
   pageSize,
   listEndpoint,
   exportEndpoint,
-  crumb,
-  heading,
-  subtitle,
+  boardName,
   backHref = "/boards",
 }: AuditLogProps) {
+  const t = useTranslations("Common");
+  const format = useFormatter();
+  const crumb = t(boardName === undefined ? "auditLog" : "history");
+  const heading =
+    boardName === undefined
+      ? t("auditLog")
+      : t("boardHistory", { name: boardName });
+  const subtitle = t(
+    boardName === undefined ? "auditSubtitle" : "historySubtitle",
+  );
+  const actionLabel = (value: string) => {
+    const known = AUDIT_ACTIONS.find((action) => action === value);
+    return known ? t(`auditActions.${known}`) : value;
+  };
+  const targetLabel = (value: string) => {
+    const known = AUDIT_TARGET_TYPES.find((target) => target === value);
+    return known ? t(`auditTargets.${known}`) : value;
+  };
   const [entries, setEntries] = useState<AuditEntry[]>(initialEntries);
   const [cursor, setCursor] = useState<AuditCursor | null>(initialCursor);
   const [actor, setActor] = useState("");
@@ -126,7 +139,7 @@ export function AuditLog({
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         if (seq === reqSeq.current) {
-          setError(body.error ?? "Couldn't load the audit log.");
+          setError(body.error ?? t("auditLoadFailed"));
         }
         return;
       }
@@ -135,7 +148,7 @@ export function AuditLog({
       setEntries((prev) => (reset ? data.entries : [...prev, ...data.entries]));
       setCursor(data.nextCursor);
     } catch {
-      if (seq === reqSeq.current) setError("Couldn't load the audit log.");
+      if (seq === reqSeq.current) setError(t("auditLoadFailed"));
     } finally {
       if (seq === reqSeq.current) setLoading(false);
     }
@@ -183,12 +196,12 @@ export function AuditLog({
         <TextField
           select
           size="small"
-          label="Actor"
+          label={t("actor")}
           value={actor}
           onChange={(e) => setActor(e.target.value)}
           sx={{ minWidth: 180 }}
         >
-          <MenuItem value="">All actors</MenuItem>
+          <MenuItem value="">{t("allActors")}</MenuItem>
           {actors.map((a) => (
             <MenuItem key={a.id} value={a.id}>
               {a.name ?? a.email}
@@ -199,15 +212,15 @@ export function AuditLog({
         <TextField
           select
           size="small"
-          label="Action"
+          label={t("action")}
           value={action}
           onChange={(e) => setAction(e.target.value)}
           sx={{ minWidth: 190 }}
         >
-          <MenuItem value="">All actions</MenuItem>
+          <MenuItem value="">{t("allActions")}</MenuItem>
           {AUDIT_ACTIONS.map((a) => (
             <MenuItem key={a} value={a}>
-              {auditActionLabel(a)}
+              {actionLabel(a)}
             </MenuItem>
           ))}
         </TextField>
@@ -215,15 +228,15 @@ export function AuditLog({
         <TextField
           select
           size="small"
-          label="Resource"
+          label={t("resource")}
           value={target}
           onChange={(e) => setTarget(e.target.value)}
           sx={{ minWidth: 150 }}
         >
-          <MenuItem value="">All resources</MenuItem>
-          {AUDIT_TARGET_TYPES.map((t) => (
-            <MenuItem key={t} value={t}>
-              {t.replace("_", " ")}
+          <MenuItem value="">{t("allResources")}</MenuItem>
+          {AUDIT_TARGET_TYPES.map((targetType) => (
+            <MenuItem key={targetType} value={targetType}>
+              {targetLabel(targetType)}
             </MenuItem>
           ))}
         </TextField>
@@ -231,7 +244,7 @@ export function AuditLog({
         <TextField
           type="date"
           size="small"
-          label="From"
+          label={t("from")}
           value={from}
           onChange={(e) => setFrom(e.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
@@ -239,7 +252,7 @@ export function AuditLog({
         <TextField
           type="date"
           size="small"
-          label="To"
+          label={t("to")}
           value={to}
           onChange={(e) => setTo(e.target.value)}
           slotProps={{ inputLabel: { shrink: true } }}
@@ -247,12 +260,13 @@ export function AuditLog({
 
         {hasFilters ? (
           <Button size="small" color="inherit" onClick={clearFilters}>
-            Clear
+            {t("clear")}
           </Button>
         ) : null}
 
         <Tooltip
-          title={`Downloads up to ${AUDIT_EXPORT_CAP.toLocaleString()} most recent matching entries`}
+          describeChild
+          title={t("downloadLimit", { count: AUDIT_EXPORT_CAP })}
         >
           <Button
             component="a"
@@ -264,7 +278,7 @@ export function AuditLog({
             startIcon={<FileDownloadOutlinedIcon />}
             sx={{ borderColor: "divider" }}
           >
-            Export CSV
+            {t("exportCsv")}
           </Button>
         </Tooltip>
       </Box>
@@ -278,26 +292,24 @@ export function AuditLog({
       {entries.length === 0 ? (
         <Paper sx={{ p: { xs: 3, sm: 5 }, textAlign: "center" }}>
           <Typography variant="body2" color="text.secondary">
-            {hasFilters
-              ? "No entries match these filters."
-              : "No activity has been recorded yet."}
+            {hasFilters ? t("noMatchingEntries") : t("noActivity")}
           </Typography>
         </Paper>
       ) : (
         <Paper
           role="region"
-          aria-label="Activity entries"
+          aria-label={t("activityEntries")}
           tabIndex={0}
           sx={{ overflowX: "auto" }}
         >
           <Table size="small" sx={{ "& th": { whiteSpace: "nowrap" } }}>
             <TableHead>
               <TableRow>
-                <TableCell>When (UTC)</TableCell>
-                <TableCell>Actor</TableCell>
-                <TableCell>Action</TableCell>
-                <TableCell>Resource</TableCell>
-                <TableCell>Details</TableCell>
+                <TableCell>{t("whenUtc")}</TableCell>
+                <TableCell>{t("actor")}</TableCell>
+                <TableCell>{t("action")}</TableCell>
+                <TableCell>{t("resource")}</TableCell>
+                <TableCell>{t("details")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -311,14 +323,21 @@ export function AuditLog({
                         color: "text.secondary",
                       }}
                     >
-                      {formatAuditTime(e.at)}
+                      {format.dateTime(e.at, {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZoneName: "short",
+                      })}
                     </TableCell>
-                    <TableCell>{e.actorName ?? "a former member"}</TableCell>
-                    <TableCell>{auditActionLabel(e.action)}</TableCell>
+                    <TableCell>{e.actorName ?? t("formerActor")}</TableCell>
+                    <TableCell>{actionLabel(e.action)}</TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={0.75} alignItems="center">
                         <Chip
-                          label={e.targetType.replace("_", " ")}
+                          label={targetLabel(e.targetType)}
                           size="small"
                           variant="outlined"
                           sx={{ borderColor: "divider" }}
@@ -378,7 +397,7 @@ export function AuditLog({
             disabled={loading}
             sx={{ borderColor: "divider" }}
           >
-            {loading ? "Loading…" : "Load more"}
+            {loading ? t("loading") : t("loadMore")}
           </Button>
         </Box>
       ) : null}

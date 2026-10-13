@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useRef, useState } from "react";
 import Box from "@mui/material/Box";
@@ -26,6 +27,7 @@ interface SignInPanelProps {
  * to render multiple buttons.
  */
 export function SignInPanel({ callback }: SignInPanelProps) {
+  const t = useTranslations("Common");
   return (
     <SignInPanelView
       onSignIn={async () => {
@@ -34,9 +36,7 @@ export function SignInPanel({ callback }: SignInPanelProps) {
           callbackURL: callback,
         });
         if (result.error)
-          throw new Error(
-            result.error.message || "Unable to sign in. Try again.",
-          );
+          throw new Error(result.error.message || t("signInFailed"));
       }}
     />
   );
@@ -47,6 +47,7 @@ export function SignInPanelView({
 }: {
   onSignIn: () => Promise<void>;
 }) {
+  const t = useTranslations("Common");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -58,11 +59,7 @@ export function SignInPanelView({
     try {
       await onSignIn();
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to sign in. Try again.",
-      );
+      setError(cause instanceof Error ? cause.message : t("signInFailed"));
       setBusy(false);
       inFlight.current = false;
     }
@@ -77,11 +74,10 @@ export function SignInPanelView({
             <LockOutlinedIcon sx={{ color: "text.secondary", fontSize: 32 }} />
             <Stack spacing={1}>
               <Typography component="h1" variant="h5">
-                Sign in to your workspace
+                {t("signInTitle")}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Use your company account to review products and manage release
-                readiness.
+                {t("signInDescription")}
               </Typography>
             </Stack>
             <Button
@@ -93,7 +89,7 @@ export function SignInPanelView({
               disabled={busy}
               sx={{ px: 4 }}
             >
-              {busy ? "Redirecting…" : "Continue with company account"}
+              {busy ? t("redirecting") : t("companyAccount")}
             </Button>
             {error ? (
               <Typography role="alert" variant="body2" color="error">
@@ -101,7 +97,7 @@ export function SignInPanelView({
               </Typography>
             ) : null}
             <Typography variant="caption" color="text.secondary" sx={{ pt: 1 }}>
-              Just exploring?{" "}
+              {t("exploring")}{" "}
               <Box
                 component={Link}
                 href="/share/demo/releases"
@@ -111,7 +107,7 @@ export function SignInPanelView({
                   "&:hover": { textDecoration: "underline" },
                 }}
               >
-                View an example assessment
+                {t("exampleAssessment")}
               </Box>
             </Typography>
           </Stack>

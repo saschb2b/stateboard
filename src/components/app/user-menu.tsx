@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useState } from "react";
 import Avatar from "@mui/material/Avatar";
@@ -37,6 +38,7 @@ interface UserMenuProps {
  * raw user id or workspace id — that's debugging info, not user-facing.
  */
 export function UserMenu({ user, role }: UserMenuProps) {
+  const t = useTranslations("Common");
   const router = useRouter();
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
   const open = Boolean(anchor);
@@ -55,7 +57,7 @@ export function UserMenu({ user, role }: UserMenuProps) {
       <IconButton
         size="small"
         onClick={(e) => setAnchor(e.currentTarget)}
-        aria-label="Open user menu"
+        aria-label={t("openUserMenu")}
         sx={{ p: 0.25 }}
       >
         <Avatar
@@ -104,7 +106,7 @@ export function UserMenu({ user, role }: UserMenuProps) {
                 textTransform: "capitalize",
               }}
             >
-              {role}
+              {t(`roles.${role}`)}
             </Typography>
           </Stack>
         </Box>
@@ -116,7 +118,7 @@ export function UserMenu({ user, role }: UserMenuProps) {
             onClick={() => setAnchor(null)}
           >
             <GroupIcon fontSize="small" sx={{ mr: 1.5 }} />
-            Members
+            {t("members")}
           </MenuItem>
         ) : null}
         {role === "owner" ? (
@@ -126,7 +128,7 @@ export function UserMenu({ user, role }: UserMenuProps) {
             onClick={() => setAnchor(null)}
           >
             <HistoryIcon fontSize="small" sx={{ mr: 1.5 }} />
-            Audit log
+            {t("auditLog")}
           </MenuItem>
         ) : null}
         <MenuItem
@@ -135,11 +137,11 @@ export function UserMenu({ user, role }: UserMenuProps) {
           onClick={() => setAnchor(null)}
         >
           <KeyIcon fontSize="small" sx={{ mr: 1.5 }} />
-          API keys
+          {t("apiKeys")}
         </MenuItem>
         <MenuItem onClick={onSignOut}>
           <LogoutIcon fontSize="small" sx={{ mr: 1.5 }} />
-          Sign out
+          {t("signOut")}
         </MenuItem>
       </Menu>
     </>

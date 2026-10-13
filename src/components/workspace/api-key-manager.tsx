@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useRef, useState } from "react";
 import { clientRequest } from "@/lib/client-request";
@@ -36,6 +37,7 @@ interface ApiKeyManagerProps {
 type CreatedKey = ApiKey & { key: string };
 
 export function ApiKeyManager(props: ApiKeyManagerProps) {
+  const t = useTranslations("Common");
   return (
     <ApiKeyManagerView
       {...props}
@@ -45,15 +47,11 @@ export function ApiKeyManager(props: ApiKeyManagerProps) {
           headers: { "content-type": "application/json" },
           body: JSON.stringify(input),
         });
-        if (!result.key || !result.id)
-          throw new Error(
-            "The key response was incomplete. Reload the key list before trying again.",
-          );
+        if (!result.key || !result.id) throw new Error(t("incompleteKey"));
         return result;
       }}
       revokeKey={async (key) => {
-        if (!confirm(`Revoke "${key.name}"? Anything using it stops working.`))
-          return false;
+        if (!confirm(t("confirmRevoke", { name: key.name }))) return false;
         await clientRequest(`/api/api-keys/${key.id}`, { method: "DELETE" });
         return true;
       }}
@@ -72,6 +70,7 @@ export function ApiKeyManagerView({
   createKey: (input: ApiKeyCreateInput) => Promise<CreatedKey>;
   revokeKey: (key: ApiKey) => Promise<boolean>;
 }) {
+  const t = useTranslations("Common");
   const [keys, setKeys] = useState<ApiKey[]>(initialKeys);
   const [workspaceKeys, setWorkspaceKeys] = useState<WorkspaceApiKey[] | null>(
     initialWorkspaceKeys,
@@ -110,11 +109,7 @@ export function ApiKeyManagerView({
       setRevealed({ id: body.id, key });
       return true;
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to create the key. Try again.",
-      );
+      setError(cause instanceof Error ? cause.message : t("keyCreateFailed"));
       return false;
     } finally {
       createInFlight.current = false;
@@ -135,11 +130,7 @@ export function ApiKeyManagerView({
       setWorkspaceKeys((prev) => (prev ? markRevoked(prev) : prev));
       setRevealed((current) => (current?.id === k.id ? null : current));
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to revoke the key. Try again.",
-      );
+      setError(cause instanceof Error ? cause.message : t("keyRevokeFailed"));
     } finally {
       revokeInFlight.current = false;
       setPendingId(null);
@@ -150,8 +141,8 @@ export function ApiKeyManagerView({
     <SettingsFrame
       viewer={viewer}
       section="api-keys"
-      title="API keys"
-      description="Connect agents and CI to this workspace. Each key acts with its assigned role."
+      title={t("apiKeys")}
+      description={t("keyDescription")}
       actions={
         <Button
           component={Link}
@@ -160,7 +151,7 @@ export function ApiKeyManagerView({
           variant="outlined"
           sx={{ flexShrink: 0 }}
         >
-          Agent setup
+          {t("agentSetup")}
         </Button>
       }
     >
@@ -186,7 +177,7 @@ export function ApiKeyManagerView({
 
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 1.5 }}>
-            Your keys
+            {t("yourKeys")}
           </Typography>
           <ApiKeyList
             keys={keys}
@@ -194,21 +185,21 @@ export function ApiKeyManagerView({
             viewerId={viewer.user.id}
             pendingId={pendingId}
             onRevoke={onRevoke}
-            emptyText="No keys yet. Create one above to let an agent read this workspace."
+            emptyText={t("noKeys")}
           />
         </Box>
 
         {workspaceKeys ? (
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
-              Other workspace keys
+              {t("otherKeys")}
             </Typography>
             <Typography
               variant="caption"
               color="text.secondary"
               sx={{ display: "block", mb: 1.5 }}
             >
-              Owner access · Revocations are recorded in the audit log.
+              {t("keyOwnerHelp")}
             </Typography>
             <ApiKeyList
               keys={workspaceKeys.filter(
@@ -219,7 +210,7 @@ export function ApiKeyManagerView({
               pendingId={pendingId}
               onRevoke={onRevoke}
               showOwner
-              emptyText="No other members have created keys."
+              emptyText={t("noOtherKeys")}
             />
           </Box>
         ) : null}

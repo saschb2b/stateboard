@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useRef, useState } from "react";
 import Avatar from "@mui/material/Avatar";
@@ -34,6 +35,7 @@ interface MemberRosterProps {
  * surfaces the API error.
  */
 export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
+  const t = useTranslations("Common");
   const changeRole = async (member: WorkspaceMember, role: WorkspaceRole) => {
     await clientRequest(`/api/workspace/members/${member.userId}`, {
       method: "PATCH",
@@ -43,7 +45,13 @@ export function MemberRoster({ viewer, initialMembers }: MemberRosterProps) {
   };
 
   const removeMember = async (member: WorkspaceMember) => {
-    if (!confirm(`Remove ${member.email ?? member.name ?? "this member"}?`))
+    if (
+      !confirm(
+        t("confirmMemberRemove", {
+          name: member.email ?? member.name ?? t("memberFallback"),
+        }),
+      )
+    )
       return false;
     await clientRequest(`/api/workspace/members/${member.userId}`, {
       method: "DELETE",
@@ -70,6 +78,7 @@ export function MemberRosterView({
   onChangeRole: (member: WorkspaceMember, role: WorkspaceRole) => Promise<void>;
   onRemove: (member: WorkspaceMember) => Promise<boolean>;
 }) {
+  const t = useTranslations("Common");
   const [members, setMembers] = useState<WorkspaceMember[]>(initialMembers);
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -86,11 +95,7 @@ export function MemberRosterView({
         prev.map((x) => (x.userId === m.userId ? { ...x, role } : x)),
       );
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to change this role. Try again.",
-      );
+      setError(cause instanceof Error ? cause.message : t("roleChangeFailed"));
     } finally {
       mutationInFlight.current = false;
       setPendingId(null);
@@ -107,9 +112,7 @@ export function MemberRosterView({
         setMembers((prev) => prev.filter((x) => x.userId !== m.userId));
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to remove this member. Try again.",
+        cause instanceof Error ? cause.message : t("memberRemoveFailed"),
       );
     } finally {
       mutationInFlight.current = false;
@@ -121,8 +124,8 @@ export function MemberRosterView({
     <SettingsFrame
       viewer={viewer}
       section="members"
-      title="Members"
-      description="Manage who can access this workspace. New members join as editors."
+      title={t("members")}
+      description={t("memberDescription")}
     >
       <Stack spacing={3}>
         {error ? (
@@ -158,7 +161,7 @@ export function MemberRosterView({
                 >
                   <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                     {m.name ?? m.email?.split("@")[0]}
-                    {m.userId === viewer.user.id ? " (you)" : ""}
+                    {m.userId === viewer.user.id ? t("you") : ""}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap>
                     {m.email}
@@ -172,7 +175,9 @@ export function MemberRosterView({
                   }
                   disabled={pendingId !== null}
                   inputProps={{
-                    "aria-label": `Role for ${m.name ?? m.email ?? "member"}`,
+                    "aria-label": t("roleFor", {
+                      name: m.name ?? m.email ?? t("memberNameFallback"),
+                    }),
                   }}
                   sx={{
                     minWidth: 120,
@@ -186,17 +191,19 @@ export function MemberRosterView({
                       value={r}
                       sx={{ textTransform: "capitalize" }}
                     >
-                      {r}
+                      {t(`roles.${r}`)}
                     </MenuItem>
                   ))}
                 </Select>
-                <Tooltip title="Remove from workspace">
+                <Tooltip title={t("removeMember")}>
                   <span>
                     <IconButton
                       size="small"
                       onClick={() => void removeMember(m)}
                       disabled={pendingId !== null}
-                      aria-label={`Remove ${m.name ?? m.email ?? "member"}`}
+                      aria-label={t("removeNamed", {
+                        name: m.name ?? m.email ?? t("memberNameFallback"),
+                      })}
                       sx={{ color: "text.secondary" }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
@@ -208,7 +215,7 @@ export function MemberRosterView({
             {members.length === 0 ? (
               <Box sx={{ p: 3, textAlign: "center" }}>
                 <Typography variant="body2" color="text.secondary">
-                  No members yet.
+                  {t("noMembers")}
                 </Typography>
               </Box>
             ) : null}
@@ -217,21 +224,12 @@ export function MemberRosterView({
 
         <Box sx={{ px: { xs: 0, sm: 2 }, maxWidth: 760 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Role permissions
+            {t("rolePermissions")}
           </Typography>
           <Stack spacing={0.5}>
-            <RoleRow
-              role="owner"
-              desc="Manage workspace access, record release decisions, and publish reviews. Includes editor permissions."
-            />
-            <RoleRow
-              role="editor"
-              desc="Maintain product mappings, assessments, checks, evidence, and visual boards. Manage visual share links."
-            />
-            <RoleRow
-              role="viewer"
-              desc="Read boards inside the app. Public share links work without any role."
-            />
+            <RoleRow role="owner" desc={t("ownerDescription")} />
+            <RoleRow role="editor" desc={t("editorDescription")} />
+            <RoleRow role="viewer" desc={t("viewerDescription")} />
           </Stack>
         </Box>
       </Stack>
@@ -240,12 +238,13 @@ export function MemberRosterView({
 }
 
 function RoleRow({ role, desc }: { role: WorkspaceRole; desc: string }) {
+  const t = useTranslations("Common");
   return (
     <Stack direction="row" spacing={1.5} alignItems="flex-start">
       <Typography
         variant="caption"
         sx={{
-          width: 64,
+          width: 100,
           fontWeight: 700,
           color: "text.primary",
           textTransform: "capitalize",
@@ -253,7 +252,7 @@ function RoleRow({ role, desc }: { role: WorkspaceRole; desc: string }) {
           pt: 0.25,
         }}
       >
-        {role}
+        {t(`roles.${role}`)}
       </Typography>
       <Typography variant="body2" color="text.secondary">
         {desc}

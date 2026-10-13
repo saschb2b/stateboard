@@ -1,7 +1,10 @@
+"use client";
+import { useTranslations } from "next-intl";
 import { Container, Paper, Skeleton, Stack } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 
 export default function SignInLoading() {
+  const t = useTranslations("Common");
   return (
     <>
       <AppHeader />
@@ -10,7 +13,7 @@ export default function SignInLoading() {
         maxWidth="sm"
         sx={{ py: { xs: 5, md: 9 } }}
         aria-busy="true"
-        aria-label="Loading sign-in"
+        aria-label={t("loadingSignIn")}
       >
         <Paper sx={{ p: { xs: 3, sm: 5 } }}>
           <Stack spacing={3} alignItems="center">

@@ -44,9 +44,7 @@ export default async function BoardHistoryPage({ params }: PageProps) {
       listEndpoint={`/api/boards/${id}/audit`}
       exportEndpoint={`/api/boards/${id}/audit/export`}
       backHref={`/boards/${id}/releases`}
-      crumb="History"
-      heading={`${board.name} · History`}
-      subtitle="Recorded changes to this product, its assessments, evidence, and screens. Newest first."
+      boardName={board.name}
     />
   );
 }

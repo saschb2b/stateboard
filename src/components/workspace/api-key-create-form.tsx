@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useId, useState } from "react";
 import Button from "@mui/material/Button";
@@ -37,6 +38,7 @@ export function ApiKeyCreateForm({
   creating,
   onCreate,
 }: ApiKeyCreateFormProps) {
+  const t = useTranslations("Common");
   const fieldId = useId();
   const [name, setName] = useState("");
   const [role, setRole] = useState<WorkspaceRole>(
@@ -60,15 +62,14 @@ export function ApiKeyCreateForm({
   return (
     <Paper sx={{ p: 2.5 }}>
       <Typography variant="subtitle2" sx={{ mb: 0.25 }}>
-        New key
+        {t("newKey")}
       </Typography>
       <Typography
         variant="caption"
         color="text.secondary"
         sx={{ display: "block", mb: 2 }}
       >
-        Use a name that identifies the agent or workflow. Editor keys can
-        maintain boards; viewer keys can read them.
+        {t("keyHelp")}
       </Typography>
       <Stack
         sx={{
@@ -76,16 +77,16 @@ export function ApiKeyCreateForm({
           gridTemplateColumns: {
             xs: "minmax(0, 1fr)",
             sm: "repeat(2, minmax(0, 1fr))",
-            lg: "minmax(0, 1fr) 120px 140px auto",
+            lg: "minmax(0, 1fr) 140px 200px auto",
           },
           gap: 1.5,
         }}
       >
         <TextField
           size="small"
-          label="Key name"
+          label={t("keyName")}
           disabled={creating}
-          placeholder="e.g. release-bot"
+          placeholder={t("keyPlaceholder")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
@@ -94,42 +95,42 @@ export function ApiKeyCreateForm({
           sx={{ minWidth: 0 }}
         />
         <FormControl size="small" sx={{ minWidth: 120 }} disabled={creating}>
-          <InputLabel id={`${fieldId}-role`}>Key role</InputLabel>
+          <InputLabel id={`${fieldId}-role`}>{t("keyRole")}</InputLabel>
           <Select
             labelId={`${fieldId}-role`}
-            label="Key role"
+            label={t("keyRole")}
             size="small"
             value={role}
             disabled={creating}
-            inputProps={{ "aria-label": "Key role" }}
+            inputProps={{ "aria-label": t("keyRole") }}
             onChange={(e) => setRole(e.target.value as WorkspaceRole)}
             sx={{ minWidth: 120, textTransform: "capitalize" }}
           >
             {roleOptions.map((r) => (
               <MenuItem key={r} value={r} sx={{ textTransform: "capitalize" }}>
-                {r}
+                {t(`roles.${r}`)}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
         <FormControl size="small" sx={{ minWidth: 140 }} disabled={creating}>
-          <InputLabel id={`${fieldId}-expiry`}>Key expiration</InputLabel>
+          <InputLabel id={`${fieldId}-expiry`}>{t("keyExpiry")}</InputLabel>
           <Select
             labelId={`${fieldId}-expiry`}
-            label="Key expiration"
+            label={t("keyExpiry")}
             size="small"
             value={expiry}
             disabled={creating}
-            inputProps={{ "aria-label": "Key expiration" }}
+            inputProps={{ "aria-label": t("keyExpiry") }}
             onChange={(e) => setExpiry(e.target.value)}
             sx={{ minWidth: 140 }}
           >
             {API_KEY_EXPIRY_PRESETS.map((days) => (
               <MenuItem key={days} value={String(days)}>
-                {days === 365 ? "1 year" : `${days} days`}
+                {days === 365 ? t("year") : t("days", { count: days })}
               </MenuItem>
             ))}
-            <MenuItem value="never">No expiration</MenuItem>
+            <MenuItem value="never">{t("noExpiration")}</MenuItem>
           </Select>
         </FormControl>
         <Button
@@ -138,7 +139,7 @@ export function ApiKeyCreateForm({
           disabled={creating || !name.trim()}
           sx={{ whiteSpace: "nowrap", flexShrink: 0 }}
         >
-          Create key
+          {t("createKey")}
         </Button>
       </Stack>
     </Paper>

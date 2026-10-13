@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -8,6 +9,7 @@ import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
+import { LanguageSwitcher } from "@/i18n/language-switcher";
 
 // Raw <img src> doesn't get basePath applied; prepend it manually so the
 // GitHub Pages build (served under /stateboard/) finds the asset.
@@ -115,6 +117,7 @@ export function AppHeader({
           </>
         ) : null}
         <Box sx={{ flex: 1 }} />
+        <LanguageSwitcher />
         {actions ? (
           <Stack
             direction="row"
@@ -154,6 +157,7 @@ function EditableCrumb({
   value: string;
   onCommit: (next: string) => void;
 }) {
+  const t = useTranslations("Common");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -178,7 +182,7 @@ function EditableCrumb({
     return (
       <InputBase
         inputRef={inputRef}
-        inputProps={{ "aria-label": "Board name" }}
+        inputProps={{ "aria-label": t("boardName") }}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -212,8 +216,8 @@ function EditableCrumb({
       component="button"
       type="button"
       onClick={startEditing}
-      aria-label={`Rename ${value}`}
-      title="Rename board"
+      aria-label={t("rename", { name: value })}
+      title={t("renameBoard")}
       sx={{
         color: "text.secondary",
         fontWeight: 500,

@@ -1,3 +1,5 @@
+"use client";
+import { useTranslations } from "next-intl";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
@@ -10,40 +12,40 @@ import { version } from "../../../package.json";
 
 const landingType = designTokens.typography.landing;
 
-const perspectives = [
-  {
-    role: "Product & delivery",
-    question: "Which outcomes can we release?",
-    view: "release",
-  },
-  {
-    role: "Backend & architecture",
-    question: "What does this capability depend on?",
-    view: "backend",
-  },
-  {
-    role: "QA & testing",
-    question: "What passed for this exact candidate?",
-    view: "qa",
-  },
-  {
-    role: "Frontend & design",
-    question: "What works behind this screen?",
-    view: "visual",
-  },
-  {
-    role: "Operations",
-    question: "Can we deploy and recover it?",
-    view: "operations",
-  },
-  {
-    role: "Release owners",
-    question: "What supports the decision?",
-    view: "decision",
-  },
-];
-
 export default function LandingPage() {
+  const t = useTranslations("Common");
+  const perspectives = [
+    {
+      role: t("perspectiveProduct"),
+      question: t("questionProduct"),
+      view: "release",
+    },
+    {
+      role: t("perspectiveBackend"),
+      question: t("questionBackend"),
+      view: "backend",
+    },
+    {
+      role: t("perspectiveQa"),
+      question: t("questionQa"),
+      view: "qa",
+    },
+    {
+      role: t("perspectiveFrontend"),
+      question: t("questionFrontend"),
+      view: "visual",
+    },
+    {
+      role: t("perspectiveOperations"),
+      question: t("questionOperations"),
+      view: "operations",
+    },
+    {
+      role: t("perspectiveDecision"),
+      question: t("questionDecision"),
+      view: "decision",
+    },
+  ];
   return (
     <>
       <AppHeader
@@ -55,10 +57,15 @@ export default function LandingPage() {
               size="small"
               sx={{ display: { xs: "none", md: "inline-flex" } }}
             >
-              For agents
+              {t("forAgents")}
             </SiteLink>
-            <SiteLink href="/docs" color="inherit" size="small">
-              Docs
+            <SiteLink
+              href="/docs"
+              color="inherit"
+              size="small"
+              sx={{ display: { xs: "none", sm: "inline-flex" } }}
+            >
+              {t("docs")}
             </SiteLink>
             <SiteLink
               href="/boards"
@@ -66,7 +73,7 @@ export default function LandingPage() {
               color="inherit"
               size="small"
             >
-              Open workspace
+              {t("openWorkspace")}
             </SiteLink>
           </>
         }
@@ -90,7 +97,7 @@ export default function LandingPage() {
                 variant="body2"
                 sx={{ color: "primary.main", fontWeight: 500, mb: 2.5 }}
               >
-                Release readiness for the whole team
+                {t("landingKicker")}
               </Typography>
               <Typography
                 variant="h1"
@@ -106,7 +113,7 @@ export default function LandingPage() {
                   maxWidth: 680,
                 }}
               >
-                Know what’s ready to release.
+                {t("landingTitle")}
               </Typography>
             </Box>
             <Stack spacing={3} sx={{ pb: 0.5 }}>
@@ -118,9 +125,7 @@ export default function LandingPage() {
                   maxWidth: 410,
                 }}
               >
-                Connect product capabilities to their dependencies and evidence.
-                Give every role a clear view of what works, what’s missing, and
-                what needs a decision.
+                {t("landingLead")}
               </Typography>
               <Stack
                 direction="row"
@@ -133,10 +138,10 @@ export default function LandingPage() {
                   variant="contained"
                   endIcon={<ArrowForwardIcon />}
                 >
-                  Explore the demo
+                  {t("exploreDemo")}
                 </SiteLink>
                 <SiteLink href="/docs/getting-started" color="inherit">
-                  Get started
+                  {t("getStarted")}
                 </SiteLink>
               </Stack>
             </Stack>
@@ -149,10 +154,10 @@ export default function LandingPage() {
             sx={{ mt: 2 }}
           >
             <Typography variant="caption" color="text.secondary">
-              A screen is one part of the product. See the work behind it.
+              {t("screenPart")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Open source · Self-hosted · API + MCP
+              {t("openSource")}
             </Typography>
           </Stack>
         </Container>
@@ -184,13 +189,12 @@ export default function LandingPage() {
                   mb: 2,
                 }}
               >
-                A useful view
+                {t("usefulView")}
                 <br />
-                for every role.
+                {t("everyRole")}
               </Typography>
               <Typography color="text.secondary" sx={{ maxWidth: 340 }}>
-                Review the same candidate from the perspective that matters to
-                your work.
+                {t("reviewPerspective")}
               </Typography>
             </Box>
             <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
@@ -261,7 +265,7 @@ export default function LandingPage() {
             >
               <Box>
                 <Typography variant="body2" color="primary.main" sx={{ mb: 2 }}>
-                  Built for agent upkeep
+                  {t("agentUpkeep")}
                 </Typography>
                 <Typography
                   id="agents-heading"
@@ -277,17 +281,15 @@ export default function LandingPage() {
                     mb: 2,
                   }}
                 >
-                  Let agents keep
+                  {t("letAgents")}
                   <br />
-                  the record current.
+                  {t("recordCurrent")}
                 </Typography>
                 <Typography
                   color="text.secondary"
                   sx={{ mb: 2, maxWidth: 420 }}
                 >
-                  Your coding agent can map capabilities, update dependencies,
-                  and submit observed results through MCP or REST. CI can append
-                  evidence from the checks it runs.
+                  {t("agentLead")}
                 </Typography>
                 <SiteLink
                   href="/docs/agents"
@@ -295,7 +297,7 @@ export default function LandingPage() {
                   endIcon={<ArrowForwardIcon />}
                   sx={{ px: 0 }}
                 >
-                  Connect your agent
+                  {t("connectAgent")}
                 </SiteLink>
               </Box>
               <Box
@@ -311,21 +313,9 @@ export default function LandingPage() {
                   sx={{ listStyle: "none", p: 0, m: 0 }}
                 >
                   {[
-                    [
-                      "01",
-                      "Read the product",
-                      "Reuse its capabilities, owners, and dependencies.",
-                    ],
-                    [
-                      "02",
-                      "Record what was observed",
-                      "Keep passing, failing, and inconclusive results tied to the candidate.",
-                    ],
-                    [
-                      "03",
-                      "Bring it back for review",
-                      "A human owner records the release decision and its rationale.",
-                    ],
+                    ["01", t("readProduct"), t("reuseProduct")],
+                    ["02", t("recordObserved"), t("keepResults")],
+                    ["03", t("bringReview"), t("humanDecision")],
                   ].map(([number, title, body]) => (
                     <Stack
                       component="li"
@@ -356,8 +346,7 @@ export default function LandingPage() {
                   color="text.secondary"
                   sx={{ display: "block", mt: 3 }}
                 >
-                  Runs in your agent or CI workflow. Connecting MCP does not
-                  start background maintenance.
+                  {t("noBackground")}
                 </Typography>
               </Box>
             </Box>
@@ -380,11 +369,10 @@ export default function LandingPage() {
                 variant="h5"
                 sx={{ fontWeight: landingType.weight, mb: 1 }}
               >
-                Keep the assessment with your team.
+                {t("keepAssessment")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Self-host StateBoard with PostgreSQL and your company’s identity
-                provider.
+                {t("selfHostLead")}
               </Typography>
             </Box>
             <SiteLink
@@ -393,7 +381,7 @@ export default function LandingPage() {
               color="inherit"
               endIcon={<ArrowForwardIcon />}
             >
-              Self-hosting guide
+              {t("selfHostGuide")}
             </SiteLink>
           </Stack>
         </Container>
@@ -411,7 +399,7 @@ export default function LandingPage() {
           flexWrap="wrap"
         >
           <Typography variant="caption" color="text.secondary">
-            Development preview · baseline v{version} · MIT
+            {t("developmentVersion", { version })}
           </Typography>
           <Stack direction="row" gap={1}>
             <SiteLink
@@ -423,7 +411,7 @@ export default function LandingPage() {
               GitHub
             </SiteLink>
             <SiteLink href="/docs/changelog" color="inherit" size="small">
-              Changelog
+              {t("changelog")}
             </SiteLink>
           </Stack>
         </Stack>

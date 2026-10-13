@@ -159,3 +159,24 @@ export const FailedRemoval: Story = {
     ).toBeEnabled();
   },
 };
+
+export const GermanRoleChangePreservesApiValue: Story = {
+  parameters: { locale: "de" },
+  args: { initialMembers: EDITABLE_MEMBERS },
+  play: async ({ canvas, args }) => {
+    const role = canvas.getByRole("combobox", { name: "Rolle für Bob" });
+    await expect(role).toHaveTextContent("Bearbeitung");
+    await userEvent.click(role);
+    await userEvent.click(
+      within(document.body).getByRole("option", { name: "Lesen" }),
+    );
+    await expect(args.onChangeRole).toHaveBeenCalledWith(
+      EDITABLE_MEMBERS[1],
+      "viewer",
+    );
+    await expect(role).toHaveTextContent("Lesen");
+    await expect(
+      canvas.getByRole("button", { name: "Bob entfernen" }),
+    ).toBeVisible();
+  },
+};

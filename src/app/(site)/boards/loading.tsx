@@ -1,3 +1,5 @@
+"use client";
+import { useTranslations } from "next-intl";
 import {
   Box,
   Container,
@@ -9,22 +11,23 @@ import {
 import { AppHeader } from "@/components/app/app-header";
 
 export default function BoardsLoading() {
+  const t = useTranslations("Common");
   return (
     <>
-      <AppHeader homeHref="/boards" crumb="Workspace" />
+      <AppHeader homeHref="/boards" crumb={t("workspace")} />
       <Container
         component="main"
         maxWidth="lg"
         sx={{ py: { xs: 3, md: 4 } }}
         aria-busy="true"
-        aria-label="Loading boards"
+        aria-label={t("loadingBoards")}
       >
         <Box sx={{ mb: 3 }}>
           <Typography component="h1" variant="h5">
-            Boards
+            {t("boards")}
           </Typography>
           <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-            Your products and their latest release assessments.
+            {t("boardsDescription")}
           </Typography>
         </Box>
         <Paper sx={{ overflow: "hidden" }}>

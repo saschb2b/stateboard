@@ -1,18 +1,22 @@
+"use client";
+import { useTranslations } from "next-intl";
 import { Box, Paper, Skeleton, Stack } from "@mui/material";
 import { SettingsFrame, type SettingsSection } from "./settings-frame";
 
-export function SettingsLoading({
-  section,
-  title,
-}: {
-  section: SettingsSection;
-  title: string;
-}) {
+export function SettingsLoading({ section }: { section: SettingsSection }) {
+  const t = useTranslations("Common");
+  const title = t(
+    section === "api-keys"
+      ? "apiKeys"
+      : section === "audit"
+        ? "auditLog"
+        : "members",
+  );
   return (
     <SettingsFrame section={section} title={title}>
       <Stack
         spacing={3}
-        aria-label={`Loading ${title.toLowerCase()}`}
+        aria-label={t("loadingSection", { section: title })}
         aria-busy="true"
       >
         {section === "api-keys" && (

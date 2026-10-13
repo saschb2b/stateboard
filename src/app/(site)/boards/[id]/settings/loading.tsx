@@ -1,7 +1,11 @@
+"use client";
+import { useTranslations } from "next-intl";
 import { Box, Container, Skeleton, Stack, Typography } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 
 export default function BoardSettingsLoading() {
+  const t = useTranslations("Common");
+  const visual = useTranslations("Visual");
   return (
     <>
       <AppHeader />
@@ -10,10 +14,10 @@ export default function BoardSettingsLoading() {
         maxWidth="lg"
         sx={{ py: { xs: 3, md: 4 } }}
         aria-busy="true"
-        aria-label="Loading board settings"
+        aria-label={t("loadingBoardSettings")}
       >
         <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-          Board settings
+          {visual("boardSettings")}
         </Typography>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={4}>
           <Box sx={{ width: { sm: 184 }, flexShrink: 0 }}>

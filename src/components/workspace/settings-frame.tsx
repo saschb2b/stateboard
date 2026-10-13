@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -51,11 +52,12 @@ export function SettingsFrame({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const t = useTranslations("Common");
   return (
     <>
       <AppHeader
         homeHref="/boards"
-        crumb="Workspace settings"
+        crumb={t("workspaceSettings")}
         actions={
           viewer ? (
             <UserMenu user={viewer.user} role={viewer.role} />
@@ -78,7 +80,7 @@ export function SettingsFrame({
         >
           <Box
             component="nav"
-            aria-label="Workspace settings"
+            aria-label={t("workspaceSettings")}
             sx={{ minWidth: 0 }}
           >
             <Typography
@@ -86,7 +88,7 @@ export function SettingsFrame({
               color="text.secondary"
               sx={{ px: 1.5, display: { xs: "none", md: "block" }, mb: 1 }}
             >
-              Workspace
+              {t("workspace")}
             </Typography>
             <Stack
               direction={{ xs: "row", md: "column" }}
@@ -117,7 +119,13 @@ export function SettingsFrame({
                           section === item.id ? "action.selected" : undefined,
                       }}
                     >
-                      {item.label}
+                      {t(
+                        item.id === "api-keys"
+                          ? "apiKeys"
+                          : item.id === "members"
+                            ? "members"
+                            : "auditLog",
+                      )}
                     </Button>
                   ))
               ) : (

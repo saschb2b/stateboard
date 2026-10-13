@@ -1,4 +1,5 @@
 "use client";
+import { useFormatter, useTranslations } from "next-intl";
 
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
@@ -9,7 +10,6 @@ import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import KeyIcon from "@mui/icons-material/Key";
-import { timeAgo } from "@/lib/time";
 import {
   apiKeyExpiryStatus,
   type ApiKey,
@@ -17,26 +17,6 @@ import {
 } from "@/lib/types";
 
 const DAY_MS = 86_400_000;
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-] as const;
-
-/** "Sep 30, 2026" — UTC-derived so SSR and hydration render identically. */
-function fmtDate(ms: number): string {
-  const d = new Date(ms);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
-}
 
 type KeyStatus =
   | { kind: "active"; expiryText: string }
@@ -44,25 +24,33 @@ type KeyStatus =
   | { kind: "expired"; chip: string }
   | { kind: "revoked"; chip: string };
 
-function keyStatus(k: ApiKey, now: number): KeyStatus {
-  if (k.revokedAt !== null) return { kind: "revoked", chip: "Revoked" };
+function keyStatus(
+  k: ApiKey,
+  now: number,
+  t: ReturnType<typeof useTranslations<"Common">>,
+  fmtDate: (ms: number) => string,
+): KeyStatus {
+  if (k.revokedAt !== null) return { kind: "revoked", chip: t("revoked") };
   const status = apiKeyExpiryStatus(k.expiresAt, now);
   if (status === "expired") {
-    return { kind: "expired", chip: `Expired ${fmtDate(k.expiresAt!)}` };
+    return {
+      kind: "expired",
+      chip: t("expiredDate", { date: fmtDate(k.expiresAt!) }),
+    };
   }
   if (status === "expiring-soon") {
     const days = Math.max(1, Math.ceil((k.expiresAt! - now) / DAY_MS));
     return {
       kind: "expiring",
-      chip: `Expires in ${days} day${days === 1 ? "" : "s"}`,
+      chip: t("expiresDays", { count: days }),
     };
   }
   return {
     kind: "active",
     expiryText:
       k.expiresAt === null
-        ? "no expiration"
-        : `expires ${fmtDate(k.expiresAt)}`,
+        ? t("noExpiryLower")
+        : t("expiresDate", { date: fmtDate(k.expiresAt) }),
   };
 }
 
@@ -91,18 +79,22 @@ export function ApiKeyList({
   showOwner = false,
   emptyText,
 }: ApiKeyListProps) {
+  const t = useTranslations("Common");
+  const format = useFormatter();
+  const fmtDate = (ms: number) =>
+    format.dateTime(ms, { year: "numeric", month: "short", day: "numeric" });
   const ownerLine = (k: ApiKey | WorkspaceApiKey): string | null => {
     if (!showOwner) return null;
-    if (k.userId === viewerId) return "yours";
-    if ("userName" in k) return k.userName ?? k.userEmail ?? "former member";
-    return "former member";
+    if (k.userId === viewerId) return t("yours");
+    if ("userName" in k) return k.userName ?? k.userEmail ?? t("formerMember");
+    return t("formerMember");
   };
 
   return (
     <Paper sx={{ overflow: "hidden" }}>
       <Stack divider={<Box sx={{ borderTop: 1, borderColor: "divider" }} />}>
         {keys.map((k) => {
-          const status = keyStatus(k, now);
+          const status = keyStatus(k, now, t, fmtDate);
           const dead = status.kind === "expired" || status.kind === "revoked";
           const owner = ownerLine(k);
           return (
@@ -189,26 +181,28 @@ export function ApiKeyList({
                     {k.keyPrefix}…
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    created {fmtDate(k.createdAt)}
+                    {t("createdDate", { date: fmtDate(k.createdAt) })}
                     {status.kind === "active"
                       ? ` · ${status.expiryText}`
                       : ""}{" "}
                     ·{" "}
                     {k.lastUsedAt !== null
-                      ? `last used ${timeAgo(k.lastUsedAt, now)}`
-                      : "never used"}
+                      ? t("lastUsed", {
+                          time: format.relativeTime(k.lastUsedAt, now),
+                        })
+                      : t("neverUsed")}
                   </Typography>
                 </Stack>
               </Box>
 
               {k.revokedAt === null ? (
-                <Tooltip title="Revoke key">
+                <Tooltip title={t("revokeKey")}>
                   <span>
                     <IconButton
                       size="small"
                       onClick={() => onRevoke(k)}
                       disabled={pendingId !== null}
-                      aria-label={`Revoke ${k.name}`}
+                      aria-label={t("revokeNamed", { name: k.name })}
                       sx={{ color: "text.secondary" }}
                     >
                       <DeleteOutlineIcon fontSize="small" />
@@ -233,6 +227,7 @@ export function ApiKeyList({
 }
 
 function RoleChip({ role }: { role: ApiKey["role"] }) {
+  const t = useTranslations("Common");
   return (
     <Typography
       variant="caption"
@@ -250,7 +245,7 @@ function RoleChip({ role }: { role: ApiKey["role"] }) {
         lineHeight: 1.6,
       }}
     >
-      {role}
+      {t(`roles.${role}`)}
     </Typography>
   );
 }
