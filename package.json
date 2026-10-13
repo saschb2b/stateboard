@@ -2,7 +2,7 @@
   "name": "stateboard",
   "version": "2026.8.0",
   "private": true,
-  "description": "Status reporting for visual products. Show, don't tell.",
+  "description": "Release readiness for every role. Show, don't tell.",
   "license": "MIT",
   "scripts": {
     "dev": "next dev --port 3000",
@@ -16,6 +16,8 @@
     "test:stories": "vitest --project storybook run",
     "build:pages": "node scripts/pages-prebuild.mjs && STATEBOARD_PAGES=1 next build",
     "migrate": "node scripts/migrate.mjs",
+    "cleanup:release-assets": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/cleanup-release-assets.mjs",
+    "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/release-db.test.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

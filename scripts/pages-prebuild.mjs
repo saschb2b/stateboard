@@ -30,6 +30,8 @@ const REMOVE = [
   "src/app/(site)/boards/[id]",
   // The dynamic public share view — same problem. /share/demo stays.
   "src/app/(site)/share/[token]",
+  // Release review tokens read Postgres; the permanent readiness example stays.
+  "src/app/(site)/share/releases",
   // Auth surfaces — Better Auth needs a Node runtime.
   "src/app/(site)/sign-in",
   "src/app/(site)/settings",
@@ -76,14 +78,14 @@ export default function DemoBoardsPage() {
             The editor needs a server. This deployment is read-only.
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 540 }}>
-            Open the example board to see what a finished StateBoard looks like:
-            two screens, twelve regions, and Present mode all work here. To create
-            your own boards, run StateBoard yourself (it&apos;s one Docker container).
+            Explore a release assessment with capabilities, dependencies, and
+            evidence across all six views, or open the visual example. To create
+            your own assessments, self-host StateBoard with Postgres and OIDC.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ pt: 1 }}>
-            <Link href="/share/demo" style={{ textDecoration: "none" }}>
+            <Link href="/share/demo/releases" style={{ textDecoration: "none" }}>
               <Button variant="contained" color="primary" endIcon={<OpenInNewIcon />} sx={{ px: 3, py: 1.25 }}>
-                Open the example
+                Explore release readiness
               </Button>
             </Link>
             <Button
@@ -99,8 +101,9 @@ export default function DemoBoardsPage() {
             </Button>
           </Stack>
           <Box sx={{ pt: 2 }}>
-            <Typography variant="caption" color="text.secondary">
-              docker run --rm -p 3000:3000 -v stateboard-data:/data ghcr.io/saschb2b/stateboard
+            <Link href="/share/demo" style={{ color: "inherit" }}>Visual example</Link>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
+              Editing requires the app, Postgres, and your identity provider.
             </Typography>
           </Box>
         </Stack>

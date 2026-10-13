@@ -19,6 +19,20 @@ jobs:
     name: typecheck · lint · format · build
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: stateboard
+          POSTGRES_PASSWORD: stateboard
+          POSTGRES_DB: stateboard_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U stateboard"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
 
@@ -50,6 +64,11 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Release persistence integration tests
+        env:
+          STATEBOARD_INTEGRATION_DB_URL: postgres://stateboard:stateboard@localhost:5432/stateboard_test
+        run: pnpm test:integration
 
       - name: Build
         run: pnpm build
