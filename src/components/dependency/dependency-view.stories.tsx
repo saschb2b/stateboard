@@ -32,6 +32,45 @@ export const ArchitectureSlice: Story = {
   },
 };
 
+export const RequestedCapabilityAndDependencyNavigation: Story = {
+  args: { initialCapabilityId: "cap-export" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("combobox", { name: "Capability" }),
+    ).toHaveTextContent("Export an invoice");
+    const api = canvas.getByRole("button", {
+      name: /Billing API.*1 dependency/,
+    });
+    await userEvent.click(api);
+    const target = canvas.getByRole("button", {
+      name: /Ledger store.*No dependencies/,
+    });
+    const dependency = canvas.getByRole("button", {
+      name: "Ledger store",
+    });
+    dependency.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(target).toHaveAttribute("aria-expanded", "true");
+    await expect(target).toHaveFocus();
+    await expect(api).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      canvas.getByRole("combobox", { name: "Capability" }),
+    ).toHaveTextContent("Export an invoice");
+    await expect(args.onCheckScopeChange).not.toHaveBeenCalled();
+  },
+};
+
+export const UnavailableRequestedCapability: Story = {
+  args: { initialCapabilityId: "cap-unavailable" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("combobox", { name: "Capability" }),
+    ).toHaveTextContent("All capabilities");
+  },
+};
+
 const componentCheck = {
   ...example.detail.checks[0]!,
   id: "check-ledger-example",

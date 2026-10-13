@@ -1,5 +1,6 @@
 "use client";
 
+import type { Ref } from "react";
 import ExpandMoreRounded from "@mui/icons-material/ExpandMoreRounded";
 import {
   Accordion,
@@ -63,6 +64,8 @@ export function DependencyComponentRow({
   scope,
   dependencies,
   componentName,
+  summaryRef,
+  onInspectDependency,
 }: {
   component: ProductComponent;
   expanded: boolean;
@@ -73,6 +76,8 @@ export function DependencyComponentRow({
   scope: ReleaseCapability[];
   dependencies: ComponentDependency[];
   componentName: (id: string) => string;
+  summaryRef?: Ref<HTMLDivElement>;
+  onInspectDependency?: (componentId: string) => void;
 }) {
   const summary =
     checks.length > 0
@@ -100,6 +105,7 @@ export function DependencyComponentRow({
       }}
     >
       <AccordionSummary
+        ref={summaryRef}
         expandIcon={<ExpandMoreRounded fontSize="small" />}
         aria-controls={`component-${component.id}-details`}
         id={`component-${component.id}-summary`}
@@ -206,9 +212,21 @@ export function DependencyComponentRow({
                 </Typography>
                 {dependencies.map((link) => (
                   <Box key={link.id}>
-                    <Typography variant="body2">
-                      {componentName(link.providerId)}
-                    </Typography>
+                    {onInspectDependency ? (
+                      <Link
+                        component="button"
+                        type="button"
+                        variant="body2"
+                        textAlign="left"
+                        onClick={() => onInspectDependency(link.providerId)}
+                      >
+                        {componentName(link.providerId)}
+                      </Link>
+                    ) : (
+                      <Typography variant="body2">
+                        {componentName(link.providerId)}
+                      </Typography>
+                    )}
                     <Typography variant="caption" color="text.secondary">
                       {link.relation} ·{" "}
                       {link.required

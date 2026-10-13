@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   Box,
@@ -27,15 +27,24 @@ export function DependencyView({
   detail,
   readiness,
   onCheckScopeChange,
+  initialCapabilityId,
 }: {
   product: ProductContext;
   detail: ReleaseDetail;
   readiness: ReleaseEvaluation;
   onCheckScopeChange?: (scope: CheckSubjectScope | null) => void;
+  initialCapabilityId?: string | null;
 }) {
-  const [capabilityId, setCapabilityId] = useState<string | null>(null);
+  const [capabilityId, setCapabilityId] = useState<string | null>(() =>
+    detail.scope.some(
+      (item) => item.included && item.capabilityId === initialCapabilityId,
+    )
+      ? (initialCapabilityId ?? null)
+      : null,
+  );
   const [componentId, setComponentId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const summaryRefs = useRef(new Map<string, HTMLDivElement>());
   const scope = detail.scope.filter((item) => item.included);
   const focus = dependencyFocus(product, detail, capabilityId, componentId);
   const selectFocus = (capability: string | null, component: string | null) => {
@@ -52,6 +61,13 @@ export function DependencyView({
   const activeChecks = detail.checks.filter(
     (check) => check.archivedAt === null,
   );
+  const inspectDependency = (id: string) => {
+    if (!focus.components.some((item) => item.id === id)) return;
+    setExpandedId(id);
+    const summary = summaryRefs.current.get(id);
+    summary?.focus({ preventScroll: true });
+    summary?.scrollIntoView({ block: "nearest", behavior: "instant" });
+  };
   return (
     <Stack spacing={2}>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -161,6 +177,11 @@ export function DependencyView({
               component={item}
               expanded={expandedId === item.id}
               onExpand={(expanded) => setExpandedId(expanded ? item.id : null)}
+              summaryRef={(element) => {
+                if (element) summaryRefs.current.set(item.id, element);
+                else summaryRefs.current.delete(item.id);
+              }}
+              onInspectDependency={inspectDependency}
               checks={activeChecks.filter(
                 (check) =>
                   check.subjectType === "component" &&
