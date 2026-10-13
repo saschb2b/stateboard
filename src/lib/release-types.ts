@@ -105,6 +105,25 @@ export interface ReleaseOverview {
   decision: "approved" | "held" | null;
   decisionRevision: number | null;
   decisionAt: number | null;
+  coverage?: ReleaseOverviewCoverage;
+}
+export interface ReleaseOverviewCheck
+  extends
+    Pick<
+      ReleaseCheck,
+      | "id"
+      | "subjectType"
+      | "subjectId"
+      | "claim"
+      | "category"
+      | "ownerLabel"
+      | "required"
+    >,
+    Pick<CheckEvaluation, "state" | "evidenceId" | "expiresAt" | "reason"> {}
+export interface ReleaseOverviewCoverage {
+  scope: ReleaseCapability[];
+  capabilities: CapabilityEvaluation[];
+  checks: ReleaseOverviewCheck[];
 }
 export interface ReleaseCapability {
   assessmentId: string;

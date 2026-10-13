@@ -3,6 +3,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { newId, newShareToken } from "./ids";
 import { evaluateRelease } from "./readiness";
+import { buildReleaseOverviewCoverage } from "./product-overview";
 import {
   captureDecisionAssets,
   cleanupReleaseAssets,
@@ -1540,11 +1541,17 @@ async function readOverviewsForAssessments(
     >(row),
   );
   return assessments.map((assessment) => {
+    const assessmentScope = scope.filter(
+      (item) => item.assessmentId === assessment.id,
+    );
+    const assessmentChecks = checks.filter(
+      (item) => item.assessmentId === assessment.id,
+    );
     const readiness = evaluateRelease(
       {
         assessment,
-        scope: scope.filter((item) => item.assessmentId === assessment.id),
-        checks: checks.filter((item) => item.assessmentId === assessment.id),
+        scope: assessmentScope,
+        checks: assessmentChecks,
         evidence: evidence.filter(
           (item) => item.assessmentId === assessment.id,
         ),
@@ -1567,6 +1574,11 @@ async function readOverviewsForAssessments(
       decision: decision?.decision ?? null,
       decisionRevision: decision?.revision ?? null,
       decisionAt: decision?.createdAt ?? null,
+      coverage: buildReleaseOverviewCoverage(
+        assessmentScope,
+        assessmentChecks,
+        readiness,
+      ),
     };
   });
 }

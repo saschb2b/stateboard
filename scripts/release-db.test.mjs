@@ -260,18 +260,58 @@ test(
           await db.readLatestReleaseOverviews("test", ["board-a", "absent"]),
         );
         assert.equal(overview.assessment.id, releaseId);
-        const full = evaluateRelease(
-          await db.readReleaseDetail(releaseId, "test"),
-          overview.evaluatedAt,
-        );
+        const fullDetail = await db.readReleaseDetail(releaseId, "test");
+        const full = evaluateRelease(fullDetail, overview.evaluatedAt);
         assert.equal(overview.state, expectedState);
         assert.equal(overview.state, full.state);
         assert.equal(overview.blockerCount, full.blockers.length);
         assert.equal(overview.gapCount, full.gaps.length);
         assert.equal(overview.validUntil, full.validUntil);
         assert.equal("snapshot" in overview, false);
+        assert.equal(
+          overview.assessment.revision,
+          fullDetail.assessment.revision,
+        );
+        assert.deepEqual(overview.coverage.scope, fullDetail.scope);
+        assert.deepEqual(overview.coverage.capabilities, full.capabilities);
+        assert.deepEqual(
+          overview.coverage.checks,
+          full.checks.map((evaluation) => {
+            const check = fullDetail.checks.find(
+              (item) => item.id === evaluation.checkId,
+            );
+            return {
+              id: check.id,
+              subjectType: check.subjectType,
+              subjectId: check.subjectId,
+              claim: check.claim,
+              category: check.category,
+              ownerLabel: check.ownerLabel,
+              required: evaluation.required,
+              state: evaluation.state,
+              evidenceId: evaluation.evidenceId,
+              expiresAt: evaluation.expiresAt,
+              reason: evaluation.reason,
+            };
+          }),
+        );
+        assert.equal("evidence" in overview.coverage, false);
+        assert.equal("decisions" in overview.coverage, false);
+        assert.equal("assets" in overview.coverage, false);
         const product = await db.readProductContext("board-a", "test");
         assert.equal(product.releaseOverviews[0].state, expectedState);
+        assert.equal(
+          product.releaseOverviews[0].assessment.revision,
+          product.releases[0].revision,
+        );
+        assert.deepEqual(
+          product.releaseOverviews[0].coverage.scope,
+          fullDetail.scope,
+        );
+        assert.deepEqual(
+          product.releaseOverviews[0].coverage.checks,
+          overview.coverage.checks,
+        );
         return overview;
       };
       assert.deepEqual(
@@ -285,8 +325,9 @@ test(
       assert.equal(await db.readReleaseWorkspace(releaseId, "other"), null);
       assert.equal(await db.readReleaseWorkspace("absent", "test"), null);
       for (let revision = 0; revision < 6; revision++) {
-        const [workspace] = await Promise.all([
+        const [workspace, product] = await Promise.all([
           db.readReleaseWorkspace(releaseId, "test"),
+          db.readProductContext("board-a", "test"),
           db.mutateProduct(
             "test",
             "board-a",
@@ -307,6 +348,15 @@ test(
         assert.equal(
           workspace.readiness.state,
           evaluateRelease(workspace, workspace.readiness.evaluatedAt).state,
+        );
+        assert.equal(
+          product.releaseOverviews[0].assessment.revision,
+          product.releases.find((release) => release.id === releaseId).revision,
+          "Concurrent product writes cannot mix catalog and overview assessment revisions",
+        );
+        assert.equal(
+          product.releaseOverviews[0].coverage.scope[0].capabilityId,
+          capabilityId,
         );
       }
       detail = await db.readReleaseDetail(releaseId, "test");
@@ -370,7 +420,16 @@ test(
         actor,
       );
       assert.equal(evaluateRelease(detail, Date.now()).state, "ready");
-      await assertOverview("ready");
+      const readyOverview = await assertOverview("ready");
+      assert.equal(readyOverview.coverage.scope[0].included, true);
+      assert.equal(readyOverview.coverage.checks[0].id, checkId);
+      assert.equal(readyOverview.coverage.checks[0].category, "functional");
+      assert.equal(readyOverview.coverage.checks[0].required, true);
+      assert.equal(readyOverview.coverage.checks[0].state, "pass");
+      assert.equal(
+        readyOverview.coverage.checks[0].evidenceId,
+        detail.evidence[0].id,
+      );
       const firstRevision = detail.assessment.revision;
       detail = await db.mutateRelease(
         "test",
