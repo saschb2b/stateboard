@@ -35,6 +35,7 @@ const config = [
       "next-env.d.ts",
       "storybook-static/**",
       ".agents/skills/**",
+      ".agents/browser/**",
     ],
   },
   ...storybook.configs["flat/recommended"],

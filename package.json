@@ -24,7 +24,8 @@
     "browser": "agent-browser",
     "browser:install": "agent-browser install",
     "design:generate": "node scripts/design-tokens.mjs",
-    "docs:check": "node scripts/check-docs.mjs"
+    "docs:check": "node scripts/check-docs.mjs",
+    "i18n:check": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",
@@ -38,6 +39,7 @@
     "fumadocs-ui": "^16.15.9",
     "nanoid": "^6.0.1",
     "next": "16.3.5",
+    "next-intl": "^4.14.9",
     "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -45,6 +47,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@formatjs/icu-messageformat-parser": "^3.5.21",
     "@storybook/addon-a11y": "^10.6.0",
     "@storybook/addon-docs": "^10.6.0",
     "@storybook/addon-mcp": "^0.7.0",

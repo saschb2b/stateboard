@@ -1,8 +1,8 @@
 import type { Preview } from "@storybook/nextjs-vite";
-import { ThemeProvider } from "@mui/material/styles";
-import CssBaseline from "@mui/material/CssBaseline";
-import theme from "../src/lib/theme";
 import { geist, geistMono } from "../src/lib/fonts";
+import { AppLocaleProvider } from "../src/i18n/provider";
+import { LocaleThemeProvider } from "../src/i18n/theme-provider";
+import { parseLocale } from "../src/i18n/config";
 
 /**
  * Put the font variables on <html>, exactly where the root layout puts
@@ -24,13 +24,34 @@ if (typeof document !== "undefined") {
  */
 const preview: Preview = {
   decorators: [
-    (Story) => (
-      <ThemeProvider theme={theme} defaultMode="dark">
-        <CssBaseline />
-        <Story />
-      </ThemeProvider>
+    (Story, context) => (
+      <AppLocaleProvider
+        key={context.parameters.locale ?? context.globals.locale ?? "en"}
+        initialLocale={parseLocale(
+          context.parameters.locale ?? context.globals.locale,
+        )}
+        persist={false}
+      >
+        <LocaleThemeProvider>
+          <Story />
+        </LocaleThemeProvider>
+      </AppLocaleProvider>
     ),
   ],
+  globalTypes: {
+    locale: {
+      description: "Interface language",
+      toolbar: {
+        icon: "globe",
+        items: [
+          { value: "en", title: "English" },
+          { value: "de", title: "Deutsch" },
+        ],
+        dynamicTitle: true,
+      },
+    },
+  },
+  initialGlobals: { locale: "en" },
   parameters: {
     // The app is App Router throughout; mock next/navigation, not next/router.
     nextjs: { appDirectory: true },

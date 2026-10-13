@@ -3,10 +3,13 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const config: StorybookConfig = {
-  // Scoped to src/components on purpose: a bare src/** glob would sweep the
+  // Keep story directories explicit: a bare src/** glob would sweep the
   // Fumadocs MDX under src/content/docs into the sidebar, where its
   // components (<Callout> etc.) don't exist and every page errors.
-  stories: ["../src/components/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
+  stories: [
+    "../src/components/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+    "../src/i18n/**/*.stories.@(js|jsx|mjs|ts|tsx)",
+  ],
   addons: [
     "@storybook/addon-vitest",
     "@storybook/addon-a11y",

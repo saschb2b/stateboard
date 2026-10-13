@@ -70,6 +70,9 @@ jobs:
       - name: Knowledge and design consistency
         run: pnpm docs:check
 
+      - name: Translation completeness and ICU validation
+        run: pnpm i18n:check
+
       - name: Test
         run: pnpm test
 
