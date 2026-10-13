@@ -1,24 +1,27 @@
-import Box from "@mui/material/Box";
-import Paper from "@mui/material/Paper";
-import Skeleton from "@mui/material/Skeleton";
+import { Container, Paper, Skeleton, Stack } from "@mui/material";
+import { AppHeader } from "@/components/app/app-header";
 
-/** Shell for /sign-in while the session check runs. */
 export default function SignInLoading() {
   return (
-    <Box
-      sx={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        p: 2,
-      }}
-    >
-      <Paper sx={{ p: 4, width: "100%", maxWidth: 400 }}>
-        <Skeleton variant="text" width="60%" height={40} />
-        <Skeleton variant="text" width="90%" />
-        <Skeleton variant="rounded" height={44} sx={{ mt: 3 }} />
-      </Paper>
-    </Box>
+    <>
+      <AppHeader />
+      <Container
+        component="main"
+        maxWidth="sm"
+        sx={{ py: { xs: 5, md: 9 } }}
+        aria-busy="true"
+        aria-label="Loading sign-in"
+      >
+        <Paper sx={{ p: { xs: 3, sm: 5 } }}>
+          <Stack spacing={3} alignItems="center">
+            <Skeleton variant="rounded" width={32} height={32} />
+            <Skeleton width="85%" height={36} />
+            <Skeleton width="100%" />
+            <Skeleton variant="rounded" width="85%" height={44} />
+            <Skeleton width="75%" />
+          </Stack>
+        </Paper>
+      </Container>
+    </>
   );
 }

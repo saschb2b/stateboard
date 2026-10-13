@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -8,7 +8,7 @@ import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Link from "next/link";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import LoginIcon from "@mui/icons-material/Login";
 import { AppHeader } from "@/components/app/app-header";
 import { authClient } from "@/lib/auth-client";
@@ -26,43 +26,62 @@ interface SignInPanelProps {
  * to render multiple buttons.
  */
 export function SignInPanel({ callback }: SignInPanelProps) {
+  return (
+    <SignInPanelView
+      onSignIn={async () => {
+        const result = await authClient.signIn.social({
+          provider: "keycloak",
+          callbackURL: callback,
+        });
+        if (result.error)
+          throw new Error(
+            result.error.message || "Unable to sign in. Try again.",
+          );
+      }}
+    />
+  );
+}
+
+export function SignInPanelView({
+  onSignIn,
+}: {
+  onSignIn: () => Promise<void>;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const onSignIn = async () => {
+  const inFlight = useRef(false);
+  const signIn = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
-      await authClient.signIn.social({
-        provider: "keycloak",
-        callbackURL: callback,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign-in failed");
+      await onSignIn();
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to sign in. Try again.",
+      );
       setBusy(false);
+      inFlight.current = false;
     }
   };
 
   return (
     <>
       <AppHeader />
-      <Container maxWidth="sm" sx={{ py: { xs: 6, md: 10 } }}>
+      <Container component="main" maxWidth="sm" sx={{ py: { xs: 5, md: 9 } }}>
         <Paper sx={{ p: { xs: 3, sm: 5 }, textAlign: "center" }}>
           <Stack spacing={3} alignItems="center">
-            <Box
-              sx={{
-                width: 28,
-                height: 28,
-                bgcolor: "primary.main",
-                borderRadius: 0.5,
-              }}
-            />
+            <LockOutlinedIcon sx={{ color: "text.secondary", fontSize: 32 }} />
             <Stack spacing={1}>
-              <Typography variant="h4">Sign in to StateBoard</Typography>
+              <Typography component="h1" variant="h5">
+                Sign in to your workspace
+              </Typography>
               <Typography variant="body1" color="text.secondary">
-                Authentication runs through your company&apos;s Keycloak realm.
-                Editors and owners create boards; viewers can read them. Public
-                share links work without signing in.
+                Use your company account to review products and manage release
+                readiness.
               </Typography>
             </Stack>
             <Button
@@ -70,31 +89,29 @@ export function SignInPanel({ callback }: SignInPanelProps) {
               variant="contained"
               color="primary"
               startIcon={<LoginIcon />}
-              onClick={onSignIn}
+              onClick={() => void signIn()}
               disabled={busy}
               sx={{ px: 4 }}
             >
-              {busy ? "Redirecting…" : "Continue with Keycloak"}
+              {busy ? "Redirecting…" : "Continue with company account"}
             </Button>
             {error ? (
-              <Typography variant="caption" color="error">
+              <Typography role="alert" variant="body2" color="error">
                 {error}
               </Typography>
             ) : null}
             <Typography variant="caption" color="text.secondary" sx={{ pt: 1 }}>
-              No account?{" "}
+              Just exploring?{" "}
               <Box
                 component={Link}
-                href="/share/demo"
-                target="_blank"
-                rel="noopener"
+                href="/share/demo/releases"
                 sx={{
                   color: "primary.main",
                   textDecoration: "none",
                   "&:hover": { textDecoration: "underline" },
                 }}
               >
-                See the example board ↗ <OpenInNewIcon fontSize="inherit" />
+                View an example assessment
               </Box>
             </Typography>
           </Stack>
