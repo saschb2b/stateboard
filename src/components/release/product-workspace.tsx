@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +48,7 @@ export function ProductWorkspace({
   initialProduct: ProductContext;
   viewer: CurrentMember;
 }) {
+  const t = useTranslations("Product");
   const [product, setProduct] = useState(initialProduct);
   const [tab, setTab] = useProductSection();
   const [reloading, setReloading] = useState(false);
@@ -63,11 +66,7 @@ export function ProductWorkspace({
         ),
       );
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to reload the product.",
-      );
+      setError(cause instanceof Error ? cause.message : t("reloadError"));
     } finally {
       setReloading(false);
     }
@@ -86,7 +85,7 @@ export function ProductWorkspace({
         ),
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to save.");
+      setError(cause instanceof Error ? cause.message : t("saveError"));
       throw cause;
     }
   }
@@ -103,7 +102,7 @@ export function ProductWorkspace({
               color="inherit"
               size="small"
             >
-              Screens
+              {t("screens")}
             </Button>
             <UserMenu user={viewer.user} role={viewer.role} />
           </>
@@ -114,7 +113,7 @@ export function ProductWorkspace({
           <Stack direction="row" justifyContent="space-between" gap={2}>
             <Stack spacing={0.5} sx={{ minWidth: 0 }}>
               <Typography variant="caption" color="text.secondary">
-                Product workspace
+                {t("workspace")}
               </Typography>
               <Typography
                 variant="h5"
@@ -137,10 +136,10 @@ export function ProductWorkspace({
                 </Typography>
               )}
             </Stack>
-            <Tooltip title="Refresh product">
+            <Tooltip title={t("refresh")}>
               <IconButton
                 size="small"
-                aria-label="Refresh product"
+                aria-label={t("refresh")}
                 disabled={reloading}
                 onClick={reload}
                 sx={{ alignSelf: "flex-start" }}
@@ -152,34 +151,34 @@ export function ProductWorkspace({
         }
         navigation={
           <WorkspaceNavigation
-            label="Product sections"
+            label={t("sections")}
             idPrefix="product"
             value={tab}
             onChange={setTab}
             sections={[
               {
                 value: "overview",
-                label: "Overview",
+                label: t("overview"),
                 icon: <DashboardOutlinedIcon fontSize="small" />,
               },
               {
                 value: "releases",
-                label: "Assessments",
+                label: t("assessments"),
                 icon: <LayersOutlinedIcon fontSize="small" />,
               },
               {
                 value: "capabilities",
-                label: "Capabilities",
+                label: t("capabilities"),
                 icon: <ViewQuiltOutlinedIcon fontSize="small" />,
               },
               {
                 value: "dependencies",
-                label: "Components",
+                label: t("components"),
                 icon: <WidgetsOutlinedIcon fontSize="small" />,
               },
               {
                 value: "connections",
-                label: "Connections",
+                label: t("connections"),
                 icon: <AccountTreeOutlinedIcon fontSize="small" />,
               },
             ]}
@@ -198,7 +197,7 @@ export function ProductWorkspace({
               severity="error"
               action={
                 <Button color="inherit" onClick={reload}>
-                  Reload
+                  {t("reload")}
                 </Button>
               }
             >
@@ -250,7 +249,7 @@ export function ProductWorkspace({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>New release assessment</DialogTitle>
+        <DialogTitle>{t("newReleaseAssessment")}</DialogTitle>
         <DialogContent>
           <AssessmentCreateForm
             capabilities={product.capabilities}

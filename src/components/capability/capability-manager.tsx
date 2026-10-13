@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Button,
@@ -21,21 +23,6 @@ import type {
   ProductMutation,
 } from "@/lib/release-types";
 
-const fields: FormField[] = [
-  {
-    name: "name",
-    label: "Capability name",
-    required: true,
-    helper: "e.g. Receive a partner webhook",
-  },
-  {
-    name: "outcome",
-    label: "Expected outcome",
-    required: true,
-    type: "textarea",
-  },
-  { name: "ownerLabel", label: "Accountable owner", required: true },
-];
 export function CapabilityManager({
   product,
   editable,
@@ -45,13 +32,31 @@ export function CapabilityManager({
   editable: boolean;
   mutate: (mutation: ProductMutation) => Promise<void>;
 }) {
+  const t = useTranslations("Product");
+  const fields: FormField[] = [
+    {
+      name: "name",
+      label: t("capabilityName"),
+      required: true,
+      helper: t("capabilityNameHelp"),
+    },
+    {
+      name: "outcome",
+      label: t("expectedOutcome"),
+      required: true,
+      type: "textarea",
+    },
+    { name: "ownerLabel", label: t("accountableOwner"), required: true },
+  ];
   const [editing, setEditing] = useState<Capability | "new" | null>(null);
   return (
     <Stack spacing={2}>
       <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h6">Product capabilities</Typography>
+        <Typography variant="h6">{t("productCapabilities")}</Typography>
         {editable && (
-          <Button onClick={() => setEditing("new")}>Add capability</Button>
+          <Button onClick={() => setEditing("new")}>
+            {t("addCapability")}
+          </Button>
         )}
       </Stack>
       {product.capabilities
@@ -63,18 +68,21 @@ export function CapabilityManager({
                 <Typography variant="subtitle1">{item.name}</Typography>
                 <Typography variant="body2">{item.outcome}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {item.ownerLabel} · Definition {item.definitionRevision}
+                  {t("ownerDefinition", {
+                    owner: item.ownerLabel,
+                    revision: item.definitionRevision,
+                  })}
                 </Typography>
                 {item.ownerNeedsReassignment && (
                   <Typography variant="body2" color="warning.main">
-                    Owner membership ended; review accountability.
+                    {t("ownerMembershipEnded")}
                   </Typography>
                 )}
               </Stack>
               {editable && (
                 <Stack direction="row">
                   <Button size="small" onClick={() => setEditing(item)}>
-                    Edit
+                    {t("edit")}
                   </Button>
                   <Button
                     size="small"
@@ -87,7 +95,7 @@ export function CapabilityManager({
                       }).catch(() => {})
                     }
                   >
-                    Archive
+                    {t("archive")}
                   </Button>
                 </Stack>
               )}
@@ -95,15 +103,18 @@ export function CapabilityManager({
             <Chip
               size="small"
               sx={{ mt: 1 }}
-              label={`${product.regionCapabilities.filter((link) => link.capabilityId === item.id).length} visual anchors`}
+              label={t("visualAnchorCount", {
+                count: product.regionCapabilities.filter(
+                  (link) => link.capabilityId === item.id,
+                ).length,
+              })}
             />
           </Paper>
         ))}
       {product.capabilities.filter((item) => item.archivedAt === null)
         .length === 0 && (
         <Typography color="text.secondary">
-          Start with one outcome. Capabilities can include screens or work
-          entirely without a UI.
+          {t("capabilityStartHelp")}
         </Typography>
       )}
       <Dialog
@@ -113,7 +124,7 @@ export function CapabilityManager({
         maxWidth="sm"
       >
         <DialogTitle>
-          {editing === "new" ? "Add capability" : "Edit capability"}
+          {editing === "new" ? t("addCapability") : t("editCapability")}
         </DialogTitle>
         <DialogContent>
           {editing && (
@@ -129,7 +140,7 @@ export function CapabilityManager({
                       ownerLabel: editing.ownerLabel,
                     }
               }
-              submitLabel="Save capability"
+              submitLabel={t("saveCapability")}
               onCancel={() => setEditing(null)}
               onSubmit={async (data) => {
                 await mutate({

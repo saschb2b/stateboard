@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Alert,
@@ -18,6 +20,7 @@ export function ReleaseAssetUploader({
   assets: ReleaseAsset[];
   upload: (file: File, label: string) => Promise<void>;
 }) {
+  const t = useTranslations("Release");
   const [file, setFile] = useState<File | null>(null);
   const [label, setLabel] = useState("");
   const [pending, setPending] = useState(false);
@@ -32,11 +35,12 @@ export function ReleaseAssetUploader({
         variant="body2"
         sx={{ cursor: "pointer", width: "fit-content" }}
       >
-        Supporting review images{assets.length > 0 ? ` · ${assets.length}` : ""}
+        {t("assets.title")}
+        {assets.length > 0 ? ` · ${assets.length}` : ""}
       </Typography>
       <Stack spacing={2} sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Private until explicitly selected for a public review.
+          {t("assets.privateHelp")}
         </Typography>
         <Stack
           component="form"
@@ -53,9 +57,7 @@ export function ReleaseAssetUploader({
               setLabel("");
             } catch (cause) {
               setError(
-                cause instanceof Error
-                  ? cause.message
-                  : "Unable to upload this image.",
+                cause instanceof Error ? cause.message : t("assets.failed"),
               );
             } finally {
               setPending(false);
@@ -63,7 +65,7 @@ export function ReleaseAssetUploader({
           }}
         >
           <Button component="label" variant="outlined" disabled={pending}>
-            {file?.name ?? "Choose image"}
+            {file?.name ?? t("assets.choose")}
             <input
               type="file"
               hidden
@@ -73,20 +75,23 @@ export function ReleaseAssetUploader({
           </Button>
           <TextField
             size="small"
-            label="Review image label"
+            label={t("assets.label")}
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             disabled={pending}
             sx={{ flex: 1 }}
           />
           <Button type="submit" variant="contained" disabled={!file || pending}>
-            {pending ? "Uploading…" : "Upload image"}
+            {pending ? t("assets.uploading") : t("assets.upload")}
           </Button>
         </Stack>
         {error && <Alert severity="error">{error}</Alert>}
         {assets.map((asset) => (
           <Typography key={asset.id} variant="caption">
-            {asset.label} · {Math.ceil(asset.sizeBytes / 1024)} KB
+            {t("assets.size", {
+              label: asset.label,
+              size: Math.ceil(asset.sizeBytes / 1024),
+            })}
           </Typography>
         ))}
       </Stack>

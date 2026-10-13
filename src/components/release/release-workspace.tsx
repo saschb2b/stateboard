@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -57,6 +59,7 @@ export function ReleaseWorkspace({
   now: number;
   demo?: boolean;
 }) {
+  const t = useTranslations("Release");
   const [detail, setDetail] = useState(initialDetail);
   const [product, setProduct] = useState(initialProduct);
   const [view, changeView] = useReleaseView(initialView);
@@ -153,7 +156,9 @@ export function ReleaseWorkspace({
       await releaseRequest(url, options);
       await reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to save.");
+      setError(
+        cause instanceof Error ? cause.message : t("workspace.saveFailed"),
+      );
       throw cause;
     }
   }
@@ -193,7 +198,7 @@ export function ReleaseWorkspace({
         actions={
           demo ? (
             <Button component={Link} href="/share/demo">
-              Visual example
+              {t("workspace.visualExample")}
             </Button>
           ) : (
             <>
@@ -203,7 +208,7 @@ export function ReleaseWorkspace({
                 href={`/boards/${product.board.id}/releases`}
                 size="small"
               >
-                Product overview
+                {t("workspace.productOverview")}
               </Button>
               {viewer && <UserMenu user={viewer.user} role={viewer.role} />}
             </>
@@ -213,7 +218,7 @@ export function ReleaseWorkspace({
       <WorkspaceFrame
         header={
           <Stack spacing={1.5}>
-            {demo && <Alert severity="info">Example release · Read-only</Alert>}
+            {demo && <Alert severity="info">{t("workspace.example")}</Alert>}
             <Stack direction="row" justifyContent="space-between" gap={2}>
               <Stack spacing={0.5}>
                 <Typography
@@ -221,7 +226,7 @@ export function ReleaseWorkspace({
                   color="text.secondary"
                   sx={{ mb: 0.5 }}
                 >
-                  Release assessment
+                  {t("workspace.assessment")}
                 </Typography>
                 <Typography
                   variant="h5"
@@ -243,15 +248,17 @@ export function ReleaseWorkspace({
                     <ReadinessChip state={readiness.state} />
                   )}
                   <Typography variant="caption" color="text.secondary">
-                    Target · {assessment.targetEnvironment} · Revision{" "}
-                    {assessment.revision}
+                    {t("workspace.targetRevision", {
+                      target: assessment.targetEnvironment,
+                      revision: assessment.revision,
+                    })}
                   </Typography>
                 </Stack>
               </Stack>
               {!demo && (
-                <Tooltip title="Refresh assessment">
+                <Tooltip title={t("workspace.refresh")}>
                   <IconButton
-                    aria-label="Refresh assessment"
+                    aria-label={t("workspace.refresh")}
                     sx={{ alignSelf: "flex-start" }}
                     size="small"
                     disabled={reloading}
@@ -264,7 +271,7 @@ export function ReleaseWorkspace({
                         setError(
                           cause instanceof Error
                             ? cause.message
-                            : "Unable to reload.",
+                            : t("workspace.reloadFailed"),
                         );
                       } finally {
                         setReloading(false);
@@ -290,19 +297,20 @@ export function ReleaseWorkspace({
         >
           {error && (
             <Alert severity="error">
-              {error} Reload the assessment before retrying if another person
-              changed it.
+              {error}
+              {t("workspace.conflictHelp")}
             </Alert>
           )}
           {checkId && !focusedCheckId && (
             <Alert
               severity="warning"
               action={
-                <Button onClick={clearCheckFocus}>Clear check focus</Button>
+                <Button onClick={clearCheckFocus}>
+                  {t("workspace.clearCheck")}
+                </Button>
               }
             >
-              The linked check is not part of the current assessment. Choose a
-              current check below.
+              {t("workspace.missingCheck")}
             </Alert>
           )}
           <Box

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Alert, Stack, Typography } from "@mui/material";
 import { MutationForm } from "./mutation-form";
 import { ReleaseContext } from "./release-context";
@@ -24,70 +26,70 @@ export function DecisionReview({
   record: (input: DecisionInput) => Promise<void>;
   onCancel: () => void;
 }) {
+  const t = useTranslations("Release");
   return (
     <Stack spacing={2}>
       <Typography variant="subtitle2">
-        Review revision {detail.assessment.revision} ·{" "}
-        {detail.assessment.candidateLabel}
+        {t("decision.reviewRevision", {
+          revision: detail.assessment.revision,
+          candidate: detail.assessment.candidateLabel,
+        })}
       </Typography>
       <ReleaseContext assessment={detail.assessment} />
       <Typography variant="body2">
-        Required blockers: {readiness.blockers.length} · Evidence gaps:{" "}
-        {readiness.gaps.length}
+        {t("decision.counts", {
+          blockers: readiness.blockers.length,
+          gaps: readiness.gaps.length,
+        })}
       </Typography>
       <ReleaseFindings
         detail={detail}
         readiness={readiness}
-        title="Required checks preventing approval"
+        title={t("decision.preventingApproval")}
       />
       {readiness.state !== "ready" && (
-        <Alert severity="warning">
-          This assessment cannot be approved yet. You can record a held
-          decision.
-        </Alert>
+        <Alert severity="warning">{t("decision.cannotApprove")}</Alert>
       )}
       <MutationForm
         key={`${detail.assessment.revision}-${readiness.state}`}
         fields={[
           {
             name: "decision",
-            label: "Decision",
+            label: t("decision.label"),
             type: "select",
             required: true,
             options: [
-              { value: "held", label: "Hold release" },
+              { value: "held", label: t("decision.hold") },
               ...(readiness.state === "ready"
-                ? [{ value: "approved", label: "Approve release" }]
+                ? [{ value: "approved", label: t("decision.approve") }]
                 : []),
             ],
           },
           {
             name: "rationale",
-            label: "Decision rationale",
+            label: t("decision.rationale"),
             required: true,
             type: "textarea",
           },
           {
             name: "screenIds",
-            label: "Screens to retain in this review",
+            label: t("decision.screens"),
             type: "multi",
-            helper:
-              "Selected screenshots are copied into the decision record so later replacement or deletion cannot alter this review.",
+            helper: t("decision.screensHelp"),
             options: product.screens.map((screen) => ({
               value: screen.id,
-              label: screen.label ?? "Product screen",
+              label: screen.label ?? t("decision.productScreen"),
             })),
           },
           {
             name: "assetIds",
-            label: "Private images to retain",
+            label: t("decision.privateImages"),
             type: "multi",
-            helper:
-              "Choose supporting images for this review. Previously reviewed images are included only when selected here.",
+            helper: t("decision.privateImagesHelp"),
             options: detail.assets.map((asset) => ({
               value: asset.id,
               label: asset.decisionId
-                ? `${asset.label} · earlier review image`
+                ? t("decision.earlierImage", { label: asset.label })
                 : asset.label,
             })),
           },
@@ -99,7 +101,7 @@ export function DecisionReview({
             .filter((asset) => asset.decisionId === null)
             .map((asset) => asset.id),
         }}
-        submitLabel="Record reviewed snapshot"
+        submitLabel={t("decision.recordSnapshot")}
         onCancel={onCancel}
         onSubmit={async (values) => {
           await record({

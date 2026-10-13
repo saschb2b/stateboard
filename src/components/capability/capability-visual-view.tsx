@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -34,6 +36,7 @@ export function CapabilityVisualView({
   onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   screensHref?: string;
 }) {
+  const t = useTranslations("Product");
   const [capabilityId, setCapabilityId] = useState("all");
   const included = detail.scope.filter((item) => item.included);
   const linked = product.regionCapabilities.filter(
@@ -63,7 +66,7 @@ export function CapabilityVisualView({
         gap={1}
       >
         <TextField
-          label="Capability"
+          label={t("capability")}
           value={capabilityId}
           select
           fullWidth
@@ -71,7 +74,7 @@ export function CapabilityVisualView({
           sx={{ flex: 1, minWidth: 0 }}
           onChange={(event) => setCapabilityId(event.target.value)}
         >
-          <MenuItem value="all">All screens</MenuItem>
+          <MenuItem value="all">{t("allScreens")}</MenuItem>
           {included.map((item) => (
             <MenuItem key={item.capabilityId} value={item.capabilityId}>
               {item.name}
@@ -89,7 +92,7 @@ export function CapabilityVisualView({
                 )
               }
             >
-              View architecture
+              {t("viewArchitecture")}
             </Button>
             <Button
               size="small"
@@ -100,21 +103,20 @@ export function CapabilityVisualView({
                 )
               }
             >
-              View checks
+              {t("viewChecks")}
             </Button>
           </Stack>
         )}
       </Stack>
       {screens.length > 0 && (
         <Typography variant="caption" color="text.secondary">
-          Annotations show shipped, mock, or missing UI. Checks verify the
-          candidate.
+          {t("annotationHelp")}
         </Typography>
       )}
       {screens.map((screen) => (
         <Paper key={screen.id} sx={{ overflow: "hidden" }}>
           <Typography variant="subtitle2" sx={{ px: 2, py: 1.5 }}>
-            {screen.label ?? "Product screen"}
+            {screen.label ?? t("productScreen")}
           </Typography>
           <Box
             sx={{
@@ -126,7 +128,7 @@ export function CapabilityVisualView({
             <Box
               component="img"
               src={screen.mediaUrl}
-              alt={screen.label ?? "Product screen"}
+              alt={screen.label ?? t("productScreen")}
               sx={{ width: "100%", height: "100%", display: "block" }}
             />
             <RegionOverlay
@@ -158,7 +160,7 @@ export function CapabilityVisualView({
                 >
                   <StateChip state={region.state} size="sm" />
                   <Typography variant="body2">
-                    {region.label ?? "Region"}
+                    {region.label ?? t("region")}
                   </Typography>
                   {product.regionCapabilities
                     .filter((link) => link.regionId === region.id)
@@ -176,7 +178,7 @@ export function CapabilityVisualView({
                             product.capabilities.find(
                               (item) => item.id === link.capabilityId,
                             )?.name ??
-                            "Capability"}
+                            t("capability")}
                         </Typography>
                         <ReadinessChip
                           verification
@@ -196,11 +198,11 @@ export function CapabilityVisualView({
       {screens.length === 0 && (
         <Box sx={{ py: 5, textAlign: "center" }}>
           <Typography variant="subtitle1">
-            {capabilityId === "all" ? "No screens yet" : "No linked screen"}
+            {capabilityId === "all" ? t("noScreens") : t("noLinkedScreen")}
           </Typography>
           {screensHref && (
             <Button component={Link} href={screensHref} sx={{ mt: 1.5 }}>
-              Manage screens
+              {t("manageScreens")}
             </Button>
           )}
         </Box>
@@ -216,8 +218,7 @@ export function CapabilityVisualView({
             color="text.secondary"
             sx={{ cursor: "pointer" }}
           >
-            {noUI.length} {noUI.length === 1 ? "capability" : "capabilities"}{" "}
-            without a linked screen
+            {t("withoutScreenCount", { count: noUI.length })}
           </Typography>
           <Stack sx={{ mt: 1.5 }}>
             {noUI.map((item) => (

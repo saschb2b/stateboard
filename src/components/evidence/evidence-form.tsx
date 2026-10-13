@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useRef } from "react";
 import { Alert, Paper, Stack, Typography } from "@mui/material";
 import { MutationForm } from "@/components/release/mutation-form";
@@ -24,65 +26,66 @@ export function EvidenceForm({
   ) => Promise<void>;
   onCancel: () => void;
 }) {
+  const t = useTranslations("Release");
   const eventId = useRef<string | null>(null);
   return (
     <Stack spacing={2}>
       <Paper sx={{ p: 2 }}>
         <Typography variant="subtitle2">
-          {check.claim} · Revision {check.revision}
+          {t("evidence.claimRevision", {
+            claim: check.claim,
+            revision: check.revision,
+          })}
         </Typography>
-        <Typography variant="body2">Owner: {check.ownerLabel}</Typography>
         <Typography variant="body2">
-          Verification method: {check.method}
+          {t("evidence.owner", { owner: check.ownerLabel })}
         </Typography>
         <Typography variant="body2">
-          Candidate: {assessment.candidateRef}
+          {t("evidence.method", { method: check.method })}
+        </Typography>
+        <Typography variant="body2">
+          {t("evidence.candidate", { value: assessment.candidateRef })}
           <br />
-          Environment: {check.environment}
+          {t("evidence.environment", { value: check.environment })}
           <br />
-          Audience: {assessment.audience}
+          {t("evidence.audience", { value: assessment.audience })}
           <br />
-          Configuration: {assessment.configurationRef}
+          {t("evidence.configuration", { value: assessment.configurationRef })}
         </Typography>
       </Paper>
-      <Alert severity="info">
-        This review asserts the exact context above. Submitting a newer
-        observation appends evidence; earlier observations remain in the
-        history.
-      </Alert>
+      <Alert severity="info">{t("evidence.contextHelp")}</Alert>
       <MutationForm
         fields={[
           {
             name: "result",
-            label: "Result",
+            label: t("common.result"),
             type: "select",
             required: true,
             options: [
-              { value: "pass", label: "Pass" },
-              { value: "fail", label: "Fail" },
-              { value: "inconclusive", label: "Inconclusive" },
+              { value: "pass", label: t("evidence.pass") },
+              { value: "fail", label: t("evidence.fail") },
+              { value: "inconclusive", label: t("evidence.inconclusive") },
             ],
           },
           {
             name: "summary",
-            label: "Observation",
+            label: t("evidence.observation"),
             type: "textarea",
             required: true,
           },
           {
             name: "observedAt",
-            label: "Observed at",
+            label: t("evidence.observedAt"),
             type: "datetime-local",
             required: true,
-            helper: "Date and time in your local timezone.",
+            helper: t("evidence.localTime"),
           },
-          { name: "source", label: "Evidence source", required: true },
-          { name: "runRef", label: "Run or review reference", required: true },
+          { name: "source", label: t("evidence.source"), required: true },
+          { name: "runRef", label: t("evidence.runReference"), required: true },
           {
             name: "referenceUrl",
-            label: "Supporting result link",
-            helper:
-              "Optional internal or external result URL. StateBoard does not fetch this link.",
+            label: t("evidence.supportingLink"),
+            helper: t("evidence.linkHelp"),
           },
         ]}
         initial={{
@@ -94,12 +97,12 @@ export function EvidenceForm({
           runRef: "",
           referenceUrl: "",
         }}
-        submitLabel="Append evidence"
+        submitLabel={t("evidence.append")}
         onCancel={onCancel}
         onSubmit={async (values) => {
           const observedAt = Date.parse(String(values.observedAt));
           if (!Number.isFinite(observedAt))
-            throw new Error("Enter a valid observation date and time.");
+            throw new Error(t("evidence.invalidTime"));
           eventId.current ??= crypto.randomUUID();
           await onSave({
             type: "evidence.create",

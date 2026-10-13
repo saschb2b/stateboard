@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Button,
@@ -24,23 +26,6 @@ import {
 } from "@/lib/release-types";
 import { productComponentFocus } from "./dependency-focus";
 
-const fields: FormField[] = [
-  { name: "name", label: "Component name", required: true },
-  {
-    name: "kind",
-    label: "Kind",
-    type: "select",
-    required: true,
-    options: COMPONENT_KINDS.map((value) => ({ value, label: value })),
-  },
-  { name: "ownerLabel", label: "Accountable owner", required: true },
-  { name: "description", label: "Purpose", type: "textarea" },
-  {
-    name: "referenceUrl",
-    label: "Reference link",
-    helper: "Optional link to existing internal documentation.",
-  },
-];
 export function ComponentManager({
   product,
   editable,
@@ -50,6 +35,28 @@ export function ComponentManager({
   editable: boolean;
   mutate: (mutation: ProductMutation) => Promise<void>;
 }) {
+  const t = useTranslations("Product");
+  const locale = useLocale();
+  const fields: FormField[] = [
+    { name: "name", label: t("componentName"), required: true },
+    {
+      name: "kind",
+      label: t("kind"),
+      type: "select",
+      required: true,
+      options: COMPONENT_KINDS.map((value) => ({
+        value,
+        label: t(`kinds.${value}`),
+      })),
+    },
+    { name: "ownerLabel", label: t("accountableOwner"), required: true },
+    { name: "description", label: t("purpose"), type: "textarea" },
+    {
+      name: "referenceUrl",
+      label: t("referenceLink"),
+      helper: t("referenceLinkHelp"),
+    },
+  ];
   const [editing, setEditing] = useState<ProductComponent | "new" | null>(null);
   const [linking, setLinking] = useState<ProductComponent | null>(null);
   const [browseWorkspace, setBrowseWorkspace] = useState(false);
@@ -61,13 +68,13 @@ export function ComponentManager({
   const available = active.filter((item) => !linkedIds.has(item.id));
   const shown = (browseWorkspace ? active : linked).filter((item) =>
     `${item.name} ${item.description} ${item.ownerLabel}`
-      .toLocaleLowerCase()
-      .includes(search.trim().toLocaleLowerCase()),
+      .toLocaleLowerCase(locale)
+      .includes(search.trim().toLocaleLowerCase(locale)),
   );
   const linkFields: FormField[] = [
     {
       name: "capabilityId",
-      label: "Capability",
+      label: t("capability"),
       type: "select",
       required: true,
       options: product.capabilities
@@ -76,28 +83,30 @@ export function ComponentManager({
     },
     {
       name: "relation",
-      label: "Relationship",
+      label: t("relationship"),
       required: true,
-      helper: "e.g. calls, consumes, reads, requires",
+      helper: t("relationshipHelp"),
     },
-    { name: "description", label: "Contract or purpose", type: "textarea" },
+    { name: "description", label: t("contractPurpose"), type: "textarea" },
     {
       name: "required",
-      label: "Required for this capability",
+      label: t("requiredForCapability"),
       type: "checkbox",
     },
   ];
   return (
     <Stack spacing={2}>
       <Stack direction="row" justifyContent="space-between">
-        <Typography variant="h6">Dependencies and owners</Typography>
+        <Typography variant="h6">{t("dependenciesOwners")}</Typography>
         {editable && (
-          <Button onClick={() => setEditing("new")}>Add component</Button>
+          <Button onClick={() => setEditing("new")}>{t("addComponent")}</Button>
         )}
       </Stack>
       <Typography variant="body2" color="text.secondary">
-        Linked to this product: {linked.length} · Available in workspace:{" "}
-        {available.length}
+        {t("componentAvailability", {
+          linked: linked.length,
+          available: available.length,
+        })}
       </Typography>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
         <Button
@@ -106,16 +115,14 @@ export function ComponentManager({
             setSearch("");
           }}
         >
-          {browseWorkspace
-            ? "Show linked components"
-            : "Browse workspace components"}
+          {browseWorkspace ? t("showLinkedComponents") : t("browseComponents")}
         </Button>
         <TextField
           size="small"
           label={
             browseWorkspace
-              ? "Search workspace components"
-              : "Search linked components"
+              ? t("searchWorkspaceComponents")
+              : t("searchLinkedComponents")
           }
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -124,21 +131,17 @@ export function ComponentManager({
       </Stack>
       {browseWorkspace && (
         <Typography variant="body2" color="text.secondary">
-          Components are shared within the workspace. Link an existing component
-          to reuse it; edits apply wherever it is linked.
+          {t("sharedComponentHelp")}
         </Typography>
       )}
       {focus.truncated && (
         <Typography variant="body2" color="warning.main">
-          Linked dependency context is limited to 200 components. Browse the
-          workspace to inspect additional components.
+          {t("componentLimit")}
         </Typography>
       )}
       {shown.length === 0 && (
         <Typography color="text.secondary">
-          {search
-            ? "No components match this search."
-            : "No components are linked to this product yet. Browse the workspace to reuse one, or add a component and link it to a capability."}
+          {search ? t("noMatchingComponents") : t("noLinkedComponents")}
         </Typography>
       )}
       {shown.map((item) => (
@@ -147,14 +150,14 @@ export function ComponentManager({
             <Stack spacing={0.5}>
               <Stack direction="row" alignItems="center" spacing={1}>
                 <Typography variant="subtitle1">{item.name}</Typography>
-                <Chip size="small" label={item.kind} />
+                <Chip size="small" label={t(`kinds.${item.kind}`)} />
                 <Chip
                   size="small"
                   variant="outlined"
                   label={
                     linkedIds.has(item.id)
-                      ? "Linked to product"
-                      : "Available to link"
+                      ? t("linkedToProduct")
+                      : t("availableToLink")
                   }
                 />
               </Stack>
@@ -164,7 +167,7 @@ export function ComponentManager({
               </Typography>
               {item.ownerNeedsReassignment && (
                 <Typography variant="body2" color="warning.main">
-                  Owner membership ended; review accountability.
+                  {t("ownerMembershipEnded")}
                 </Typography>
               )}
               {item.referenceUrl && (
@@ -175,7 +178,7 @@ export function ComponentManager({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Open reference
+                  {t("openReference")}
                 </Button>
               )}
             </Stack>
@@ -183,11 +186,11 @@ export function ComponentManager({
               <Stack direction="row" flexWrap="wrap" alignContent="start">
                 {!linkedIds.has(item.id) && (
                   <Button size="small" onClick={() => setLinking(item)}>
-                    Link to capability
+                    {t("linkToCapability")}
                   </Button>
                 )}
                 <Button size="small" onClick={() => setEditing(item)}>
-                  Edit
+                  {t("edit")}
                 </Button>
                 <Button
                   size="small"
@@ -200,7 +203,7 @@ export function ComponentManager({
                     }).catch(() => {})
                   }
                 >
-                  Archive
+                  {t("archive")}
                 </Button>
               </Stack>
             )}
@@ -213,14 +216,16 @@ export function ComponentManager({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Link {linking?.name} to this product</DialogTitle>
+        <DialogTitle>
+          {t("linkComponentTitle", { name: linking?.name ?? "" })}
+        </DialogTitle>
         <DialogContent>
           {linking && (
             <MutationForm
               key={linking.id}
               fields={linkFields}
               initial={{ required: true }}
-              submitLabel="Save connection"
+              submitLabel={t("saveConnection")}
               onCancel={() => setLinking(null)}
               onSubmit={async (data) => {
                 await mutate({
@@ -240,7 +245,7 @@ export function ComponentManager({
         maxWidth="sm"
       >
         <DialogTitle>
-          {editing === "new" ? "Add component" : "Edit component"}
+          {editing === "new" ? t("addComponent") : t("editComponent")}
         </DialogTitle>
         <DialogContent>
           {editing && (
@@ -258,7 +263,7 @@ export function ComponentManager({
                       referenceUrl: editing.referenceUrl ?? "",
                     }
               }
-              submitLabel="Save component"
+              submitLabel={t("saveComponent")}
               onCancel={() => setEditing(null)}
               onSubmit={async (data) => {
                 await mutate({

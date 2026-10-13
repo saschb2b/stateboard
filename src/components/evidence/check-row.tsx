@@ -1,5 +1,9 @@
 "use client";
 
+import { useReleaseReason } from "@/components/release/use-release-reason";
+
+import { useTranslations } from "next-intl";
+
 import { useId, useState } from "react";
 import {
   Box,
@@ -17,8 +21,6 @@ import type {
 } from "@/lib/release-types";
 import { EvidenceHistory } from "./evidence-history";
 import { CheckRevisionHistory } from "./check-revision-history";
-
-import { CHECK_RESULT_LABELS } from "./check-result-labels";
 
 export function CheckRow({
   check,
@@ -45,6 +47,8 @@ export function CheckRow({
   onArchive: () => void;
   loadRevisions?: () => Promise<ReleaseCheck[]>;
 }) {
+  const t = useTranslations("Release");
+  const localizeReason = useReleaseReason();
   const [expanded, setExpanded] = useState(initiallyExpanded);
   const panelId = useId();
   const statusId = useId();
@@ -119,13 +123,13 @@ export function CheckRow({
             textAlign: { xs: "left", sm: "right" },
           }}
         >
-          {evaluation ? CHECK_RESULT_LABELS[evaluation.state] : "Not evaluated"}
+          {t(`results.${evaluation?.state ?? "not_evaluated"}`)}
           {!check.required && (
             <Box
               component="span"
               sx={{ display: "block", color: "text.secondary" }}
             >
-              Optional
+              {t("common.optional")}
             </Box>
           )}
         </Typography>
@@ -144,30 +148,36 @@ export function CheckRow({
         <Stack id={panelId} spacing={2} sx={{ px: 2.5, pb: 2.5 }}>
           {evaluation && (
             <Typography variant="body2" sx={{ color }}>
-              {evaluation.reason}
+              {localizeReason(evaluation.reason)}
             </Typography>
           )}
           <Box>
             <Typography variant="caption" color="text.secondary">
-              Verification method
+              {t("check.verificationMethod")}
             </Typography>
             <Typography variant="body2">{check.method}</Typography>
           </Box>
           <Typography variant="caption" color="text.secondary">
-            {check.required ? "Required" : "Optional · does not block release"}{" "}
-            · {check.category} · {check.environment} · Valid for{" "}
-            {check.maxAgeMs / 3_600_000}h · Definition {check.revision}
+            {t("check.details", {
+              requirement: check.required
+                ? t("common.required")
+                : t("check.optionalHelp"),
+              category: t(`categories.${check.category}`),
+              environment: check.environment,
+              hours: check.maxAgeMs / 3_600_000,
+              revision: check.revision,
+            })}
           </Typography>
           {editable && (
             <Stack direction="row" gap={1} flexWrap="wrap">
               <Button variant="outlined" size="small" onClick={onRecord}>
-                Record evidence
+                {t("check.recordEvidence")}
               </Button>
               <Button size="small" color="inherit" onClick={onRevise}>
-                Revise check
+                {t("check.revise")}
               </Button>
               <Button size="small" color="inherit" onClick={onArchive}>
-                Archive
+                {t("check.archive")}
               </Button>
             </Stack>
           )}

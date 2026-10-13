@@ -107,7 +107,7 @@ export const ScopedComponentVerification: Story = {
       canvas.getByText("Ledger read set is consistent."),
     ).toBeVisible();
     await expect(
-      canvas.getByText("pass · Required · staging-eu"),
+      canvas.getByText("Passed · Required · staging-eu"),
     ).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: /Ledger store/ }));
     await waitFor(() =>

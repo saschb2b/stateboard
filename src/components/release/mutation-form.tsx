@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Alert,
@@ -43,6 +45,7 @@ export function MutationForm({
   onSubmit: (values: FormValues) => Promise<void>;
   onCancel?: () => void;
 }) {
+  const t = useTranslations("Release");
   const [values, setValues] = useState<FormValues>(() =>
     Object.fromEntries(
       fields.map((field) => [
@@ -75,12 +78,12 @@ export function MutationForm({
           field.required &&
           (value === "" || (Array.isArray(value) && value.length === 0))
         )
-          throw new Error(`${field.label} is required.`);
+          throw new Error(t("mutation.required", { field: field.label }));
       }
       await onSubmit(result);
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "Unable to save. Try again.",
+        cause instanceof Error ? cause.message : t("mutation.saveFailed"),
       );
     } finally {
       setPending(false);
@@ -170,11 +173,11 @@ export function MutationForm({
       {error && <Alert severity="error">{error}</Alert>}
       <Stack direction="row" spacing={1}>
         <Button type="submit" variant="contained" disabled={pending}>
-          {pending ? "Saving…" : submitLabel}
+          {pending ? t("mutation.saving") : submitLabel}
         </Button>
         {onCancel && (
           <Button disabled={pending} onClick={onCancel}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         )}
       </Stack>

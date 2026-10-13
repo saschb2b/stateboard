@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { useRef, useState } from "react";
 import {
   Alert,
@@ -35,6 +37,8 @@ export function DependencyView({
   onCheckScopeChange?: (scope: CheckSubjectScope | null) => void;
   initialCapabilityId?: string | null;
 }) {
+  const t = useTranslations("Product");
+  const format = useFormatter();
   const [capabilityId, setCapabilityId] = useState<string | null>(() =>
     detail.scope.some(
       (item) => item.included && item.capabilityId === initialCapabilityId,
@@ -57,7 +61,7 @@ export function DependencyView({
   };
   const name = (id: string) =>
     product.components.find((item) => item.id === id)?.name ??
-    "Unavailable component";
+    t("unavailableComponent");
   const activeChecks = detail.checks.filter(
     (check) => check.archivedAt === null,
   );
@@ -75,7 +79,7 @@ export function DependencyView({
           select
           fullWidth
           size="small"
-          label="Capability"
+          label={t("capability")}
           value={capabilityId ?? "all"}
           onChange={(event) =>
             selectFocus(
@@ -84,7 +88,7 @@ export function DependencyView({
             )
           }
         >
-          <MenuItem value="all">All capabilities</MenuItem>
+          <MenuItem value="all">{t("allCapabilities")}</MenuItem>
           {scope.map((item) => (
             <MenuItem key={item.capabilityId} value={item.capabilityId}>
               {item.name}
@@ -95,7 +99,7 @@ export function DependencyView({
           select
           fullWidth
           size="small"
-          label="Component impact"
+          label={t("componentImpact")}
           value={componentId ?? "all"}
           onChange={(event) =>
             selectFocus(
@@ -104,7 +108,7 @@ export function DependencyView({
             )
           }
         >
-          <MenuItem value="all">All components</MenuItem>
+          <MenuItem value="all">{t("allComponents")}</MenuItem>
           {focus.assessmentComponents.map((item) => (
             <MenuItem key={item.id} value={item.id}>
               {item.name}
@@ -113,14 +117,12 @@ export function DependencyView({
         </TextField>
       </Stack>
       {focus.truncated && (
-        <Alert severity="warning">
-          Showing up to 200 components. Some dependencies are outside this view.
-        </Alert>
+        <Alert severity="warning">{t("dependencyLimit")}</Alert>
       )}
       {componentId && (
         <Box sx={{ py: 0.5 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Affected capabilities
+            {t("affectedCapabilities")}
           </Typography>
           <Stack direction="row" gap={1.5} flexWrap="wrap">
             {focus.impacted.map((item) => (
@@ -142,7 +144,7 @@ export function DependencyView({
             ))}
             {focus.impacted.length === 0 && (
               <Typography variant="body2" color="text.secondary">
-                No declared path to an included capability.
+                {t("noDeclaredPath")}
               </Typography>
             )}
           </Stack>
@@ -150,24 +152,26 @@ export function DependencyView({
       )}
       <Stack direction="row" justifyContent="space-between" alignItems="center">
         <Typography variant="subtitle2">
-          Components{" "}
+          {t("components")}{" "}
           <Box
             component="span"
             sx={{ color: "text.secondary", ml: 0.5, fontWeight: 400 }}
           >
-            {focus.components.length}
-            {focus.checkScope ? ` / ${focus.assessmentComponents.length}` : ""}
+            {format.number(focus.components.length)}
+            {focus.checkScope
+              ? ` / ${format.number(focus.assessmentComponents.length)}`
+              : ""}
           </Box>
         </Typography>
         {focus.checkScope && (
           <Button size="small" onClick={() => selectFocus(null, null)}>
-            Clear focus
+            {t("clearFocus")}
           </Button>
         )}
       </Stack>
       {focus.components.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-          No dependencies declared for this view.
+          {t("noViewDependencies")}
         </Typography>
       ) : (
         <Paper sx={{ overflow: "hidden" }}>
@@ -203,7 +207,7 @@ export function DependencyView({
         </Paper>
       )}
       <Typography variant="caption" color="text.secondary">
-        Declared dependencies · Readiness is based on required checks.
+        {t("dependencyReadinessHelp")}
       </Typography>
     </Stack>
   );

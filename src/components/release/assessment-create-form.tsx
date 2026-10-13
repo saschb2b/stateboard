@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { MutationForm, type FormField } from "./mutation-form";
 import type { Capability, CreateAssessmentInput } from "@/lib/release-types";
 
@@ -12,46 +14,45 @@ export function AssessmentCreateForm({
   ownerLabel: string;
   onSubmit: (data: CreateAssessmentInput) => Promise<void>;
 }) {
+  const t = useTranslations("Release");
   const fields: FormField[] = [
     {
       name: "candidateLabel",
-      label: "Candidate name",
+      label: t("create.candidateName"),
       required: true,
-      helper: "e.g. October release · RC 3",
+      helper: t("create.candidateExample"),
     },
     {
       name: "candidateRef",
-      label: "Immutable candidate reference",
+      label: t("create.candidateReference"),
       required: true,
-      helper:
-        "Commit SHA, image digest, or immutable artifact manifest reference.",
+      helper: t("create.candidateHelp"),
     },
     {
       name: "validationEnvironment",
-      label: "Validation environment",
+      label: t("create.validationEnvironment"),
       required: true,
-      helper: "Where the required checks run.",
+      helper: t("create.validationHelp"),
     },
     {
       name: "targetEnvironment",
-      label: "Target deployment environment",
+      label: t("create.targetEnvironment"),
       required: true,
     },
-    { name: "audience", label: "Intended audience", required: true },
+    { name: "audience", label: t("create.audience"), required: true },
     {
       name: "configurationRef",
-      label: "Configuration reference",
+      label: t("create.configuration"),
       required: true,
-      helper: "Versioned configuration and feature flag set.",
+      helper: t("create.configurationHelp"),
     },
-    { name: "ownerLabel", label: "Accountable release owner", required: true },
+    { name: "ownerLabel", label: t("create.owner"), required: true },
     {
       name: "capabilityIds",
-      label: "Capabilities in the assessment",
+      label: t("create.capabilities"),
       type: "multi",
       required: true,
-      helper:
-        "Context is fixed when created. Scope and checks remain explicit and versioned.",
+      helper: t("create.contextHelp"),
       options: capabilities
         .filter((item) => item.archivedAt === null)
         .map((item) => ({ value: item.id, label: item.name })),
@@ -66,7 +67,7 @@ export function AssessmentCreateForm({
           .filter((item) => item.archivedAt === null)
           .map((item) => item.id),
       }}
-      submitLabel="Create assessment"
+      submitLabel={t("create.submit")}
       onSubmit={(data) => onSubmit(data as unknown as CreateAssessmentInput)}
     />
   );

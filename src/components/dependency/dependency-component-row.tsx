@@ -1,6 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import type { Ref } from "react";
+import { useReleaseReason } from "@/components/release/use-release-reason";
 import ExpandMoreRounded from "@mui/icons-material/ExpandMoreRounded";
 import {
   Accordion,
@@ -20,7 +23,11 @@ import type {
   ReleaseEvaluation,
 } from "@/lib/release-types";
 
-function checkSummary(checks: ReleaseCheck[], readiness: ReleaseEvaluation) {
+function checkSummary(
+  checks: ReleaseCheck[],
+  readiness: ReleaseEvaluation,
+  t: ReturnType<typeof useTranslations<"Product">>,
+) {
   const results = checks.map((check) => ({
     check,
     state: readiness.checks.find((item) => item.checkId === check.id)?.state,
@@ -37,20 +44,20 @@ function checkSummary(checks: ReleaseCheck[], readiness: ReleaseEvaluation) {
   ).length;
   if (failures)
     return {
-      label: `${failures} required ${failures === 1 ? "failure" : "failures"}`,
+      label: t("requiredFailureCount", { count: failures }),
       color: "error.main",
     };
   if (gaps)
     return {
-      label: `${gaps} evidence ${gaps === 1 ? "gap" : "gaps"}`,
+      label: t("evidenceGapCount", { count: gaps }),
       color: "warning.main",
     };
   if (optional)
     return {
-      label: `${optional} optional ${optional === 1 ? "finding" : "findings"}`,
+      label: t("optionalFindingCount", { count: optional }),
       color: "warning.main",
     };
-  return { label: "Checks passed", color: "success.main" };
+  return { label: t("checksPassed"), color: "success.main" };
 }
 
 /** A scan-friendly row; claim and wiring details are available on demand. */
@@ -79,14 +86,17 @@ export function DependencyComponentRow({
   summaryRef?: Ref<HTMLDivElement>;
   onInspectDependency?: (componentId: string) => void;
 }) {
+  const t = useTranslations("Product");
+  const releaseT = useTranslations("Release");
+  const localizeReason = useReleaseReason();
   const summary =
     checks.length > 0
-      ? checkSummary(checks, readiness)
+      ? checkSummary(checks, readiness, t)
       : {
           label:
             dependencies.length > 0
-              ? `${dependencies.length} ${dependencies.length === 1 ? "dependency" : "dependencies"}`
-              : "No dependencies",
+              ? t("dependencyCount", { count: dependencies.length })
+              : t("noDependencies"),
           color: "text.secondary",
         };
   return (
@@ -127,11 +137,11 @@ export function DependencyComponentRow({
               {component.name}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {component.kind} · {component.ownerLabel}
+              {t(`kinds.${component.kind}`)} · {component.ownerLabel}
               {component.ownerNeedsReassignment && (
                 <Box component="span" sx={{ color: "warning.main" }}>
                   {" "}
-                  · Owner needs review
+                  · {t("ownerNeedsReview")}
                 </Box>
               )}
             </Typography>
@@ -163,7 +173,7 @@ export function DependencyComponentRow({
               rel="noopener noreferrer"
               variant="body2"
             >
-              Component reference ↗
+              {t("componentReference")}
             </Link>
           )}
           <Box
@@ -179,7 +189,7 @@ export function DependencyComponentRow({
             {outcomeLinks.length > 0 && (
               <Stack spacing={1}>
                 <Typography variant="overline" color="text.secondary">
-                  Supports
+                  {t("supports")}
                 </Typography>
                 {outcomeLinks.map((link) => (
                   <Box key={link.capabilityId}>
@@ -193,8 +203,8 @@ export function DependencyComponentRow({
                     <Typography variant="caption" color="text.secondary">
                       {link.relation} ·{" "}
                       {link.required
-                        ? "Required dependency"
-                        : "Supporting context"}
+                        ? t("requiredDependency")
+                        : t("supportingContext")}
                     </Typography>
                     {link.description && (
                       <Typography variant="body2" color="text.secondary">
@@ -208,7 +218,7 @@ export function DependencyComponentRow({
             {dependencies.length > 0 && (
               <Stack spacing={1}>
                 <Typography variant="overline" color="text.secondary">
-                  Depends on
+                  {t("dependsOn")}
                 </Typography>
                 {dependencies.map((link) => (
                   <Box key={link.id}>
@@ -230,8 +240,8 @@ export function DependencyComponentRow({
                     <Typography variant="caption" color="text.secondary">
                       {link.relation} ·{" "}
                       {link.required
-                        ? "Required dependency"
-                        : "Supporting context"}
+                        ? t("requiredDependency")
+                        : t("supportingContext")}
                     </Typography>
                     {link.description && (
                       <Typography variant="body2" color="text.secondary">
@@ -244,13 +254,13 @@ export function DependencyComponentRow({
             )}
             {outcomeLinks.length === 0 && dependencies.length === 0 && (
               <Typography variant="body2" color="text.secondary">
-                No outgoing connections declared.
+                {t("noOutgoing")}
               </Typography>
             )}
             {checks.length > 0 && (
               <Stack spacing={1}>
                 <Typography variant="overline" color="text.secondary">
-                  Component checks
+                  {t("componentChecks")}
                 </Typography>
                 {checks.map((check) => {
                   const evaluation = readiness.checks.find(
@@ -269,13 +279,15 @@ export function DependencyComponentRow({
                               : "warning.main"
                         }
                       >
-                        {evaluation?.state ?? "Not evaluated"} ·{" "}
-                        {check.required ? "Required" : "Optional"} ·{" "}
+                        {evaluation
+                          ? releaseT(`results.${evaluation.state}`)
+                          : t("notEvaluated")}{" "}
+                        · {check.required ? t("required") : t("optional")} ·{" "}
                         {check.environment}
                       </Typography>
                       {evaluation && evaluation.state !== "pass" && (
                         <Typography variant="body2" color="text.secondary">
-                          {evaluation.reason}
+                          {localizeReason(evaluation.reason)}
                         </Typography>
                       )}
                     </Box>
@@ -286,7 +298,7 @@ export function DependencyComponentRow({
           </Box>
           {checks.length === 0 && (
             <Typography variant="caption" color="text.secondary">
-              No component checks defined.
+              {t("noComponentChecks")}
             </Typography>
           )}
         </Stack>

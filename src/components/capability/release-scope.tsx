@@ -1,6 +1,9 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { useState } from "react";
+import { useReleaseReason } from "@/components/release/use-release-reason";
 import {
   Accordion,
   AccordionDetails,
@@ -45,6 +48,9 @@ export function ReleaseScope({
     mutation: Omit<ReleaseMutation, "expectedRevision">,
   ) => Promise<void>;
 }) {
+  const t = useTranslations("Product");
+  const format = useFormatter();
+  const localizeReason = useReleaseReason();
   const [editing, setEditing] = useState<ReleaseCapability | "add" | null>(
     null,
   );
@@ -57,17 +63,17 @@ export function ReleaseScope({
     <Stack spacing={1.5}>
       <Stack direction="row" alignItems="center" justifyContent="space-between">
         <Typography variant="subtitle1" component="h2">
-          Capabilities
+          {t("capabilities")}
           <Box
             component="span"
             sx={{ ml: 1, color: "text.secondary", fontWeight: 400 }}
           >
-            {detail.scope.length}
+            {format.number(detail.scope.length)}
           </Box>
         </Typography>
         {editable && available.length > 0 && (
           <Button size="small" onClick={() => setEditing("add")}>
-            Add to scope
+            {t("addToScope")}
           </Button>
         )}
       </Stack>
@@ -81,7 +87,7 @@ export function ReleaseScope({
       >
         {detail.scope.length === 0 && (
           <Typography variant="body2" color="text.secondary" sx={{ p: 2.5 }}>
-            No capabilities in this assessment.
+            {t("noScopeCapabilities")}
           </Typography>
         )}
         {detail.scope.map((item) => {
@@ -119,7 +125,7 @@ export function ReleaseScope({
             >
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon fontSize="small" />}
-                aria-label={`Details for ${item.name}`}
+                aria-label={t("capabilityDetails", { name: item.name })}
                 aria-describedby={`capability-status-${item.capabilityId}`}
                 sx={{
                   px: 2,
@@ -153,7 +159,7 @@ export function ReleaseScope({
                     </Typography>
                     {newerDefinition && (
                       <Typography variant="caption" color="warning.main">
-                        Newer definition available
+                        {t("newDefinitionAvailable")}
                       </Typography>
                     )}
                   </Box>
@@ -167,7 +173,9 @@ export function ReleaseScope({
                       <Chip
                         size="small"
                         variant="outlined"
-                        label={item.included ? "Not evaluated" : "Excluded"}
+                        label={
+                          item.included ? t("notEvaluated") : t("excluded")
+                        }
                       />
                     )}
                   </Box>
@@ -177,11 +185,16 @@ export function ReleaseScope({
                 <Stack spacing={1.5} sx={{ maxWidth: 760 }}>
                   <Typography variant="body2">{item.outcome}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {item.ownerLabel} · Definition {item.definitionRevision}
+                    {t("ownerDefinition", {
+                      owner: item.ownerLabel,
+                      revision: item.definitionRevision,
+                    })}
                   </Typography>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
-                      {item.included ? "Included because" : "Excluded because"}
+                      {item.included
+                        ? t("includedBecause")
+                        : t("excludedBecause")}
                     </Typography>
                     <Typography variant="body2">{item.scopeReason}</Typography>
                   </Box>
@@ -192,15 +205,20 @@ export function ReleaseScope({
                         variant="body2"
                         color="text.secondary"
                       >
-                        {reason}
+                        {localizeReason(reason, item.name)}
                       </Typography>
                     ))}
                   {newerDefinition && (
                     <Typography variant="body2" color="warning.main">
-                      Product definition {latest.definitionRevision} is newer.
-                      {editable
-                        ? " Edit scope to review and adopt it."
-                        : ` This assessment uses definition ${item.definitionRevision}.`}
+                      {t(
+                        editable
+                          ? "newDefinitionEditable"
+                          : "newDefinitionRetained",
+                        {
+                          latest: latest.definitionRevision,
+                          current: item.definitionRevision,
+                        },
+                      )}
                     </Typography>
                   )}
                   {(editable ||
@@ -212,7 +230,7 @@ export function ReleaseScope({
                           size="small"
                           onClick={() => onInspectCheck(acceptanceCheck.id)}
                         >
-                          Inspect acceptance check
+                          {t("inspectAcceptance")}
                         </Button>
                       )}
                       {item.included && onReviewView && (
@@ -222,7 +240,7 @@ export function ReleaseScope({
                             onReviewView("backend", item.capabilityId)
                           }
                         >
-                          View architecture
+                          {t("viewArchitecture")}
                         </Button>
                       )}
                       {editable && (
@@ -231,7 +249,7 @@ export function ReleaseScope({
                           color="inherit"
                           onClick={() => setEditing(item)}
                         >
-                          Edit scope
+                          {t("editScope")}
                         </Button>
                       )}
                     </Stack>
@@ -250,8 +268,8 @@ export function ReleaseScope({
       >
         <DialogTitle>
           {editing === "add"
-            ? "Add capability to this assessment"
-            : "Review capability scope"}
+            ? t("addCapabilityToAssessment")
+            : t("reviewCapabilityScope")}
         </DialogTitle>
         <DialogContent>
           {editing && (
@@ -262,7 +280,7 @@ export function ReleaseScope({
                   ? [
                       {
                         name: "capabilityId",
-                        label: "Capability",
+                        label: t("capability"),
                         type: "select" as const,
                         required: true,
                         options: available.map((item) => ({
@@ -274,12 +292,12 @@ export function ReleaseScope({
                   : []),
                 {
                   name: "included",
-                  label: "Included in this release",
+                  label: t("includedInRelease"),
                   type: "checkbox",
                 },
                 {
                   name: "scopeReason",
-                  label: "Reason for including or excluding",
+                  label: t("inclusionReason"),
                   type: "textarea",
                   required: true,
                 },
@@ -287,8 +305,7 @@ export function ReleaseScope({
                   ? [
                       {
                         name: "adoptLatest",
-                        label:
-                          "Adopt the latest product definition and require fresh verification",
+                        label: t("adoptDefinition"),
                         type: "checkbox" as const,
                       },
                     ]
@@ -303,7 +320,7 @@ export function ReleaseScope({
                       adoptLatest: false,
                     }
               }
-              submitLabel="Save scope"
+              submitLabel={t("saveScope")}
               onCancel={() => setEditing(null)}
               onSubmit={async (data) => {
                 await mutate({

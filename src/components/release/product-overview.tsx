@@ -1,12 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect } from "react";
 import Link from "next/link";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { buildProductOverview } from "@/lib/product-overview";
 import type { ProductContext } from "@/lib/release-types";
-import { CHECK_RESULT_LABELS } from "@/components/evidence/check-result-labels";
 import { ReadinessChip } from "./readiness-summary";
 import { ProductOverviewCapabilities } from "./product-overview-capabilities";
 import { ProductOverviewCoverage } from "./product-overview-coverage";
@@ -24,6 +25,8 @@ export function ProductOverview({
   onCreate: () => void;
   onNavigate: (section: ProductSection) => void;
 }) {
+  const t = useTranslations("Product");
+  const releaseT = useTranslations("Release");
   const latest = product.releases[0];
   const overview = product.releaseOverviews?.find(
     (item) => item.assessment.id === latest?.id,
@@ -63,7 +66,7 @@ export function ProductOverview({
     <Stack spacing={3}>
       <Box
         component="section"
-        aria-label="Latest assessment"
+        aria-label={t("latestAssessment")}
         sx={{
           border: 1,
           borderColor: "divider",
@@ -82,7 +85,7 @@ export function ProductOverview({
             >
               <Stack spacing={0.5} sx={{ minWidth: 0 }}>
                 <Typography variant="caption" color="text.secondary">
-                  Latest assessment
+                  {t("latestAssessment")}
                 </Typography>
                 <Typography
                   component="h2"
@@ -96,8 +99,10 @@ export function ProductOverview({
                   color="text.secondary"
                   sx={{ overflowWrap: "anywhere" }}
                 >
-                  Validation: {latest.validationEnvironment} → Target:{" "}
-                  {latest.targetEnvironment}
+                  {t("environments", {
+                    validation: latest.validationEnvironment,
+                    target: latest.targetEnvironment,
+                  })}
                 </Typography>
               </Stack>
               <Button
@@ -107,7 +112,7 @@ export function ProductOverview({
                 endIcon={<ArrowForwardIcon />}
                 sx={{ flexShrink: 0 }}
               >
-                Review assessment
+                {t("reviewAssessment")}
               </Button>
             </Stack>
             <Stack
@@ -125,21 +130,28 @@ export function ProductOverview({
                   <ReadinessChip state={model.state} />
                 </Box>
               ) : (
-                <Typography variant="body2">Readiness unavailable</Typography>
+                <Typography variant="body2">
+                  {t("readinessUnavailable")}
+                </Typography>
               )}
               <Typography variant="caption" color="text.secondary">
                 {!overview
-                  ? "Refresh to load the evaluation"
+                  ? t("refreshEvaluation")
                   : model.evidenceExpired
-                    ? "Evidence has expired"
-                    : `${overview.blockerCount} blocker${overview.blockerCount === 1 ? "" : "s"} · ${overview.gapCount} evidence gap${overview.gapCount === 1 ? "" : "s"}`}
+                    ? t("evidenceExpired")
+                    : t("findingCounts", {
+                        blockers: overview.blockerCount,
+                        gaps: overview.gapCount,
+                      })}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {overview?.decision
-                  ? `${currentDecision ? "Decision" : "Earlier decision"}: ${overview.decision}`
+                  ? t(currentDecision ? "decision" : "earlierDecision", {
+                      decision: t(`decisions.${overview.decision}`),
+                    })
                   : overview
-                    ? "No recorded decision"
-                    : "Decision unavailable"}
+                    ? t("noDecision")
+                    : t("decisionUnavailable")}
               </Typography>
             </Stack>
             {findingCount > 0 && (
@@ -152,7 +164,7 @@ export function ProductOverview({
                   variant="body2"
                   sx={{ cursor: "pointer", width: "fit-content" }}
                 >
-                  {findingCount} unresolved item{findingCount === 1 ? "" : "s"}
+                  {t("unresolvedCount", { count: findingCount })}
                 </Typography>
                 <Stack
                   component="ul"
@@ -161,7 +173,7 @@ export function ProductOverview({
                 >
                   {emptyScope && (
                     <Typography component="li" variant="body2">
-                      No capabilities included in this assessment.
+                      {t("noIncludedCapabilities")}
                     </Typography>
                   )}
                   {model.findings.map((check) => (
@@ -183,8 +195,8 @@ export function ProductOverview({
                         color="text.secondary"
                         display="block"
                       >
-                        {CHECK_RESULT_LABELS[check.state]} ·{" "}
-                        {check.ownerLabel || "No owner assigned"}
+                        {releaseT(`results.${check.state}`)} ·{" "}
+                        {check.ownerLabel || t("noOwner")}
                       </Typography>
                     </Box>
                   ))}
@@ -194,8 +206,7 @@ export function ProductOverview({
                       variant="body2"
                       key={capability.capabilityId}
                     >
-                      {capability.name}: no required functional acceptance
-                      check.
+                      {t("missingAcceptanceNamed", { name: capability.name })}
                     </Typography>
                   ))}
                 </Stack>
@@ -205,12 +216,12 @@ export function ProductOverview({
         ) : (
           <Stack alignItems="flex-start" spacing={1.5}>
             <Typography component="h2" variant="subtitle1">
-              No release assessment yet
+              {t("noAssessment")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {model.counts.activeCapabilities
-                ? "The catalog describes this product. Assess a candidate to see what is verified and what still needs evidence."
-                : "Start with the outcomes this product should support, then assess a release candidate."}
+                ? t("catalogAssessmentHelp")
+                : t("startOutcomes")}
             </Typography>
             {editable && (
               <Button
@@ -222,8 +233,8 @@ export function ProductOverview({
                 }
               >
                 {model.counts.activeCapabilities
-                  ? "New assessment"
-                  : "Add capabilities"}
+                  ? t("newAssessment")
+                  : t("addCapabilities")}
               </Button>
             )}
           </Stack>
@@ -240,14 +251,12 @@ export function ProductOverview({
       />
       <Box
         component="section"
-        aria-label="Product connections"
+        aria-label={t("productConnections")}
         sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}
       >
         <Typography variant="caption" color="text.secondary">
-          Declared product connections
-          {model.architectureTruncated
-            ? " · Partial graph; open connections to inspect"
-            : ""}
+          {t("declaredConnections")}
+          {model.architectureTruncated ? t("partialGraph") : ""}
         </Typography>
         <Stack direction="row" flexWrap="wrap" gap={1} mt={0.5}>
           <Button
@@ -255,14 +264,14 @@ export function ProductOverview({
             size="small"
             onClick={() => onNavigate("dependencies")}
           >
-            {model.counts.components} components
+            {t("componentCount", { count: model.counts.components })}
           </Button>
           <Button
             color="inherit"
             size="small"
             onClick={() => onNavigate("connections")}
           >
-            {model.counts.dependencies} dependencies
+            {t("dependencyCount", { count: model.counts.dependencies })}
           </Button>
           <Button
             color="inherit"
@@ -271,8 +280,11 @@ export function ProductOverview({
             href={`/boards/${product.board.id}`}
           >
             {model.counts.screens === 0
-              ? "No screens added"
-              : `${model.counts.mappedScreens}/${model.counts.screens} screens mapped`}
+              ? t("noScreensAdded")
+              : t("mappedScreens", {
+                  mapped: model.counts.mappedScreens,
+                  count: model.counts.screens,
+                })}
           </Button>
         </Stack>
       </Box>

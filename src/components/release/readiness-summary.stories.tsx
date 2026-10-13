@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { getReleaseDemo } from "@/lib/release-demo";
 import { evaluateRelease } from "@/lib/readiness";
-import { ReadinessSummary } from "./readiness-summary";
+import { Box } from "@mui/material";
+import { ReadinessChip, ReadinessSummary } from "./readiness-summary";
 
 const meta = {
   component: ReadinessSummary,
@@ -101,5 +102,51 @@ export const CompactRequiredActionPreview: Story = {
     await expect(
       canvas.getAllByRole("button", { name: /Inspect check:/ }),
     ).toHaveLength(3);
+  },
+};
+
+const missingDefinitionDetail = {
+  ...getReleaseDemo().detail,
+  checks: [],
+  evidence: [],
+};
+export const GermanMissingDefinition: Story = {
+  parameters: { locale: "de" },
+  args: {
+    detail: missingDefinitionDetail,
+    readiness: evaluateRelease(missingDefinitionDetail, getReleaseDemo().now),
+    onReviewChecks: fn(),
+  },
+  play: async ({ canvas, args }) => {
+    await expect(
+      canvas.getByRole("heading", { name: "Nachweise fehlen" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Klärungsbedarf" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getAllByText(/fehlt eine erforderliche funktionale Abnahmeprüfung/)
+        .length,
+    ).toBeGreaterThan(0);
+    await userEvent.click(
+      canvas.getAllByRole("button", { name: "Abnahmeprüfungen prüfen" })[0]!,
+    );
+    await expect(args.onReviewChecks).toHaveBeenCalledOnce();
+  },
+};
+
+export const GermanStatusInNarrowColumn: Story = {
+  parameters: { locale: "de" },
+  render: () => (
+    <Box sx={{ width: 170 }}>
+      <ReadinessChip state="needs_evidence" verification />
+    </Box>
+  ),
+  play: async ({ canvas }) => {
+    const label = canvas.getByText("Nachweise fehlen · Prüfungen");
+    await expect(label).toBeVisible();
+    await expect(label.scrollWidth).toBeLessThanOrEqual(label.clientWidth);
+    await expect(label.getBoundingClientRect().height).toBeGreaterThan(23);
+    await expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(170);
   },
 };

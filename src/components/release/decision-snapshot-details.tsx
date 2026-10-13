@@ -1,5 +1,9 @@
 "use client";
 
+import { useReleaseReason } from "@/components/release/use-release-reason";
+
+import { useTranslations, useFormatter } from "next-intl";
+
 import { Box, Stack, Typography } from "@mui/material";
 import { ReadinessChip } from "./readiness-summary";
 import { EvidenceHistory } from "@/components/evidence/evidence-history";
@@ -14,6 +18,9 @@ export function DecisionSnapshotDetails({
 }: {
   decision: ReleaseDecision;
 }) {
+  const t = useTranslations("Release");
+  const localizeReason = useReleaseReason();
+  const format = useFormatter();
   return (
     <Box component="details">
       <Typography
@@ -21,18 +28,20 @@ export function DecisionSnapshotDetails({
         variant="body2"
         sx={{ cursor: "pointer", width: "fit-content" }}
       >
-        Reviewed scope and evidence
+        {t("snapshot.scopeEvidence")}
       </Typography>
       <Stack spacing={3} sx={{ pt: 2 }}>
         <ReleaseContext assessment={decision.snapshot.assessment} />
         <Stack direction="row" alignItems="center" gap={1}>
           <Typography variant="caption" color="text.secondary">
-            Checks when reviewed
+            {t("snapshot.checksWhenReviewed")}
           </Typography>
           <ReadinessChip state={decision.snapshot.readiness.state} />
         </Stack>
         <Stack spacing={1.5}>
-          <Typography variant="subtitle2">Capabilities</Typography>
+          <Typography variant="subtitle2">
+            {t("common.capabilities")}
+          </Typography>
           {decision.snapshot.scope.map((item) => (
             <Box
               key={item.capabilityId}
@@ -43,7 +52,8 @@ export function DecisionSnapshotDetails({
               }}
             >
               <Typography variant="body2" fontWeight={600}>
-                {item.name} · {item.included ? "Included" : "Excluded"}
+                {item.name} ·{" "}
+                {item.included ? t("common.included") : t("common.excluded")}
               </Typography>
               <Typography variant="body2">{item.outcome}</Typography>
               <Typography variant="caption" color="text.secondary">
@@ -54,7 +64,7 @@ export function DecisionSnapshotDetails({
         </Stack>
         <Box>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Checks
+            {t("common.checks")}
           </Typography>
           {decision.snapshot.checks
             .filter((check) => check.archivedAt === null)
@@ -80,22 +90,34 @@ export function DecisionSnapshotDetails({
                     variant="body2"
                     sx={{ cursor: "pointer" }}
                   >
-                    {check.claim} · {evaluation?.state ?? "Not evaluated"}
+                    {check.claim} ·{" "}
+                    {t(`results.${evaluation?.state ?? "not_evaluated"}`)}
                   </Typography>
                   <Stack spacing={1} sx={{ pt: 1.5 }}>
                     <Typography variant="caption" color="text.secondary">
-                      {check.required ? "Required" : "Optional"} · Revision{" "}
-                      {check.revision} · {check.category} · {check.ownerLabel} ·{" "}
-                      {check.environment}
+                      {t("snapshot.checkDetails", {
+                        requirement: check.required
+                          ? t("common.required")
+                          : t("common.optional"),
+                        revision: check.revision,
+                        category: t(`categories.${check.category}`),
+                        owner: check.ownerLabel,
+                        environment: check.environment,
+                      })}
                     </Typography>
                     <Typography variant="body2">{check.method}</Typography>
                     <Typography variant="body2">
-                      {evaluation?.reason}
+                      {evaluation && localizeReason(evaluation.reason)}
                     </Typography>
                     {evidence && (
                       <Typography variant="caption" color="text.secondary">
                         {evidence.summary} · {evidence.actorName} ·{" "}
-                        {new Date(evidence.observedAt).toISOString()}
+                        {format.dateTime(evidence.observedAt, {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                          timeZone: "UTC",
+                        })}{" "}
+                        UTC
                       </Typography>
                     )}
                     <EvidenceHistory

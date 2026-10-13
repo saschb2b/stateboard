@@ -71,3 +71,39 @@ export const KeyboardCancellation: Story = {
     await expect(args.onSave).not.toHaveBeenCalled();
   },
 };
+
+export const GermanEvidenceReview: Story = {
+  parameters: { locale: "de" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(`Verantwortung: ${args.check.ownerLabel}`),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(`Prüfverfahren: ${args.check.method}`),
+    ).toBeVisible();
+    await userEvent.type(
+      canvas.getByRole("textbox", { name: /^Beobachtung(?: \*)?$/ }),
+      "Das Ergebnis wurde im angegebenen Kontext geprüft.",
+    );
+    await userEvent.type(
+      canvas.getByLabelText(/Referenz auf Prüflauf oder Review/),
+      "review-de-42",
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Nachweis ergänzen" }),
+    );
+    await expect(args.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "evidence.create",
+        data: expect.objectContaining({
+          result: "inconclusive",
+          candidateRef: args.assessment.candidateRef,
+          environment: args.check.environment,
+          runRef: "review-de-42",
+          summary: "Das Ergebnis wurde im angegebenen Kontext geprüft.",
+        }),
+      }),
+    );
+  },
+};

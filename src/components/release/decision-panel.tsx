@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useFormatter } from "next-intl";
+
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -46,6 +48,8 @@ export function DecisionPanel({
   ) => Promise<void>;
   revoke: (token: string) => Promise<void>;
 }) {
+  const t = useTranslations("Release");
+  const format = useFormatter();
   const [recording, setRecording] = useState(false);
   const [publishing, setPublishing] = useState<ReleaseDecision | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
@@ -65,17 +69,19 @@ export function DecisionPanel({
       >
         <Box>
           <Typography variant="subtitle1" component="h2">
-            Release decision
+            {t("decision.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {canRecord
-              ? `Owner review · Revision ${detail.assessment.revision}`
-              : "A signed-in workspace owner records and publishes decisions."}
+              ? t("decision.ownerRevision", {
+                  revision: detail.assessment.revision,
+                })
+              : t("decision.ownerHelp")}
           </Typography>
         </Box>
         {canRecord && (
           <Button variant="contained" onClick={() => setRecording(true)}>
-            Record decision
+            {t("decision.record")}
           </Button>
         )}
       </Stack>
@@ -87,7 +93,7 @@ export function DecisionPanel({
       />
       <Stack spacing={1}>
         <Typography variant="subtitle1" component="h2">
-          Public review links
+          {t("decision.publicLinks")}
         </Typography>
         <Box>
           {activeLinks.map((link) => (
@@ -105,15 +111,15 @@ export function DecisionPanel({
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {link.projection.decision === "approved"
-                    ? "Approved"
-                    : "Held"}{" "}
-                  · Published{" "}
+                    ? t("common.approved")
+                    : t("common.held")}{" "}
+                  {t("decision.published")}
                   <Box
                     component="time"
                     dateTime={new Date(link.createdAt).toISOString()}
                     title={new Date(link.createdAt).toISOString()}
                   >
-                    {new Date(link.createdAt).toLocaleDateString("en-GB", {
+                    {format.dateTime(link.createdAt, {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
@@ -129,7 +135,7 @@ export function DecisionPanel({
                   href={`/share/releases/${link.token}`}
                   target="_blank"
                 >
-                  Open review link
+                  {t("decision.openLink")}
                 </Button>
                 {canRecord && (
                   <Button
@@ -137,7 +143,7 @@ export function DecisionPanel({
                     color="inherit"
                     onClick={() => setRevoking(link.token)}
                   >
-                    Revoke
+                    {t("decision.revoke")}
                   </Button>
                 )}
               </Stack>
@@ -146,8 +152,8 @@ export function DecisionPanel({
           {activeLinks.length === 0 && (
             <Typography variant="body2" color="text.secondary">
               {detail.decisions.length === 0
-                ? "Record a decision to prepare a public review."
-                : "No public links. Open a recorded decision to prepare one."}
+                ? t("decision.prepareHelp")
+                : t("decision.noLinks")}
             </Typography>
           )}
         </Box>
@@ -158,7 +164,7 @@ export function DecisionPanel({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Record release decision</DialogTitle>
+        <DialogTitle>{t("decision.recordRelease")}</DialogTitle>
         <DialogContent>
           <DecisionReview
             detail={detail}
@@ -175,7 +181,7 @@ export function DecisionPanel({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Curate the public review</DialogTitle>
+        <DialogTitle>{t("decision.curate")}</DialogTitle>
         <DialogContent>
           {publishing && (
             <PublicationForm
@@ -195,17 +201,14 @@ export function DecisionPanel({
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>Revoke this public link?</DialogTitle>
+        <DialogTitle>{t("decision.revokeTitle")}</DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
-            <Typography>
-              People with this link will lose access to its review and retained
-              images.
-            </Typography>
+            <Typography>{t("decision.revokeHelp")}</Typography>
             {error && <Alert severity="error">{error}</Alert>}
             <Stack direction="row">
               <Button disabled={pending} onClick={() => setRevoking(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={pending}
@@ -222,14 +225,14 @@ export function DecisionPanel({
                     setError(
                       cause instanceof Error
                         ? cause.message
-                        : "Unable to revoke.",
+                        : t("decision.revokeFailed"),
                     );
                   } finally {
                     setPending(false);
                   }
                 }}
               >
-                Revoke link
+                {t("decision.revokeLink")}
               </Button>
             </Stack>
           </Stack>

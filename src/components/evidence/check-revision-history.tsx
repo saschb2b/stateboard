@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Alert,
@@ -21,6 +23,7 @@ export function CheckRevisionHistory({
   check: ReleaseCheck;
   load?: () => Promise<ReleaseCheck[]>;
 }) {
+  const t = useTranslations("Release");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [revisions, setRevisions] = useState<ReleaseCheck[]>([check]);
@@ -38,16 +41,14 @@ export function CheckRevisionHistory({
             setRevisions(await load());
           } catch (cause) {
             setError(
-              cause instanceof Error
-                ? cause.message
-                : "Unable to load check history.",
+              cause instanceof Error ? cause.message : t("history.loadFailed"),
             );
           } finally {
             setPending(false);
           }
         }}
       >
-        Check definition history
+        {t("history.definitions")}
       </Button>
       <Dialog
         open={open}
@@ -55,29 +56,37 @@ export function CheckRevisionHistory({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Check definition history</DialogTitle>
+        <DialogTitle>{t("history.definitions")}</DialogTitle>
         <DialogContent>
           <Stack spacing={2}>
-            {pending && <Typography>Loading definitions…</Typography>}
+            {pending && <Typography>{t("history.loading")}</Typography>}
             {error && <Alert severity="error">{error}</Alert>}
             {revisions.map((revision) => (
               <Paper key={revision.revision} sx={{ p: 2 }}>
                 <Typography variant="subtitle2">
-                  Revision {revision.revision} ·{" "}
-                  {revision.required ? "Required" : "Optional"}
+                  {t("history.revision", {
+                    revision: revision.revision,
+                    requirement: revision.required
+                      ? t("common.required")
+                      : t("common.optional"),
+                  })}
                 </Typography>
                 <Typography>{revision.claim}</Typography>
                 <Typography variant="body2">{revision.method}</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {revision.category} · {revision.ownerLabel} ·{" "}
-                  {revision.environment} · {revision.maxAgeMs / 3_600_000} hours
+                  {t("history.context", {
+                    category: t(`categories.${revision.category}`),
+                    owner: revision.ownerLabel,
+                    environment: revision.environment,
+                    hours: revision.maxAgeMs / 3_600_000,
+                  })}
                 </Typography>
               </Paper>
             ))}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>Close</Button>
+          <Button onClick={() => setOpen(false)}>{t("common.close")}</Button>
         </DialogActions>
       </Dialog>
     </>

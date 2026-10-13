@@ -1,26 +1,27 @@
 "use client";
 
+import { useTranslations, useLocale } from "next-intl";
+
 import { Box, Chip, Container, Paper, Stack, Typography } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 import { ReadinessChip } from "./readiness-summary";
 import type { PublicReleaseProjection } from "@/lib/release-types";
 
-const reviewDateFormat = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-  timeZone: "UTC",
-  timeZoneName: "short",
-});
-
 function ReviewTime({ value }: { value: number }) {
+  const locale = useLocale();
   const exactTime = new Date(value).toISOString();
   return (
     <Box component="time" dateTime={exactTime} title={exactTime}>
-      {reviewDateFormat.format(value)}
+      {new Intl.DateTimeFormat(locale === "de" ? "de-DE" : "en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+        timeZone: "UTC",
+        timeZoneName: "short",
+      }).format(value)}
     </Box>
   );
 }
@@ -33,6 +34,7 @@ export function PublicReleaseShare({
   projection: PublicReleaseProjection;
   token: string;
 }) {
+  const t = useTranslations("Release");
   return (
     <>
       <AppHeader />
@@ -40,7 +42,7 @@ export function PublicReleaseShare({
         <Stack spacing={3}>
           <Stack spacing={1.5} component="header">
             <Typography variant="overline" color="text.secondary">
-              Recorded release review
+              {t("public.recordedReview")}
             </Typography>
             <Typography
               variant="h4"
@@ -58,8 +60,8 @@ export function PublicReleaseShare({
                 variant="outlined"
                 label={
                   projection.decision === "approved"
-                    ? "Approved release"
-                    : "Held release"
+                    ? t("public.approved")
+                    : t("public.held")
                 }
                 color={
                   projection.decision === "approved" ? "success" : "warning"
@@ -86,18 +88,18 @@ export function PublicReleaseShare({
               sx={{ mb: 1 }}
             >
               <Typography variant="caption" color="text.secondary">
-                Reviewed <ReviewTime value={projection.reviewedAt} />
+                {t("public.reviewed")}{" "}
+                <ReviewTime value={projection.reviewedAt} />
               </Typography>
               {projection.validUntil != null && (
                 <Typography variant="caption" color="text.secondary">
-                  Evidence valid until{" "}
+                  {t("common.validUntil")}{" "}
                   <ReviewTime value={projection.validUntil} />
                 </Typography>
               )}
             </Stack>
             <Typography variant="caption" color="text.secondary">
-              This is a saved review. It does not update as evidence changes or
-              expires.
+              {t("public.frozen")}
             </Typography>
           </Box>
 
@@ -110,11 +112,10 @@ export function PublicReleaseShare({
                   variant="subtitle1"
                   sx={{ mb: 0.5 }}
                 >
-                  Outcomes in this review
+                  {t("public.outcomes")}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Check verification at this review; availability requires
-                  deployment verification.
+                  {t("public.verificationHelp")}
                 </Typography>
               </Box>
               {projection.capabilities.map((item, index) => (
@@ -161,7 +162,7 @@ export function PublicReleaseShare({
                 variant="subtitle1"
                 sx={{ mb: 2 }}
               >
-                Review images
+                {t("public.images")}
               </Typography>
               <Stack spacing={2}>
                 {projection.images.map((asset) => (

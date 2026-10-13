@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   MutationForm,
   type FormField,
@@ -27,27 +29,28 @@ export function CheckEditor({
   ) => Promise<void>;
   onCancel: () => void;
 }) {
+  const t = useTranslations("Release");
   const fields: FormField[] = [
     ...(!check
       ? [
           {
             name: "subject",
-            label: "What this check verifies",
+            label: t("check.subject"),
             required: true,
             type: "select" as const,
             options: [
-              { value: "release|", label: "Entire release" },
+              { value: "release|", label: t("common.entireRelease") },
               ...detail.scope
                 .filter((item) => item.included)
                 .map((item) => ({
                   value: `capability|${item.capabilityId}`,
-                  label: `Capability · ${item.name}`,
+                  label: t("check.capabilitySubject", { name: item.name }),
                 })),
               ...product.components
                 .filter((item) => item.archivedAt === null)
                 .map((item) => ({
                   value: `component|${item.id}`,
-                  label: `Component · ${item.name}`,
+                  label: t("check.componentSubject", { name: item.name }),
                 })),
             ],
           },
@@ -55,37 +58,38 @@ export function CheckEditor({
       : []),
     {
       name: "claim",
-      label: "Acceptance claim",
+      label: t("check.claim"),
       required: true,
       type: "textarea",
-      helper:
-        "A concrete assertion, e.g. Duplicate delivery creates one ledger entry.",
+      helper: t("check.claimHelp"),
     },
     {
       name: "category",
-      label: "Category",
+      label: t("common.category"),
       required: true,
       type: "select",
-      options: CHECK_CATEGORIES.map((value) => ({ value, label: value })),
+      options: CHECK_CATEGORIES.map((value) => ({
+        value,
+        label: t(`categories.${value}`),
+      })),
     },
-    { name: "required", label: "Required to release", type: "checkbox" },
-    { name: "ownerLabel", label: "Accountable owner", required: true },
+    { name: "required", label: t("check.required"), type: "checkbox" },
+    { name: "ownerLabel", label: t("check.owner"), required: true },
     {
       name: "method",
-      label: "How to verify",
+      label: t("check.method"),
       required: true,
       type: "textarea",
     },
     {
       name: "environment",
-      label: "Verification environment",
+      label: t("check.environment"),
       required: true,
-      helper:
-        "Evidence must match this environment and the assessment context.",
+      helper: t("check.environmentHelp"),
     },
     {
       name: "maxAgeHours",
-      label: "Evidence remains current for (hours)",
+      label: t("check.validHours"),
       type: "number",
       required: true,
     },
@@ -114,7 +118,7 @@ export function CheckEditor({
               maxAgeHours: 24,
             }
       }
-      submitLabel={check ? "Save new check revision" : "Add check"}
+      submitLabel={check ? t("check.saveRevision") : t("check.add")}
       onCancel={onCancel}
       onSubmit={async (values) => {
         const [subjectType, subjectId] = String(

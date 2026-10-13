@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useFormatter } from "next-intl";
+
 import { useId } from "react";
 import {
   Accordion,
@@ -25,6 +27,8 @@ export function DecisionHistory({
   canPublish: boolean;
   onPublish: (decision: ReleaseDecision) => void;
 }) {
+  const t = useTranslations("Release");
+  const format = useFormatter();
   const descriptionPrefix = useId();
   const decisions = [...detail.decisions].sort(
     (a, b) => b.createdAt - a.createdAt,
@@ -51,7 +55,10 @@ export function DecisionHistory({
           >
             <AccordionSummary
               expandIcon={<ExpandMoreIcon fontSize="small" />}
-              aria-label={`Decision by ${decision.actorName} at revision ${decision.revision}`}
+              aria-label={t("decision.byRevision", {
+                name: decision.actorName,
+                revision: decision.revision,
+              })}
               aria-describedby={`${descriptionPrefix}-${decision.id}-state`}
               sx={{
                 px: 0,
@@ -78,15 +85,19 @@ export function DecisionHistory({
                           : "warning.main",
                     }}
                   >
-                    {decision.decision === "approved" ? "Approved" : "Held"}
+                    {decision.decision === "approved"
+                      ? t("common.approved")
+                      : t("common.held")}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {index === 0 ? "Latest · " : ""}
-                    {historical ? "Historical revision" : "Current revision"}
+                    {index === 0 ? t("decision.latest") : ""}
+                    {historical
+                      ? t("decision.historicalRevision")
+                      : t("decision.currentRevision")}
                   </Typography>
                   {expired && (
                     <Typography variant="caption" color="warning.main">
-                      Evidence expired
+                      {t("decision.expired")}
                     </Typography>
                   )}
                 </Stack>
@@ -100,14 +111,14 @@ export function DecisionHistory({
                     dateTime={new Date(decision.createdAt).toISOString()}
                     title={new Date(decision.createdAt).toISOString()}
                   >
-                    {new Date(decision.createdAt).toLocaleDateString("en-GB", {
+                    {format.dateTime(decision.createdAt, {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
                       timeZone: "UTC",
                     })}
                   </Box>{" "}
-                  · Revision {decision.revision}
+                  {t("decision.revision", { revision: decision.revision })}
                 </Typography>
               </Stack>
             </AccordionSummary>
@@ -116,27 +127,28 @@ export function DecisionHistory({
                 <Typography variant="body2">{decision.rationale}</Typography>
                 <Stack spacing={0.5}>
                   <Typography variant="caption" color="text.secondary">
-                    Recorded {new Date(decision.createdAt).toISOString()}
+                    {t("decision.recordedAt", {
+                      date: new Date(decision.createdAt).toISOString(),
+                    })}
                   </Typography>
                   {decision.expiresAt !== null && (
                     <Typography
                       variant="caption"
                       color={expired ? "warning.main" : "text.secondary"}
                     >
-                      Evidence valid until{" "}
-                      {new Date(decision.expiresAt).toISOString()}
+                      {t("decision.evidenceUntil", {
+                        date: new Date(decision.expiresAt).toISOString(),
+                      })}
                     </Typography>
                   )}
                   {historical && (
                     <Typography variant="body2" color="text.secondary">
-                      The live assessment has changed since this review. This
-                      decision is a historical record.
+                      {t("decision.historicalHelp")}
                     </Typography>
                   )}
                   {expired && (
                     <Typography variant="body2" color="warning.main">
-                      Recorded evidence has expired. Review the current
-                      assessment before a new decision.
+                      {t("decision.expiredHelp")}
                     </Typography>
                   )}
                 </Stack>
@@ -147,7 +159,7 @@ export function DecisionHistory({
                     sx={{ alignSelf: "flex-start" }}
                     onClick={() => onPublish(decision)}
                   >
-                    Prepare public review link
+                    {t("decision.preparePublic")}
                   </Button>
                 )}
                 <DecisionSnapshotDetails decision={decision} />
@@ -158,7 +170,7 @@ export function DecisionHistory({
       })}
       {decisions.length === 0 && (
         <Typography variant="body2" color="text.secondary">
-          No decision recorded.
+          {t("decision.empty")}
         </Typography>
       )}
     </Box>

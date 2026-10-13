@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import Link from "next/link";
 import { Box, Button, Paper, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -17,6 +19,7 @@ export function ProductReleaseList({
   onCreate: () => void;
   onSetup: () => void;
 }) {
+  const t = useTranslations("Product");
   const [latest, ...history] = product.releases;
   const configured = product.capabilities.some(
     (item) => item.archivedAt === null,
@@ -33,7 +36,7 @@ export function ProductReleaseList({
           justifyContent="space-between"
         >
           <Typography variant="subtitle2" color="text.secondary">
-            {latest ? "Latest assessment" : "Assessments"}
+            {latest ? t("latestAssessment") : t("assessments")}
           </Typography>
           {editable && latest && (
             <Button
@@ -43,7 +46,7 @@ export function ProductReleaseList({
               disabled={!configured}
               onClick={onCreate}
             >
-              New assessment
+              {t("newAssessment")}
             </Button>
           )}
         </Stack>
@@ -68,7 +71,7 @@ export function ProductReleaseList({
                   color="text.secondary"
                   sx={{ mt: 0.5 }}
                 >
-                  Target · {latest.targetEnvironment}
+                  {t("target", { environment: latest.targetEnvironment })}
                 </Typography>
               </Box>
               <Button
@@ -78,7 +81,7 @@ export function ProductReleaseList({
                 endIcon={<ArrowForwardIcon />}
                 sx={{ flexShrink: 0 }}
               >
-                Review assessment
+                {t("reviewAssessment")}
               </Button>
             </Stack>
             <Box
@@ -96,16 +99,14 @@ export function ProductReleaseList({
         ) : (
           <Box sx={{ py: 5 }}>
             <Typography variant="h6">
-              {configured ? "No releases yet" : "Define the first capability"}
+              {configured ? t("noReleases") : t("defineFirst")}
             </Typography>
             <Typography
               color="text.secondary"
               variant="body2"
               sx={{ mt: 0.5, mb: 2 }}
             >
-              {configured
-                ? "Choose a candidate to start reviewing its readiness."
-                : "A capability describes what someone should be able to do."}
+              {configured ? t("chooseCandidate") : t("capabilityExplained")}
             </Typography>
             <Button
               variant="contained"
@@ -113,12 +114,12 @@ export function ProductReleaseList({
             >
               {editable
                 ? configured
-                  ? "New assessment"
-                  : "Add capabilities"
-                : "View capabilities"}
+                  ? t("newAssessment")
+                  : t("addCapabilities")
+                : t("viewCapabilities")}
             </Button>
             <Button component={Link} href="/share/demo/releases" sx={{ ml: 1 }}>
-              See an example
+              {t("seeExample")}
             </Button>
           </Box>
         )}
@@ -126,7 +127,7 @@ export function ProductReleaseList({
       {history.length > 0 && (
         <Stack spacing={1.5}>
           <Typography variant="subtitle2" color="text.secondary">
-            Earlier assessments
+            {t("earlierAssessments")}
           </Typography>
           <Box
             sx={{

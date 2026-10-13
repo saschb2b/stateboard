@@ -129,3 +129,32 @@ export const NarrowReview: Story = {
     </Box>
   ),
 };
+
+export const GermanPublicReview: Story = {
+  parameters: { locale: "de" },
+  render: (args) => (
+    <Box sx={{ width: 390, maxWidth: "100%" }}>
+      <PublicReleaseShare {...args} />
+    </Box>
+  ),
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("heading", { name: args.projection.candidateLabel }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText("Release-Freigabe zurückgestellt"),
+    ).toBeVisible();
+    await expect(canvas.getByText("Blockiert", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Bereit · Prüfungen")).toBeVisible();
+    const reviewed = canvas.getByText("13. Okt. 2026, 10:00 UTC");
+    await expect(reviewed).toHaveAttribute(
+      "datetime",
+      "2026-10-13T10:00:00.000Z",
+    );
+    await expect(canvas.getByText(args.projection.summary)).toBeVisible();
+    await expect(
+      canvas.getByText(/Dies ist ein gespeichertes Review/),
+    ).toBeVisible();
+  },
+};

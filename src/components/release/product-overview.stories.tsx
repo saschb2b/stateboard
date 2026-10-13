@@ -173,7 +173,7 @@ export const MissingCategoryAndOptionalWarning: Story = {
     );
     await expect(
       coverage.getByRole("link", {
-        name: "Functionality: 1/1 required pass. Review checks",
+        name: "Functionality: 1/1 required check passes. Review checks",
       }),
     ).toBeVisible();
   },
@@ -327,5 +327,60 @@ export const FindingUsesLatestCandidate: Story = {
     await expect(
       latest.queryByText("Previous candidate"),
     ).not.toBeInTheDocument();
+  },
+};
+
+const germanProduct = structuredClone(assessedProduct(optionalDetail));
+const longCapabilityName =
+  "Mandantenübergreifende Abrechnungsdaten mit nachvollziehbarer Berechtigungsprüfung exportieren";
+germanProduct.capabilities[0]!.name = longCapabilityName;
+germanProduct.capabilities[0]!.ownerLabel =
+  "Plattformteam für Abrechnung und Berechtigungsverwaltung";
+germanProduct.releaseOverviews![0]!.coverage!.scope[0]!.name =
+  longCapabilityName;
+germanProduct.releaseOverviews![0]!.coverage!.scope[0]!.ownerLabel =
+  germanProduct.capabilities[0]!.ownerLabel;
+
+export const GermanOverview: Story = {
+  parameters: { locale: "de" },
+  args: { product: germanProduct },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const latest = within(
+      canvas.getByRole("region", { name: "Neueste Bewertung" }),
+    );
+    await expect(latest.getByText("Bereit", { exact: true })).toBeVisible();
+    await expect(latest.getByText("Keine Entscheidung erfasst")).toBeVisible();
+    await expect(
+      latest.getByRole("link", { name: "Bewertung prüfen" }),
+    ).toHaveAttribute("href", "/boards/board1/releases/release1");
+    await expect(canvas.getByText(longCapabilityName)).toBeVisible();
+    const coverage = within(
+      canvas.getByRole("region", { name: "Prüfabdeckung" }),
+    );
+    await expect(
+      coverage.getByRole("link", {
+        name: "Sicherheit: 1 optionale Prüfung · Keine erforderlichen Prüfungen · 1 optionale Warnung. Prüfungen ansehen",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/boards/board1/releases/release1?view=qa&category=security",
+    );
+    await expect(
+      coverage.getByRole("link", {
+        name: "Integration: Keine Prüfungen definiert. Prüfungen ansehen",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "/boards/board1/releases/release1?view=qa&category=integration",
+    );
+    const capability = canvas.getByText(longCapabilityName).closest("details");
+    const summary = capability?.querySelector("summary");
+    if (!capability || !summary)
+      throw new Error("The capability needs a disclosure control.");
+    summary.focus();
+    await expect(summary).toHaveFocus();
+    await userEvent.click(summary);
+    await expect(within(capability).getByText("Receive a PDF")).toBeVisible();
   },
 };

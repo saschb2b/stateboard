@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Box, Stack, Typography } from "@mui/material";
 import { MONO_FONT } from "@/lib/theme";
 import type { ReleaseAssessment } from "@/lib/release-types";
@@ -11,6 +13,7 @@ export function ReleaseContext({
   assessment: ReleaseAssessment;
   collapsible?: boolean;
 }) {
+  const t = useTranslations("Release");
   return (
     <Box component={collapsible ? "details" : "div"} sx={{ minWidth: 0 }}>
       {collapsible && (
@@ -24,23 +27,33 @@ export function ReleaseContext({
             "&:hover": { color: "text.primary" },
           }}
         >
-          Candidate details
+          {t("context.details")}
         </Typography>
       )}
       <Stack component="dl" spacing={1} sx={{ m: 0, mt: collapsible ? 2 : 0 }}>
         {[
-          ["Candidate", assessment.candidateRef],
-          ["Validation", assessment.validationEnvironment],
-          ["Target", assessment.targetEnvironment],
-          ["Audience", assessment.audience],
-          ["Configuration", assessment.configurationRef],
-          ["Owner", assessment.ownerLabel],
-        ].map(([label, value]) => (
+          {
+            label: t("context.candidate"),
+            value: assessment.candidateRef,
+            monospace: true,
+          },
+          {
+            label: t("context.validation"),
+            value: assessment.validationEnvironment,
+          },
+          { label: t("context.target"), value: assessment.targetEnvironment },
+          { label: t("context.audience"), value: assessment.audience },
+          {
+            label: t("context.configuration"),
+            value: assessment.configurationRef,
+          },
+          { label: t("context.owner"), value: assessment.ownerLabel },
+        ].map(({ label, value, monospace }) => (
           <Box
             key={label}
             sx={{
               display: "grid",
-              gridTemplateColumns: "100px minmax(0, 1fr)",
+              gridTemplateColumns: "minmax(0, 140px) minmax(0, 1fr)",
               gap: 1,
             }}
           >
@@ -53,7 +66,7 @@ export function ReleaseContext({
               sx={{
                 m: 0,
                 overflowWrap: "anywhere",
-                ...(label === "Candidate" ? { fontFamily: MONO_FONT } : {}),
+                ...(monospace ? { fontFamily: MONO_FONT } : {}),
               }}
             >
               {value}

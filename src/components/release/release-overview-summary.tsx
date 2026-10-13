@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect } from "react";
 import { Stack, Typography } from "@mui/material";
 import type { ReleaseOverview } from "@/lib/release-types";
@@ -15,6 +17,7 @@ export function ReleaseOverviewSummary({
   showCandidate?: boolean;
   compact?: boolean;
 }) {
+  const t = useTranslations("Release");
   const { now, advance } = useServerClock(
     overview?.evaluatedAt ?? 0,
     overview?.state !== "ready",
@@ -34,7 +37,9 @@ export function ReleaseOverviewSummary({
     return () => clearTimeout(timer);
   }, [overview?.state, overview?.validUntil, checkedNow, advance]);
   if (!overview) {
-    return <Typography color="text.secondary">Not assessed yet</Typography>;
+    return (
+      <Typography color="text.secondary">{t("overview.unassessed")}</Typography>
+    );
   }
   const expired =
     overview.state === "ready" &&
@@ -46,23 +51,37 @@ export function ReleaseOverviewSummary({
     <Stack spacing={0.75} sx={{ mt: compact ? 0.75 : 2, mb: compact ? 0 : 2 }}>
       {showCandidate && (
         <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
-          Latest candidate · {overview.assessment.candidateLabel}
+          {t("overview.candidate", {
+            candidate: overview.assessment.candidateLabel,
+          })}
         </Typography>
       )}
       <Stack direction="row" gap={1} alignItems="center" flexWrap="wrap">
         <ReadinessChip state={expired ? "needs_evidence" : overview.state} />
         <Typography variant="caption" color="text.secondary">
           {expired
-            ? "Evidence expired; open the assessment to recheck."
-            : `${overview.blockerCount} blocker${overview.blockerCount === 1 ? "" : "s"} · ${overview.gapCount} evidence gap${overview.gapCount === 1 ? "" : "s"}`}
+            ? t("overview.expired")
+            : t("readiness.counts", {
+                blockers: overview.blockerCount,
+                gaps: overview.gapCount,
+              })}
         </Typography>
       </Stack>
       {!compact && (
         <Typography variant="caption" color="text.secondary">
-          Validation: {overview.assessment.validationEnvironment} ·{" "}
-          {overview.decision === null
-            ? "No recorded decision"
-            : `${currentReview ? "Recorded" : "Earlier"} ${overview.decision} review`}
+          {t("overview.validation", {
+            environment: overview.assessment.validationEnvironment,
+            decision:
+              overview.decision === null
+                ? t("overview.noDecision")
+                : currentReview
+                  ? overview.decision === "approved"
+                    ? t("overview.recordedApproved")
+                    : t("overview.recordedHeld")
+                  : overview.decision === "approved"
+                    ? t("overview.earlierApproved")
+                    : t("overview.earlierHeld"),
+          })}
         </Typography>
       )}
     </Stack>

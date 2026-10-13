@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Alert,
@@ -32,6 +34,7 @@ export function PublicationForm({
   decision: ReleaseDecision;
   onPublish: (values: PublicationValues) => Promise<void>;
 }) {
+  const t = useTranslations("Release");
   const [summary, setSummary] = useState("");
   const [audience, setAudience] = useState(
     decision.snapshot.assessment.audience,
@@ -74,9 +77,7 @@ export function PublicationForm({
       });
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to publish this review.",
+        cause instanceof Error ? cause.message : t("publication.failed"),
       );
     } finally {
       setPending(false);
@@ -84,13 +85,9 @@ export function PublicationForm({
   }
   return (
     <Stack component="form" onSubmit={publish} spacing={2}>
-      <Alert severity="info">
-        Review the public copy and choose the images to share. Internal check
-        details, evidence links, owners, and architecture are excluded from this
-        share view.
-      </Alert>
+      <Alert severity="info">{t("publication.help")}</Alert>
       <TextField
-        label="Public summary"
+        label={t("publication.summary")}
         value={summary}
         onChange={(event) => setSummary(event.target.value)}
         required
@@ -99,20 +96,22 @@ export function PublicationForm({
         disabled={pending}
       />
       <TextField
-        label="Public environment label"
+        label={t("publication.environment")}
         value={targetEnvironment}
         onChange={(event) => setTargetEnvironment(event.target.value)}
         required
         disabled={pending}
       />
       <TextField
-        label="Public audience label"
+        label={t("publication.audience")}
         value={audience}
         onChange={(event) => setAudience(event.target.value)}
         required
         disabled={pending}
       />
-      <Typography variant="subtitle2">Capabilities to share</Typography>
+      <Typography variant="subtitle2">
+        {t("publication.capabilities")}
+      </Typography>
       {decision.snapshot.scope
         .filter((item) => item.included)
         .map((item) => (
@@ -140,10 +139,10 @@ export function PublicationForm({
                     required
                     label={
                       field === "name"
-                        ? "Public capability name"
+                        ? t("publication.capabilityName")
                         : field === "outcome"
-                          ? "Public outcome"
-                          : "Public readiness explanation"
+                          ? t("publication.outcome")
+                          : t("publication.explanation")
                     }
                     value={copy[item.capabilityId]?.[field] ?? ""}
                     onChange={(event) =>
@@ -168,7 +167,7 @@ export function PublicationForm({
             )}
           </Box>
         ))}
-      <Typography variant="subtitle2">Retained images to share</Typography>
+      <Typography variant="subtitle2">{t("publication.images")}</Typography>
       {decision.snapshot.assets.map((asset) => (
         <FormControlLabel
           key={asset.id}
@@ -186,12 +185,12 @@ export function PublicationForm({
       ))}
       {decision.snapshot.assets.length === 0 && (
         <Typography variant="body2" color="text.secondary">
-          This decision has no retained images.
+          {t("publication.noImages")}
         </Typography>
       )}
       {error && <Alert severity="error">{error}</Alert>}
       <Button variant="contained" type="submit" disabled={pending}>
-        {pending ? "Publishing…" : "Create public review link"}
+        {pending ? t("publication.publishing") : t("publication.createLink")}
       </Button>
     </Stack>
   );

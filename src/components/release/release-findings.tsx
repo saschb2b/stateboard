@@ -1,7 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useId, useState } from "react";
-import { CHECK_RESULT_LABELS } from "@/components/evidence/check-result-labels";
 import { Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import type {
@@ -18,7 +19,7 @@ export function ReleaseFindings({
   onReviewChecks,
   includePassing = false,
   subjectTypes,
-  title = "Needs attention",
+  title,
   initialLimit,
 }: {
   detail: ReleaseDetail;
@@ -31,6 +32,7 @@ export function ReleaseFindings({
   title?: string;
   initialLimit?: number;
 }) {
+  const t = useTranslations("Release");
   const [expanded, setExpanded] = useState(false);
   const findingsId = useId();
   const findings = readiness.checks.flatMap((evaluation) => {
@@ -44,10 +46,16 @@ export function ReleaseFindings({
   });
   const definitionGaps = subjectTypes
     ? []
-    : readiness.capabilities.filter((capability) =>
-        capability.reasons.includes(
-          `${capability.name} needs a required functional acceptance check.`,
-        ),
+    : readiness.capabilities.filter(
+        (capability) =>
+          !detail.checks.some(
+            (check) =>
+              check.archivedAt === null &&
+              check.required &&
+              check.category === "functional" &&
+              check.subjectType === "capability" &&
+              check.subjectId === capability.capabilityId,
+          ),
       );
   if (findings.length === 0 && definitionGaps.length === 0) return null;
   const total = findings.length + definitionGaps.length;
@@ -62,11 +70,11 @@ export function ReleaseFindings({
         gap={0.5}
       >
         <Typography variant="subtitle2" component="h3">
-          {title}
+          {title ?? t("findings.attention")}
         </Typography>
         {canCollapse && (
           <Typography variant="caption" color="text.secondary">
-            {visibleCount} of {total}
+            {t("findings.shown", { shown: visibleCount, total })}
           </Typography>
         )}
       </Stack>
@@ -93,7 +101,9 @@ export function ReleaseFindings({
                 onInspectCheck ? `${findingsId}-${check.id}` : undefined
               }
               aria-label={
-                onInspectCheck ? `Inspect check: ${check.claim}` : undefined
+                onInspectCheck
+                  ? t("findings.inspect", { claim: check.claim })
+                  : undefined
               }
               sx={{
                 width: "100%",
@@ -138,7 +148,7 @@ export function ReleaseFindings({
                             : "warning.main",
                     }}
                   >
-                    {CHECK_RESULT_LABELS[evaluation.state]}
+                    {t(`results.${evaluation.state}`)}
                   </Box>
                   {" · "}
                   {check.ownerLabel}
@@ -167,7 +177,7 @@ export function ReleaseFindings({
               }}
             >
               <Typography variant="body2">
-                {capability.name} needs a required functional acceptance check.
+                {t("findings.definitionGap", { name: capability.name })}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {
@@ -182,7 +192,7 @@ export function ReleaseFindings({
                   onClick={onReviewChecks}
                   sx={{ display: "block", mt: 0.5, px: 0 }}
                 >
-                  Review acceptance checks
+                  {t("findings.reviewChecks")}
                 </Button>
               )}
             </Box>
@@ -195,7 +205,9 @@ export function ReleaseFindings({
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
         >
-          {expanded ? "Show fewer" : `Show all ${total} findings`}
+          {expanded
+            ? t("findings.showFewer")
+            : t("findings.showAll", { count: total })}
         </Button>
       )}
     </Stack>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Button,
@@ -38,6 +40,7 @@ export function CheckFilters({
   operationsOnly?: boolean;
   disabled?: boolean;
 }) {
+  const t = useTranslations("Release");
   const [expanded, setExpanded] = useState(false);
   const changed =
     filters.needsAttention ||
@@ -50,20 +53,24 @@ export function CheckFilters({
         <ToggleButtonGroup
           exclusive
           value={filters.needsAttention ? "attention" : "all"}
-          aria-label="Check coverage"
+          aria-label={t("filters.coverage")}
           size="small"
           disabled={disabled}
           onChange={(_, value: string | null) => {
             if (value) onChange({ needsAttention: value === "attention" });
           }}
         >
-          <ToggleButton value="all">All ({total})</ToggleButton>
+          <ToggleButton value="all">
+            {t("filters.all", { count: total })}
+          </ToggleButton>
           <ToggleButton value="attention">
-            Needs attention ({requiredAttention + optionalWarnings})
+            {t("filters.attention", {
+              count: requiredAttention + optionalWarnings,
+            })}
           </ToggleButton>
         </ToggleButtonGroup>
         <TextField
-          label="Search claims or owners"
+          label={t("filters.search")}
           value={filters.query ?? ""}
           size="small"
           sx={{ flex: 1 }}
@@ -76,7 +83,7 @@ export function CheckFilters({
           aria-expanded={expanded}
           onClick={() => setExpanded(!expanded)}
         >
-          {expanded ? "Hide filters" : "More filters"}
+          {expanded ? t("filters.hide") : t("filters.more")}
         </Button>
       </Stack>
       {filters.category && filters.category !== "all" && (
@@ -84,8 +91,12 @@ export function CheckFilters({
           <Chip
             size="small"
             variant="outlined"
-            label={`Category: ${filters.category}`}
-            aria-label={`Clear ${filters.category} category filter`}
+            label={t("filters.category", {
+              category: t(`categories.${filters.category}`),
+            })}
+            aria-label={t("filters.clearCategory", {
+              category: t(`categories.${filters.category}`),
+            })}
             disabled={disabled}
             onClick={() => onChange({ category: "all" })}
             onDelete={() => onChange({ category: "all" })}
@@ -96,7 +107,7 @@ export function CheckFilters({
         <Stack direction={{ xs: "column", sm: "row" }} gap={1.5}>
           <TextField
             select
-            label="Result"
+            label={t("common.result")}
             value={filters.result ?? "all"}
             size="small"
             sx={{ minWidth: 170 }}
@@ -107,23 +118,25 @@ export function CheckFilters({
               })
             }
           >
-            <MenuItem value="all">All results</MenuItem>
-            {[
-              "pass",
-              "fail",
-              "missing",
-              "stale",
-              "inconclusive",
-              "not_evaluated",
-            ].map((state) => (
+            <MenuItem value="all">{t("filters.allResults")}</MenuItem>
+            {(
+              [
+                "pass",
+                "fail",
+                "missing",
+                "stale",
+                "inconclusive",
+                "not_evaluated",
+              ] as const
+            ).map((state) => (
               <MenuItem key={state} value={state}>
-                {state === "not_evaluated" ? "Not evaluated" : state}
+                {t(`filterResults.${state}`)}
               </MenuItem>
             ))}
           </TextField>
           <TextField
             select
-            label="Category"
+            label={t("common.category")}
             value={filters.category ?? "all"}
             size="small"
             sx={{ minWidth: 170 }}
@@ -134,10 +147,10 @@ export function CheckFilters({
               })
             }
           >
-            <MenuItem value="all">All categories</MenuItem>
+            <MenuItem value="all">{t("filters.allCategories")}</MenuItem>
             {CHECK_CATEGORIES.map((value) => (
               <MenuItem key={value} value={value}>
-                {value}
+                {t(`categories.${value}`)}
               </MenuItem>
             ))}
           </TextField>
@@ -146,7 +159,7 @@ export function CheckFilters({
       {operationsOnly && (
         <Stack>
           <FormControlLabel
-            label="Include functional checks"
+            label={t("filters.includeFunctional")}
             control={
               <Checkbox
                 checked={filters.includeFunctional ?? false}
@@ -166,13 +179,16 @@ export function CheckFilters({
         alignItems="center"
       >
         <Typography variant="caption" color="text.secondary">
-          {shown} {shown === 1 ? "check" : "checks"}
+          {t("filters.count", { count: shown })}
           {filters.needsAttention &&
-            ` · ${requiredAttention} required · ${optionalWarnings} optional`}
+            t("filters.requirements", {
+              required: requiredAttention,
+              optional: optionalWarnings,
+            })}
         </Typography>
         {!disabled && changed && (
           <Button size="small" onClick={onReset}>
-            Reset filters
+            {t("filters.reset")}
           </Button>
         )}
       </Stack>

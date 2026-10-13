@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Button,
@@ -27,6 +29,7 @@ export function ProductConnections({
   editable: boolean;
   mutate: (mutation: ProductMutation) => Promise<void>;
 }) {
+  const t = useTranslations("Product");
   const [adding, setAdding] = useState<Connection | null>(null);
   const linkedComponentIds = new Set(
     productComponentFocus(product).componentIds,
@@ -43,12 +46,17 @@ export function ProductConnections({
     .filter((item) => !item.archivedAt)
     .map((item) => ({
       value: item.id,
-      label: `${item.name} · ${linkedComponentIds.has(item.id) ? "linked to product" : "available in workspace"}`,
+      label: t(
+        linkedComponentIds.has(item.id)
+          ? "linkedComponentOption"
+          : "availableComponentOption",
+        { name: item.name },
+      ),
     }));
   const regions = product.screens.flatMap((screen) =>
     screen.regions.map((region) => ({
       value: region.id,
-      label: `${screen.label ?? "Screen"} · ${region.label ?? "Region"}`,
+      label: `${screen.label ?? t("screen")} · ${region.label ?? t("region")}`,
     })),
   );
   const fields: FormField[] =
@@ -56,14 +64,14 @@ export function ProductConnections({
       ? [
           {
             name: "capabilityId",
-            label: "Capability",
+            label: t("capability"),
             type: "select",
             required: true,
             options: capabilityOptions,
           },
           {
             name: "regionId",
-            label: "Visual region",
+            label: t("visualRegion"),
             type: "select",
             required: true,
             options: regions,
@@ -74,32 +82,32 @@ export function ProductConnections({
             ? [
                 {
                   name: "capabilityId",
-                  label: "Capability",
+                  label: t("capability"),
                   type: "select" as const,
                   required: true,
                   options: capabilityOptions,
                 },
                 {
                   name: "componentId",
-                  label: "Component",
+                  label: t("component"),
                   type: "select" as const,
                   required: true,
                   options: componentOptions,
-                  helper: "Reuse a linked or available workspace component.",
+                  helper: t("reuseComponent"),
                 },
               ]
             : [
                 {
                   name: "consumerId",
-                  label: "Consumer",
+                  label: t("consumer"),
                   type: "select" as const,
                   required: true,
                   options: componentOptions,
-                  helper: "Components are shared within this workspace.",
+                  helper: t("sharedInWorkspace"),
                 },
                 {
                   name: "providerId",
-                  label: "Provider",
+                  label: t("provider"),
                   type: "select" as const,
                   required: true,
                   options: componentOptions,
@@ -107,18 +115,18 @@ export function ProductConnections({
               ]),
           {
             name: "relation",
-            label: "Relationship",
+            label: t("relationship"),
             required: true,
-            helper: "e.g. calls, consumes, reads, requires",
+            helper: t("relationshipHelp"),
           },
           {
             name: "description",
-            label: "Contract or purpose",
+            label: t("contractPurpose"),
             type: "textarea",
           },
           {
             name: "required",
-            label: "Required for this capability or consumer",
+            label: t("requiredForConsumer"),
             type: "checkbox",
           },
         ];
@@ -127,22 +135,23 @@ export function ProductConnections({
   return (
     <Stack spacing={2}>
       <Stack direction="row" justifyContent="space-between" flexWrap="wrap">
-        <Typography variant="h6">Connections</Typography>
+        <Typography variant="h6">{t("connections")}</Typography>
         {editable && (
           <Stack direction="row" flexWrap="wrap">
             <Button onClick={() => setAdding("capability")}>
-              Link capability
+              {t("linkCapability")}
             </Button>
             <Button onClick={() => setAdding("dependency")}>
-              Link components
+              {t("linkComponents")}
             </Button>
-            <Button onClick={() => setAdding("region")}>Link region</Button>
+            <Button onClick={() => setAdding("region")}>
+              {t("linkRegion")}
+            </Button>
           </Stack>
         )}
       </Stack>
       <Typography variant="body2" color="text.secondary">
-        Declared product wiring provides dependency context. Only required
-        acceptance checks determine release readiness.
+        {t("connectionsHelp")}
       </Typography>
       {product.capabilityComponents
         .filter((link) => capabilityIds.has(link.capabilityId))
@@ -156,7 +165,9 @@ export function ProductConnections({
                   )?.name
                 }{" "}
                 → {link.relation} → {name(link.componentId)} ·{" "}
-                {link.required ? "Required dependency" : "Supporting context"}
+                {link.required
+                  ? t("requiredDependency")
+                  : t("supportingContext")}
                 <br />
                 {link.description}
               </Typography>
@@ -173,7 +184,7 @@ export function ProductConnections({
                     }).catch(() => {})
                   }
                 >
-                  Unlink
+                  {t("unlink")}
                 </Button>
               )}
             </Stack>
@@ -191,7 +202,9 @@ export function ProductConnections({
               <Typography variant="body2">
                 {name(link.consumerId)} → {link.relation} →{" "}
                 {name(link.providerId)} ·{" "}
-                {link.required ? "Required dependency" : "Supporting context"}
+                {link.required
+                  ? t("requiredDependency")
+                  : t("supportingContext")}
                 <br />
                 {link.description}
               </Typography>
@@ -206,7 +219,7 @@ export function ProductConnections({
                     }).catch(() => {})
                   }
                 >
-                  Unlink
+                  {t("unlink")}
                 </Button>
               )}
             </Stack>
@@ -225,7 +238,7 @@ export function ProductConnections({
                 }{" "}
                 →{" "}
                 {regions.find((item) => item.value === link.regionId)?.label ??
-                  "Archived region"}
+                  t("archivedRegion")}
               </Typography>
               {editable && (
                 <Button
@@ -240,7 +253,7 @@ export function ProductConnections({
                     }).catch(() => {})
                   }
                 >
-                  Unlink
+                  {t("unlink")}
                 </Button>
               )}
             </Stack>
@@ -254,10 +267,10 @@ export function ProductConnections({
       >
         <DialogTitle>
           {adding === "region"
-            ? "Link a visual region"
+            ? t("linkVisualRegion")
             : adding === "capability"
-              ? "Link a capability to a component"
-              : "Connect components"}
+              ? t("linkCapabilityComponent")
+              : t("connectComponents")}
         </DialogTitle>
         <DialogContent>
           {adding && (
@@ -265,7 +278,7 @@ export function ProductConnections({
               key={adding}
               fields={fields}
               initial={{ required: true }}
-              submitLabel="Save connection"
+              submitLabel={t("saveConnection")}
               onCancel={() => setAdding(null)}
               onSubmit={async (data) => {
                 await mutate({

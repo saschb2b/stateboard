@@ -1,27 +1,12 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import Link from "next/link";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import type { OverviewCategory } from "@/lib/product-overview";
-import type { CheckCategory } from "@/lib/release-types";
 
-const labels: Record<CheckCategory, string> = {
-  functional: "Functionality",
-  integration: "Integration",
-  ux: "User experience",
-  data: "Data",
-  security: "Security",
-  operational: "Operations",
-};
-function description(row: OverviewCategory, hasAssessment: boolean) {
-  if (!hasAssessment) return "No assessment yet";
-  if (row.state === "unknown") return "Coverage unavailable";
-  if (row.state === "not_defined") return "No checks defined";
-  if (row.state === "optional_only")
-    return `${row.optional} optional check${row.optional === 1 ? "" : "s"} · No required checks${row.optionalWarnings ? ` · ${row.optionalWarnings} optional warning${row.optionalWarnings === 1 ? "" : "s"}` : ""}`;
-  return `${row.passed}/${row.required} required pass${row.blockers ? ` · ${row.blockers} failed` : ""}${row.gaps ? ` · ${row.gaps} need evidence` : ""}${row.optionalWarnings ? ` · ${row.optionalWarnings} optional warnings` : ""}`;
-}
 export function ProductOverviewCoverage({
   categories,
   assessmentHref,
@@ -29,6 +14,24 @@ export function ProductOverviewCoverage({
   categories: OverviewCategory[];
   assessmentHref?: string;
 }) {
+  const t = useTranslations("Product");
+  function description(row: OverviewCategory, hasAssessment: boolean) {
+    if (!hasAssessment) return t("coverage.noAssessment");
+    if (row.state === "unknown") return t("unavailableCoverage");
+    if (row.state === "not_defined") return t("coverage.noChecks");
+    if (row.state === "optional_only")
+      return t("coverage.optionalOnly", {
+        count: row.optional,
+        warnings: row.optionalWarnings,
+      });
+    return t("coverage.required", {
+      passed: row.passed,
+      count: row.required,
+      blockers: row.blockers,
+      gaps: row.gaps,
+      warnings: row.optionalWarnings,
+    });
+  }
   return (
     <Box component="section" aria-labelledby="product-coverage-heading">
       <Stack spacing={0.5} mb={1.5}>
@@ -37,11 +40,10 @@ export function ProductOverviewCoverage({
           component="h2"
           variant="subtitle1"
         >
-          Verification coverage
+          {t("coverage.title")}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Checks for the latest assessment. An area without checks remains
-          unassessed.
+          {t("coverage.help")}
         </Typography>
       </Stack>
       <Box sx={{ borderTop: 1, borderColor: "divider" }}>
@@ -49,7 +51,7 @@ export function ProductOverviewCoverage({
           const content = (
             <>
               <Typography variant="body2" fontWeight={500}>
-                {labels[row.category]}
+                {t(`coverage.categories.${row.category}`)}
               </Typography>
               <Typography
                 variant="body2"
@@ -104,7 +106,10 @@ export function ProductOverviewCoverage({
               key={row.category}
               component={Link}
               href={`${assessmentHref}?view=qa&category=${row.category}`}
-              aria-label={`${labels[row.category]}: ${description(row, true)}. Review checks`}
+              aria-label={t("coverage.review", {
+                category: t(`coverage.categories.${row.category}`),
+                description: description(row, true),
+              })}
               sx={sx}
             >
               {content}

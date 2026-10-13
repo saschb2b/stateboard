@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Stack } from "@mui/material";
 import { ReleaseScope } from "@/components/capability/release-scope";
 import { CapabilityVisualView } from "@/components/capability/capability-visual-view";
@@ -69,6 +71,7 @@ export function ReleasePerspectives({
   revoke: (token: string) => Promise<void>;
   upload: (file: File, label: string) => Promise<void>;
 }) {
+  const t = useTranslations("Release");
   return (
     <>
       {view === "release" && (
@@ -102,7 +105,7 @@ export function ReleasePerspectives({
         />
       )}
       {(view === "backend" || view === "qa" || view === "operations") && (
-        <Stack component="section" aria-label="Check evidence">
+        <Stack component="section" aria-label={t("workspace.checkEvidence")}>
           <CheckManager
             key={`${view}:${focusedCapabilityId ?? "all"}:${category ?? "all"}`}
             initialCategory={category}

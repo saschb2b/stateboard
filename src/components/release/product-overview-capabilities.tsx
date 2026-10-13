@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { Box, Button, Stack, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import type { OverviewCapability } from "@/lib/product-overview";
@@ -18,6 +20,8 @@ export function ProductOverviewCapabilities({
   hasAssessment: boolean;
   onManage: () => void;
 }) {
+  const t = useTranslations("Product");
+  const format = useFormatter();
   return (
     <Box component="section" aria-labelledby="product-capabilities-heading">
       <Stack
@@ -32,19 +36,18 @@ export function ProductOverviewCapabilities({
           component="h2"
           variant="subtitle1"
         >
-          Capabilities{" "}
+          {t("capabilities")}{" "}
           <Box component="span" color="text.secondary" ml={0.75}>
-            {capabilities.length}
+            {format.number(capabilities.length)}
           </Box>
         </Typography>
         <Button size="small" color="inherit" onClick={onManage}>
-          View catalog
+          {t("viewCatalog")}
         </Button>
       </Stack>
       {capabilities.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          No capabilities defined. Add the outcomes people expect from this
-          product.
+          {t("noCapabilities")}
         </Typography>
       ) : (
         <Box
@@ -68,13 +71,13 @@ export function ProductOverviewCapabilities({
             }}
           >
             <Typography variant="caption" color="text.secondary">
-              Outcome / owner
+              {t("outcomeOwner")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Capability checks
+              {t("capabilityChecks")}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              Declared mappings
+              {t("declaredMappings")}
             </Typography>
           </Box>
           {capabilities.map((capability, index) => (
@@ -117,8 +120,8 @@ export function ProductOverviewCapabilities({
                     {capability.name}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {capability.ownerLabel || "No owner assigned"}
-                    {capability.archived ? " · Archived" : ""}
+                    {capability.ownerLabel || t("noOwner")}
+                    {capability.archived ? t("archivedSuffix") : ""}
                   </Typography>
                 </Stack>
                 <Stack
@@ -131,19 +134,22 @@ export function ProductOverviewCapabilities({
                   ) : (
                     <Typography variant="body2" color="text.secondary">
                       {!hasAssessment
-                        ? "Not assessed"
+                        ? t("notAssessed")
                         : capability.inclusion === "excluded"
-                          ? "Excluded"
+                          ? t("excluded")
                           : capability.inclusion === "unknown"
-                            ? "Coverage unavailable"
-                            : "Not in assessment"}
+                            ? t("unavailableCoverage")
+                            : t("notInAssessment")}
                     </Typography>
                   )}
                   {capability.inclusion === "included" && (
                     <Typography variant="caption" color="text.secondary">
                       {capability.required === 0
-                        ? "No required checks"
-                        : `${capability.passed}/${capability.required} required checks pass`}
+                        ? t("noRequiredChecks")
+                        : t("requiredPass", {
+                            passed: capability.passed,
+                            count: capability.required,
+                          })}
                     </Typography>
                   )}
                 </Stack>
@@ -152,9 +158,13 @@ export function ProductOverviewCapabilities({
                   color="text.secondary"
                   sx={{ gridColumn: { xs: 1, md: "auto" } }}
                 >
-                  {capability.componentCount} components ·{" "}
-                  {capability.screenCount} screens
-                  {capability.newerDefinition ? " · Definition changed" : ""}
+                  {t("mappingCounts", {
+                    components: capability.componentCount,
+                    screens: capability.screenCount,
+                  })}
+                  {capability.newerDefinition
+                    ? t("definitionChangedSuffix")
+                    : ""}
                 </Typography>
                 <ExpandMoreIcon
                   className="capability-chevron"
@@ -168,29 +178,27 @@ export function ProductOverviewCapabilities({
               </Box>
               <Stack spacing={1} sx={{ px: 2, pb: 2, maxWidth: 850 }}>
                 <Typography variant="body2">
-                  {capability.outcome || "No outcome described."}
+                  {capability.outcome || t("noOutcome")}
                 </Typography>
                 {capability.scope?.scopeReason && (
                   <Typography variant="body2" color="text.secondary">
-                    Scope: {capability.scope.scopeReason}
+                    {t("scopeReason", { reason: capability.scope.scopeReason })}
                   </Typography>
                 )}
                 {capability.missingAcceptance && (
                   <Typography variant="body2" color="warning.main">
-                    No required functional acceptance check is defined.
+                    {t("missingAcceptance")}
                   </Typography>
                 )}
                 {capability.newerDefinition && (
                   <Typography variant="body2" color="text.secondary">
-                    This assessment retains definition{" "}
-                    {capability.scope?.definitionRevision}. The catalog has a
-                    newer definition; its changes have not been assessed here.
+                    {t("retainedDefinition", {
+                      revision: capability.scope?.definitionRevision ?? 0,
+                    })}
                   </Typography>
                 )}
                 <Typography variant="caption" color="text.secondary">
-                  Check status applies to this candidate. Mappings describe
-                  declared connections; they do not verify behavior or
-                  production availability.
+                  {t("candidateCheckScope")}
                 </Typography>
               </Stack>
             </Box>

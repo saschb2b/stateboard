@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
@@ -10,14 +12,6 @@ import type { ReleaseView } from "@/lib/release-types";
 import { RELEASE_VIEWS } from "@/lib/release-types";
 import { WorkspaceNavigation } from "./workspace-navigation";
 
-export const VIEW_LABELS: Record<ReleaseView, string> = {
-  release: "Overview",
-  visual: "Screens",
-  backend: "Architecture",
-  qa: "Checks",
-  operations: "Operations",
-  decision: "Decision",
-};
 const icons = {
   release: <ViewQuiltOutlinedIcon fontSize="small" />,
   visual: <ImageOutlinedIcon fontSize="small" />,
@@ -33,15 +27,16 @@ export function ReleaseViewTabs({
   view: ReleaseView;
   onChange: (view: ReleaseView) => void;
 }) {
+  const t = useTranslations("Release");
   return (
     <WorkspaceNavigation
-      label="Assessment perspective"
+      label={t("views.label")}
       idPrefix="assessment"
       value={view}
       onChange={onChange}
       sections={RELEASE_VIEWS.map((value) => ({
         value,
-        label: VIEW_LABELS[value],
+        label: t(`views.${value}`),
         icon: icons[value],
       }))}
     />

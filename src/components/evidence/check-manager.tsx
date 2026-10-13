@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useState } from "react";
 import {
   Button,
@@ -61,6 +63,7 @@ export function CheckManager({
   initialCategory?: CheckCategory | null;
   onCategoryChange?: (category: CheckCategory | null) => void;
 }) {
+  const t = useTranslations("Release");
   const [editing, setEditing] = useState<ReleaseCheck | "new" | null>(null);
   const [reviewing, setReviewing] = useState<ReleaseCheck | null>(null);
   const [filters, setFilters] = useState<CheckFilterValues>({
@@ -106,21 +109,21 @@ export function CheckManager({
   }
   function subject(check: ReleaseCheck) {
     return check.subjectType === "release"
-      ? "Entire release"
+      ? t("common.entireRelease")
       : check.subjectType === "capability"
         ? (detail.scope.find((item) => item.capabilityId === check.subjectId)
-            ?.name ?? "Capability")
+            ?.name ?? t("common.capability"))
         : (product.components.find((item) => item.id === check.subjectId)
-            ?.name ?? "Component");
+            ?.name ?? t("common.component"));
   }
   return (
     <Stack spacing={2}>
       <Stack direction="row" justifyContent="space-between" gap={1}>
         <Typography variant="h6">
-          {operationsOnly ? "Operational checks" : "Checks"}
+          {operationsOnly ? t("check.operations") : t("common.checks")}
         </Typography>
         {editable && (
-          <Button onClick={() => setEditing("new")}>Add check</Button>
+          <Button onClick={() => setEditing("new")}>{t("check.add")}</Button>
         )}
       </Stack>
       {focusedCheckId && (
@@ -130,9 +133,7 @@ export function CheckManager({
           justifyContent="space-between"
         >
           <Typography variant="body2" color="text.secondary">
-            {checks.length
-              ? "Selected check"
-              : "This check is no longer active."}
+            {checks.length ? t("check.selected") : t("check.inactive")}
           </Typography>
           {onClearFocus && (
             <Button
@@ -142,7 +143,7 @@ export function CheckManager({
                 onClearFocus();
               }}
             >
-              Clear check focus
+              {t("workspace.clearCheck")}
             </Button>
           )}
         </Stack>
@@ -157,7 +158,7 @@ export function CheckManager({
           <Stack spacing={0.25}>
             <Typography variant="body2">{subjectLabel}</Typography>
             <Typography variant="caption" color="text.secondary">
-              Capability, related components and release-wide checks
+              {t("check.scopeHelp")}
             </Typography>
           </Stack>
           {onClearFocus && (
@@ -168,7 +169,7 @@ export function CheckManager({
                 onClearFocus();
               }}
             >
-              Clear capability
+              {t("check.clearCapability")}
             </Button>
           )}
         </Stack>
@@ -220,9 +221,7 @@ export function CheckManager({
         ))}
         {checks.length === 0 && !focusedCheckId && (
           <Typography color="text.secondary" variant="body2" sx={{ p: 3 }}>
-            {scopedChecks.length
-              ? "No matching checks. Try another filter."
-              : "No checks in this view."}
+            {scopedChecks.length ? t("check.noMatches") : t("check.empty")}
           </Typography>
         )}
       </Paper>
@@ -234,8 +233,8 @@ export function CheckManager({
       >
         <DialogTitle>
           {editing === "new"
-            ? "Add acceptance check"
-            : "Revise acceptance check"}
+            ? t("check.addAcceptance")
+            : t("check.reviseAcceptance")}
         </DialogTitle>
         <DialogContent>
           {editing && (
@@ -255,7 +254,7 @@ export function CheckManager({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Record verification evidence</DialogTitle>
+        <DialogTitle>{t("check.recordVerification")}</DialogTitle>
         <DialogContent>
           {reviewing && (
             <EvidenceForm

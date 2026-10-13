@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import type {
@@ -7,13 +9,9 @@ import type {
   ReleaseDetail,
   ReleaseEvaluation,
 } from "@/lib/release-types";
+import { useReleaseReason } from "./use-release-reason";
 import { ReleaseFindings } from "./release-findings";
 
-export const READINESS_LABELS: Record<ReadinessState, string> = {
-  ready: "Ready",
-  blocked: "Blocked",
-  needs_evidence: "Needs evidence",
-};
 const READINESS_COLORS = {
   ready: "success",
   blocked: "error",
@@ -26,21 +24,37 @@ export function ReadinessChip({
   state: ReadinessState;
   verification?: boolean;
 }) {
+  const t = useTranslations("Release");
   return (
     <Chip
       size="small"
-      label={`${READINESS_LABELS[state]}${verification ? " · checks" : ""}`}
+      label={
+        verification
+          ? t("readiness.verification", { state: t(`readiness.${state}`) })
+          : t(`readiness.${state}`)
+      }
       color={READINESS_COLORS[state]}
       variant="outlined"
       sx={{
-        height: 23,
+        height: "auto",
+        minHeight: 23,
+        maxWidth: "100%",
+        justifyContent: "flex-start",
         fontWeight: 500,
         border: 0,
-        "& .MuiChip-label": { px: 0 },
+        "& .MuiChip-label": {
+          px: 0,
+          whiteSpace: "normal",
+          overflow: "visible",
+          textOverflow: "clip",
+          lineHeight: 1.4,
+          textAlign: "left",
+        },
         "&::before": {
           content: '""',
           width: 6,
           height: 6,
+          flexShrink: 0,
           mr: 0.75,
           borderRadius: "50%",
           bgcolor: "currentColor",
@@ -56,6 +70,7 @@ export function VerificationContext({
   detail: ReleaseDetail;
   now: number;
 }) {
+  const t = useTranslations("Release");
   const approved = detail.decisions.some(
     (decision) =>
       decision.decision === "approved" &&
@@ -64,11 +79,13 @@ export function VerificationContext({
   );
   return (
     <Typography variant="body2" color="text.secondary">
-      Verification: {detail.assessment.validationEnvironment} · Deployment
-      target: {detail.assessment.targetEnvironment} ·{" "}
-      {approved
-        ? "Approved decision recorded for this revision."
-        : "No current approved decision for this revision."}
+      {t("readiness.context", {
+        validation: detail.assessment.validationEnvironment,
+        target: detail.assessment.targetEnvironment,
+        decision: approved
+          ? t("readiness.approvedCurrent")
+          : t("readiness.notApprovedCurrent"),
+      })}
     </Typography>
   );
 }
@@ -87,6 +104,8 @@ export function ReadinessSummary({
   onReviewDecision?: () => void;
   editable?: boolean;
 }) {
+  const t = useTranslations("Release");
+  const localizeReason = useReleaseReason();
   const currentDecision = detail?.decisions.find(
     (decision) =>
       decision.revision === detail.assessment.revision &&
@@ -120,14 +139,17 @@ export function ReadinessSummary({
               },
             }}
           >
-            {READINESS_LABELS[readiness.state]}
+            {t(`readiness.${readiness.state}`)}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             {readiness.state === "ready"
               ? currentDecision
-                ? "Required checks pass."
-                : "Required checks pass. Ready for the release owner's decision."
-              : `${readiness.blockers.length} blocker${readiness.blockers.length === 1 ? "" : "s"} · ${readiness.gaps.length} evidence gap${readiness.gaps.length === 1 ? "" : "s"}`}
+                ? t("readiness.passing")
+                : t("readiness.awaitDecision")
+              : t("readiness.counts", {
+                  blockers: readiness.blockers.length,
+                  gaps: readiness.gaps.length,
+                })}
           </Typography>
           {detail && (
             <Typography
@@ -135,7 +157,9 @@ export function ReadinessSummary({
               color="text.secondary"
               sx={{ overflowWrap: "anywhere" }}
             >
-              Validation · {detail.assessment.validationEnvironment}
+              {t("readiness.validation", {
+                environment: detail.assessment.validationEnvironment,
+              })}
             </Typography>
           )}
         </Stack>
@@ -149,16 +173,15 @@ export function ReadinessSummary({
           >
             {currentDecision
               ? currentDecision.decision === "held"
-                ? "Decision held"
-                : "Decision approved"
-              : "Review decision"}
+                ? t("readiness.held")
+                : t("readiness.approved")
+              : t("readiness.review")}
           </Button>
         )}
       </Stack>
       {detail && !detail.scope.some((capability) => capability.included) && (
         <Typography variant="body2" color="text.secondary">
-          No capabilities included. Add the outcomes this candidate must
-          support.
+          {t("readiness.empty")}
         </Typography>
       )}
       {detail && (
@@ -181,11 +204,15 @@ export function ReadinessSummary({
             color="text.secondary"
             sx={{ cursor: "pointer", width: "fit-content" }}
           >
-            {detail ? "Optional warnings" : "All findings"}
+            {detail
+              ? t("readiness.optionalWarnings")
+              : t("readiness.allFindings")}
             {readiness.warnings.length > 0
               ? detail
                 ? ` · ${readiness.warnings.length}`
-                : ` · ${readiness.warnings.length} optional warnings`
+                : t("readiness.warningsCount", {
+                    count: readiness.warnings.length,
+                  })
               : ""}
           </Typography>
           <Stack component="ul" spacing={1} sx={{ mt: 1, pl: 2.5 }}>
@@ -197,7 +224,7 @@ export function ReadinessSummary({
                   key={`blocker-${index}`}
                   sx={{ "&::marker": { color: "error.main" } }}
                 >
-                  {reason}
+                  {localizeReason(reason)}
                 </Typography>
               ))}
             {!detail &&
@@ -208,7 +235,7 @@ export function ReadinessSummary({
                   key={`gap-${index}`}
                   sx={{ "&::marker": { color: "warning.main" } }}
                 >
-                  {reason}
+                  {localizeReason(reason)}
                 </Typography>
               ))}
             {readiness.warnings.map((reason, index) => (
@@ -218,7 +245,7 @@ export function ReadinessSummary({
                 color="text.secondary"
                 key={`warning-${index}`}
               >
-                {reason}
+                {localizeReason(reason)}
               </Typography>
             ))}
           </Stack>
