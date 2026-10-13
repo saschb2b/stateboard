@@ -54,6 +54,38 @@ export const RequiredReleaseGate: Story = {
     await expect(args.onInspectCheck).toHaveBeenCalledWith("check-rollback");
   },
 };
+const inconclusiveDetail = {
+  ...detail,
+  evidence: detail.evidence.map((item) =>
+    item.checkId === "check-recovery"
+      ? {
+          ...item,
+          result: "inconclusive" as const,
+          observedAt: example.now - 1000,
+        }
+      : item,
+  ),
+};
+export const DistinctEvidenceGaps: Story = {
+  args: {
+    detail: inconclusiveDetail,
+    readiness: evaluateRelease(inconclusiveDetail, example.now),
+  },
+  play: async ({ canvas }) => {
+    const missing = canvas.getByRole("button", {
+      name: "Inspect check: Rollback restores the previous worker version without losing events.",
+    });
+    const inconclusive = canvas.getByRole("button", {
+      name: "Inspect check: Recovery tokens expire and cannot be reused.",
+    });
+    await expect(missing).toHaveAccessibleDescription(
+      "Missing evidence · Data operations",
+    );
+    await expect(inconclusive).toHaveAccessibleDescription(
+      "Inconclusive · Identity team",
+    );
+  },
+};
 export const MissingFunctionalDefinition: Story = {
   args: {
     detail: {

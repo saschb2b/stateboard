@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import { CHECK_RESULT_LABELS } from "@/components/evidence/check-result-labels";
 import { Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import type {
@@ -31,6 +32,7 @@ export function ReleaseFindings({
   initialLimit?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const findingsId = useId();
   const findings = readiness.checks.flatMap((evaluation) => {
     const check = detail.checks.find((item) => item.id === evaluation.checkId);
     return check &&
@@ -67,14 +69,6 @@ export function ReleaseFindings({
         )}
       </Stack>
       {findings.slice(0, visibleCount).map(({ check, evaluation }) => {
-        const state =
-          evaluation.state === "fail"
-            ? "Failed"
-            : evaluation.state === "pass"
-              ? "Passed"
-              : evaluation.state === "stale"
-                ? "Expired"
-                : "Needs evidence";
         return (
           <ButtonBase
             key={check.id}
@@ -83,6 +77,9 @@ export function ReleaseFindings({
             tabIndex={onInspectCheck ? 0 : -1}
             onClick={
               onInspectCheck ? () => onInspectCheck(check.id) : undefined
+            }
+            aria-describedby={
+              onInspectCheck ? `${findingsId}-${check.id}` : undefined
             }
             aria-label={
               onInspectCheck ? `Inspect check: ${check.claim}` : undefined
@@ -107,7 +104,11 @@ export function ReleaseFindings({
               <Typography variant="body2" fontWeight={500}>
                 {check.claim}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                id={`${findingsId}-${check.id}`}
+                variant="caption"
+                color="text.secondary"
+              >
                 <Box
                   component="span"
                   sx={{
@@ -119,7 +120,7 @@ export function ReleaseFindings({
                           : "warning.main",
                   }}
                 >
-                  {state}
+                  {CHECK_RESULT_LABELS[evaluation.state]}
                 </Box>
                 {" · "}
                 {check.ownerLabel}

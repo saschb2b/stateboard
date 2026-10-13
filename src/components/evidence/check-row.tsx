@@ -18,13 +18,7 @@ import type {
 import { EvidenceHistory } from "./evidence-history";
 import { CheckRevisionHistory } from "./check-revision-history";
 
-const RESULT_LABELS = {
-  pass: "Passed",
-  fail: "Failed",
-  missing: "Missing evidence",
-  stale: "Expired evidence",
-  inconclusive: "Inconclusive",
-};
+import { CHECK_RESULT_LABELS } from "./check-result-labels";
 
 export function CheckRow({
   check,
@@ -125,7 +119,7 @@ export function CheckRow({
             textAlign: { xs: "left", sm: "right" },
           }}
         >
-          {evaluation ? RESULT_LABELS[evaluation.state] : "Not evaluated"}
+          {evaluation ? CHECK_RESULT_LABELS[evaluation.state] : "Not evaluated"}
           {!check.required && (
             <Box
               component="span"
