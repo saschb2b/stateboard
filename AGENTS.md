@@ -1,65 +1,62 @@
 # Working on StateBoard
 
-This is the canonical operating manual for coding agents in this repository. `CLAUDE.md` imports it for Claude-compatible clients. The installable [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md) serves a different purpose: it teaches agents working on other products to maintain their team's StateBoard instance.
+This is the canonical agent operating manual. `CLAUDE.md` imports it. Start at the [knowledge base](./docs/index.md) for product and engineering context, and the [design system](./docs/design-system/overview.md) for UI work.
 
-StateBoard answers **what works, what it depends on, and why it is ready to release**. Capabilities, declared dependencies, versioned checks, and evidence connect the people involved. Screenshots are an optional visual view. External coding agents and CI keep the records current; people review intent, unresolved claims, and release decisions.
+StateBoard helps each role judge release readiness from capabilities, dependencies, checks, and evidence. Screenshots are optional. External agents maintain records. People review intent, unresolved claims, and release decisions. Read [product purpose](./docs/product/purpose.md) before extending scope.
 
 ## Work loop
 
-1. **Understand the change.** Read the request, current Git status, relevant implementation/tests, and the applicable documentation below. Reuse the active task branch; create a `codex/` branch when a new branch is needed. Preserve unrelated work. Inspect available local services before starting another server.
-2. **Implement a bounded slice.** Choose a concrete outcome and work through it without stopping at a plan. Use independent agents for separable work with explicit file ownership. Resolve routine implementation choices from the repository and task context; ask only when a materially missing fact or action outside the authorized scope prevents a sound choice.
-3. **Verify behavior.** Run focused checks while iterating, then the six gates before committing or reporting completion. Exercise changed UI in the real app and narrow panels as well as component stories. Inspect failures and fix their cause; do not replace a failing check with a suppression.
-4. **Maintain the assessment when connected.** If the task includes StateBoard upkeep and a board/credential is configured, reconcile the affected capabilities, mappings, and checks through REST/MCP using the packaged skill. Reuse IDs and report actual observations for the exact candidate tested. Missing credentials do not block independent code work; report the maintenance step that could not run. Never put fabricated data into the user's board to fill a gap.
-5. **Commit and report.** Make small, coherent commits on the task branch, with passing verification for the committed state. Review the diff and repository status. Report the outcome, relevant tests, remaining uncertainty, and assessment/artifact links. A plan, a simulated persona, or a successful tool call alone is not completion.
+1. Read the request, Git status, relevant code, tests, and knowledge concepts. Reuse the task branch or create a `codex/` branch. Preserve unrelated work and reuse existing local services.
+2. Implement a bounded outcome. Delegate independent work with explicit file ownership. Resolve routine choices from the repository and current authorization.
+3. Exercise changed behavior. For UI, review the real app at normal and narrow widths, including keyboard use and relevant authenticated/public paths.
+4. Update affected instructions, knowledge, design, and published guides in the same change. Follow the synchronization table below.
+5. Run focused checks, then every required gate. Fix causes instead of suppressing failures.
+6. When assessment upkeep is in scope and credentials exist, reconcile records through REST/MCP. Submit only actual observations for the exact tested candidate.
+7. Make small, coherent commits with passing verification. Report the outcome, tests, unresolved facts, and assessment links. A plan or simulated persona alone is not completion.
 
-An instruction to implement or maintain the product authorizes routine edits and verification within that scope; do not ask for approval of every field. It does not authorize unrelated publication, messaging, deployment, destructive data cleanup, or changes to real release decisions. Follow the user's existing authorization and continue useful work when one dependent step is blocked.
+Routine edits and verification within the task do not require repeated approval. Publication, deployment, unrelated messaging, destructive cleanup, and real release decisions require their own authorization. Missing board credentials do not block independent code work.
 
-## Truth and product boundaries
+## Repository skills
 
-- A capability is a user or business outcome, including work with no UI. Components describe implementation references; dependencies explain required operations, events, jobs, or data. Source inspection can ground declared mappings, with concise source references. It cannot establish observed runtime behavior or passing acceptance evidence.
-- An assessment identifies an immutable candidate plus validation environment, target environment, audience, and configuration. Changing that tuple creates another assessment. Evidence confirms the exact candidate, expected environment, active check revision, and context actually tested. Never copy an old pass to a new candidate.
-- Every included capability needs a required functional acceptance check. Required failures block. Missing, expired, inconclusive, or mismatched evidence cannot establish ready. Empty scope is not ready. Optional checks and declared graph edges do not silently become gates; removing a failed requirement to make the board green is not verification.
-- Evidence is append-only, attributed, and idempotent by event identity. Select the latest matching observation deterministically, not the most favorable result. Compute freshness from verification time. Preserve prior definitions and history; archive referenced records rather than destroying them.
-- Visual `shipped` means working in production for the intended users. `mock` means faked/stubbed; `missing` means not built. Local or staging readiness does not change these meanings. Region rectangles use normalized `[0, 1]` coordinates, never pixels.
-- A current human owner records approval/hold and publishes/revokes curated release reviews through a browser session. API keys cannot do this, even if owner-scoped. Approval also requires calculated readiness and the reviewed revision. Simulated personas cannot supply independent human review or production evidence.
+Read the applicable skill before using it. These checked-in copies guide work on this repository:
 
-The [MVP contract](./src/content/docs/release-readiness-mvp.mdx) defines invariants and acceptance cases. The [roadmap](./src/content/docs/roadmap.mdx) records adopted scope, and the [README](./README.md) distinguishes the published baseline from unreleased work. Do not duplicate release history in this manual.
+| Skill                                                      | Apply when                                                                                                                   |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [React Compiler](./.agents/skills/react-compiler/SKILL.md) | Writing or reviewing React code. The compiler is enabled. Avoid manual memoization unless a documented boundary requires it. |
+| [React Stinky](./.agents/skills/react-stinky/SKILL.md)     | Reviewing component APIs, state, effects, accessibility, TypeScript, or duplication.                                         |
+| [OKF](./.agents/skills/okf/SKILL.md)                       | Reading or changing the `docs/` knowledge bundle. Select the narrowest capability.                                           |
+| [ODSF](./.agents/skills/odsf/SKILL.md)                     | Reading or changing the design system, tokens, components, patterns, or behavior rules.                                      |
+| [No Slop](./.agents/skills/no-slop/SKILL.md)               | Writing human-facing copy, documentation, comments, commits, or errors.                                                      |
 
-## Implementation boundaries
+The installable [StateBoard skill](./skills/stateboard/SKILL.md) has a separate audience: agents maintaining another product's StateBoard instance. Keep its workflow consistent with the product API.
 
-**Persistence and access**
+## Boundaries to preserve
 
-- All application DB access goes through `src/lib/db.ts`; no additional pools or raw SQL elsewhere in app code. Use numbered SQL migrations in `migrations/`, applied explicitly by `pnpm migrate`; no inline schema creation or migration on server startup. Map DB `snake_case` to TypeScript `camelCase` at this boundary.
-- Scope every resource and nested relationship to the authenticated workspace and correct board. Reuse existing `owner` / `editor` / `viewer` authorization. Profession views are presentation presets, never permission boundaries.
-- Preserve shared locking/revision rules for product mappings, checks, scope, evidence, decisions, and retained media. Revalidate membership and credentials in mutation transactions. Audit mutations with their data changes; source/credential attribution must survive REST and MCP.
-- Ordinary REST and MCP maintenance must enforce the same validation, roles, scope, revision conflicts, and evidence retry rules. Structured tool results should let agents continue from current context. Keep secret tokens/hashes out of results and audit metadata.
-- Use `requirePageMember` / `requireApiMember` for ordinary access, and the session-only owner guard for decisions/publication. New cookie-authenticated mutations require matching-origin checks. Keep `server-only` on filesystem, database, auth, and secret-bearing modules.
+- [Truth and readiness](./docs/product/readiness.md): exact candidate/context and active check revision determine evidence applicability. Required failures block. Missing, expired, or inconclusive evidence cannot establish ready. Never delete requirements to manufacture a pass.
+- [Product records](./docs/product/model.md): source inspection supports declared mappings, not observed behavior. Preserve definitions and append-only evidence. Visual `shipped` means working in production. Simulated personas do not replace human research.
+- [Access](./docs/architecture/access.md): scope every relationship to the workspace and board. Revalidate credentials during writes. Release decisions and publication require a current owner session. Views and owner labels grant no permissions.
+- [Persistence](./docs/architecture/persistence.md): all application SQL and pools stay in `src/lib/db.ts`. Apply numbered migrations explicitly. Preserve shared locks, revision rules, transactional audit, and retained media.
+- [Runtime](./docs/architecture/runtime.md): server code contacts only the configured identity provider. Do not add server-hosted LLMs, test execution, repository polling, or a scheduler for routine upkeep. Keep private media separate from public uploads.
+- [API](./docs/architecture/agent-api.md): REST and MCP share validation, roles, scope, evidence retry rules, and credential attribution. Use existing HTTP helpers. Preserve payload limits and matching-origin checks for cookie mutations.
+- [UI](./docs/design-system/overview.md): use MUI and Emotion with centralized theme tokens. Fumadocs alone uses scoped Tailwind. Keep conclusions and unresolved claims clear, with details on demand. Use in-memory examples, never sample records in a user's database.
 
-**Runtime and files**
+Read version-matched local Next.js guidance before Next-specific edits. Preserve strict TypeScript, `noUncheckedIndexedAccess`, `server-only` boundaries, awaited dynamic parameters, and loading/Suspense shells for request-dependent pages. Cache Components requires explicit caching.
 
-- Self-hosted, airgap-ready, MIT. Server code makes no outbound calls except to the configured internal OIDC provider. Evidence producers push results; evidence/reference URLs are stored, never fetched by StateBoard.
-- External agents may derive and maintain repository-grounded context and run authorized tests in their own environment. Do not add server-hosted LLMs, test execution, repository polling, or a scheduler to accomplish ordinary upkeep.
-- Resolve application storage through `src/lib/paths.ts`. Legacy board images in `uploads` are public and cached; confidential release images and retained decision media live in `release-assets`. Preserve filename/MIME validation and digest checks. Never remove bytes referenced by a live assessment or snapshot.
-- Public release output is an immutable server-built allowlist tied to a recorded decision. Protect JSON, HTML, metadata, and token-scoped media; hiding a private field in the UI is insufficient. Visual board sharing does not publish private release assessments.
+## Keep knowledge and design current
 
-**Next.js and TypeScript**
+| When changing                                            | Update in the same change                                                                                                                             |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Work loop, commands, tooling, skill installation         | This file, [engineering knowledge](./docs/engineering/knowledge-maintenance.md), README, and CI where applicable. Keep `CLAUDE.md` as an import.      |
+| Product scope or readiness semantics                     | Product concepts, MVP contract, roadmap/usage guide, implementation, and behavior tests.                                                              |
+| Persistence, access, REST/MCP, agent workflow            | Architecture concepts, API guide, packaged StateBoard skill, and boundary tests.                                                                      |
+| Tokens, layout, components, interaction or copy patterns | ODSF concepts/assets, generated tokens, MUI theme, implementation, and stories.                                                                       |
+| A concept's meaning or identity                          | Sources and author/date metadata, direct cross-links, affected index descriptions, and an append-only log entry. Remove obsolete verification claims. |
 
-- Next.js 16 App Router, React 19, strict TypeScript with `noUncheckedIndexedAccess`. Fix types at the call site; do not weaken compiler settings.
-- Read the version-matched local Next.js guide before Next-specific changes. `next.config.mjs` enables Cache Components and partial prefetching: request/DB-backed pages need a loading/Suspense shell, caching is opt-in with `"use cache"`, and `dynamic` / `revalidate` / `fetchCache` segment settings are incompatible. Await dynamic `params`.
-- Use existing HTTP helpers from `src/lib/http.ts`. REST successes return resources directly and errors use `{ error: string }`; keep explicit boundary validation and payload limits. Prefer existing dependencies; justify a new runtime dependency rather than adding it for convenience.
-- Use kebab-case files, named PascalCase component exports, and plural REST resource routes. Compose domain components under `src/components/{capability,dependency,evidence,release,...}`. Split files doing several jobs rather than adding more state to a monolith.
+Use [knowledge maintenance](./docs/engineering/knowledge-maintenance.md) for source ownership and the update procedure. Do not copy a contract into a second competing manual. Code and schemas define executable behavior. Published guides own user instructions. Knowledge concepts explain their relationships.
 
-## UI work
+## Verification
 
-The interface must make the release conclusion, blockers, and missing evidence understandable quickly. Keep the reading surface small: navigation before details, compact rows, disclosure for evidence/context, and clear routes between capability, implementation, and checks. Avoid repeated summary cards, helper paragraphs, and disabled controls. Use the existing real-project tasks to find confusion; [the iteration journal](./src/content/docs/persona-iteration.mdx) records findings and limits. Simulated persona reviews are not human customer research.
-
-Use React + MUI 7 + Emotion in the app. All UI colors come from `src/lib/theme.ts` / `state-meta.ts` and theme tokens; preserve the existing dark-first brand and flat bordered Paper treatment. No Tailwind, styled-components, or CSS modules in app components. `/docs` alone uses Fumadocs and its scoped Tailwind stylesheet. Local React state and server-fetched props are sufficient.
-
-Work on components through Storybook first where useful. Add/update colocated `*.stories.tsx` with substantial component changes; stories stay prop-driven with no network mutations. Use `play` only to prove meaningful interaction, async behavior, or styling. Shared theme/router mocks belong in `.storybook/preview.tsx`. Use the shipped in-memory examples as fixtures; never seed sample data into a user's database. Empty states should link to `/share/demo` or `/share/demo/releases` and demonstrate the concept with minimal copy.
-
-## Verification and local tooling
-
-The source of truth for commands is [`package.json`](./package.json), with CI in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml). Before committing or declaring completion, all six gates must pass:
+Before committing or reporting completion, run:
 
 ```bash
 pnpm typecheck
@@ -68,27 +65,12 @@ pnpm format:check
 pnpm test
 pnpm test:stories
 pnpm build
+pnpm docs:check
 ```
 
-Fix formatting on changed files without rewriting unrelated work. Tests should prove observable behavior and meaningful boundaries, not mirror implementation wording. Unit tests use Node's runner; stories render in Chromium. Install the browser with `pnpm exec playwright install chromium` if absent. Do not claim skipped or unrun tests passed.
+Run `pnpm design:generate` after design-token changes and review the generated diff. Follow [verification](./docs/engineering/verification.md) for database integration, browser, skill, Helm, and static-export checks. `PAGES_BUILD=1 pnpm build:pages` deletes/replaces runtime files: use a disposable checkout or CI.
 
-Run additional checks when their boundaries change:
-
-| Change                                                                                | Verification                                                                                                                                                                                                                                           |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Release persistence, authorization, REST/MCP adapters, revisions, evidence, or assets | `STATEBOARD_INTEGRATION_DB_URL=postgres://… pnpm test:integration` against development/test Postgres. The release and MCP suites create/remove their own schemas and media directories. Never reset the application schema or test against production. |
-| UI or navigation                                                                      | Real browser flow against Postgres/OIDC, including narrow panels and applicable authenticated/public paths; component stories alone are insufficient.                                                                                                  |
-| Runtime routes, docs, examples, or static-export behavior                             | Check the Pages surface. Run `PAGES_BUILD=1 pnpm build:pages` only in a disposable checkout/CI: its preparation deletes/replaces runtime source files.                                                                                                 |
-| Helm/deployment chart                                                                 | Follow the Helm job in CI: dependency build, lint, template validation with kubeconform, multi-replica rendering, and missing-secret rejection. Do not weaken fail-closed secrets to pass rendering.                                                   |
-| Packaged StateBoard skill                                                             | Validate its frontmatter and exercise a realistic setup/update task against the tool contract; unchanged instructions alone do not prove an agent workflow works.                                                                                      |
-
-For local startup, follow the [README quick start](./README.md#quick-start-local-dev): `.env.example`, Docker Compose Postgres/Keycloak, install, migrate, and `pnpm dev`. Reuse an existing server discovered through `.next/dev/lock` or the runtime tools rather than starting a duplicate. Keep credentials and machine-specific connection settings out of committed files.
-
-[`.mcp.json`](./.mcp.json) configures **development tools**, not a credentialed connection to the product's StateBoard MCP server: Next devtools discovers the live server; Storybook MCP uses `http://localhost:6006/mcp` when `pnpm storybook` is running. Discover their current capabilities before calling them. Use runtime diagnostics alongside tests rather than inferring successful behavior from source alone. These tools are optional aids, not extra product runtime dependencies.
-
-## Scope
-
-This product assesses and shares product/release state. It is not a ticket/sprint tracker, full developer portal or telemetry store, test runner, deployment controller, automatic release approver, or configurable waiver engine. Provider connectors, scheduled capture, broader catalog imports, and portfolio views follow the roadmap. External AI maintenance through the existing product model is in scope now. A user may authorize a deliberate scope extension; apply that request without resurrecting an obsolete restriction.
+Use [local development](./docs/engineering/local-development.md) to start or reuse Postgres, OIDC, the app, and Storybook. `.mcp.json` configures optional development tools, not a credentialed product connection. Keep secrets and machine-specific settings out of commits and logs.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

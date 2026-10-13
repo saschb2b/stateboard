@@ -79,7 +79,9 @@ After a member creates a key, an agent can inspect the project, reuse or create 
 
 Source-derived wiring is declared context; only actual observations support checks. The server calculates readiness, and a human owner records the release decision and controls publication. Maintenance runs in the connected agent or CI; StateBoard does not run a background AI service or fetch evidence URLs. The latest published `2026.8.0` build still exposes only the visual MCP tools; the expanded surface is unreleased.
 
-Full guide: [Agents & API](./src/content/docs/agents.mdx); skill source: [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md). Agents developing StateBoard itself use [`AGENTS.md`](./AGENTS.md); `CLAUDE.md` imports that single operating manual rather than maintaining a second copy.
+Full guide: [Agents & API](./src/content/docs/agents.mdx). The installable workflow lives in [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md).
+
+For repository development, start with [`AGENTS.md`](./AGENTS.md), the [knowledge base](./docs/index.md), and the [design system](./docs/design-system/overview.md). `CLAUDE.md` imports the same operating manual. The five repository skills live in `.agents/skills/` and are checked in with the project.
 
 ## Quick start (local dev)
 
@@ -149,13 +151,15 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 | `pnpm start`                  | Run the production build                                                                   |
 | `pnpm migrate`                | Apply pending SQL migrations against `DATABASE_URL`                                        |
 | `pnpm lint`                   | ESLint                                                                                     |
-| `pnpm typecheck`              | `tsc --noEmit`                                                                             |
+| `pnpm typecheck`              | Generate Fumadocs types, then run `tsc --noEmit`                                           |
 | `pnpm test`                   | Unit tests on Node's built-in runner (`node:test`)                                         |
 | `pnpm test:stories`           | Component interaction tests in Chromium                                                    |
-| `pnpm test:integration`       | Release persistence tests; set `STATEBOARD_INTEGRATION_DB_URL` to a test Postgres          |
+| `pnpm test:integration`       | Release and MCP integration tests against `STATEBOARD_INTEGRATION_DB_URL`                  |
 | `pnpm cleanup:release-assets` | Dry-run of orphan media cleanup; `--delete` removes unreferenced files older than 24 hours |
 | `pnpm format:check`           | Prettier check                                                                             |
 | `pnpm format`                 | Prettier write                                                                             |
+| `pnpm docs:check`             | Validate knowledge, design, links, token projections, and pinned repository skills         |
+| `pnpm design:generate`        | Regenerate design token outputs from the design-system foundations                         |
 
 ## Configuration
 

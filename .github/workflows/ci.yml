@@ -62,6 +62,9 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
+      - name: Knowledge and design consistency
+        run: pnpm docs:check
+
       - name: Test
         run: pnpm test
 
@@ -115,6 +118,25 @@ jobs:
       # Renders every story and runs its play functions as interaction tests.
       - name: Story tests
         run: pnpm test:stories
+
+  pages:
+    name: static Pages compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build static examples and guides
+        env:
+          PAGES_BUILD: "1"
+        run: pnpm build:pages
 
   helm:
     name: helm lint · kubeconform
