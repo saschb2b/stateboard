@@ -2512,6 +2512,29 @@ export async function readReleaseCheckRevisions(
   ).map((row) => releaseMap<ReleaseCheck>(row));
 }
 
+/** History and the active definition must describe the same database snapshot. */
+export async function readReleaseCheckHistory(
+  workspaceId: string,
+  releaseId: string,
+  checkId: string,
+) {
+  return inReleaseReadTransaction(async () => {
+    const detail = await readReleaseDetailInternal(releaseId, workspaceId);
+    const check = detail?.checks.find((item) => item.id === checkId);
+    if (!detail || !check)
+      throw new ReleaseError(404, "Assessment check not found");
+    return {
+      check,
+      definitions: await readReleaseCheckRevisions(
+        workspaceId,
+        releaseId,
+        checkId,
+      ),
+      evidence: detail.evidence.filter((item) => item.checkId === checkId),
+    };
+  });
+}
+
 async function insertReleaseAsset(asset: ReleaseAsset): Promise<void> {
   await query(
     `INSERT INTO release_assets(id,assessment_id,decision_id,filename,mime_type,width,height,size_bytes,digest,label,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
