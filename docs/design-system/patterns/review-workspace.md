@@ -3,8 +3,11 @@ type: Pattern
 title: Release review workspace
 description: One candidate heading, a compact assessment summary, and scoped capability rows in one reading flow.
 status: stable
-generated: { by: codex/unversioned, at: 2026-10-13T22:27:18Z }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: src/components/app/page-breadcrumbs.tsx
+  - resource: src/components/release/use-release-navigation.ts
+  - resource: docs/design-system/references/ux-navigation-research.md
   - resource: src/components/release/workspace-frame.tsx
   - resource: src/components/release/workspace-navigation.tsx
   - resource: src/components/release/release-workspace.tsx
@@ -19,7 +22,7 @@ examples:
 
 | Region          | Order and sizing                                                  | Reflow                                                                 |
 | --------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| App bar         | Brand, product breadcrumb, contextual actions                     | Truncate the breadcrumb while keeping actions reachable.               |
+| App bar         | Brand, linked ancestor trail, contextual actions                  | Show the immediate parent link on mobile. Keep actions reachable.      |
 | View navigation | 184px rail beside the reading surface                             | Below 1200px, move beneath the heading as scrollable tabs.             |
 | Heading         | Candidate title, target, revision, context disclosure             | Wrap the title. Keep secondary context in the disclosure.              |
 | Overview        | Verdict, grouped findings, then scoped capabilities in one column | Preserve the same order at every width.                                |
@@ -36,6 +39,10 @@ Show each capability's name, owner, and own-check state in its collapsed row. Ex
 The [controls](../components/controls.md) retain readable labels. The [interaction rules](../behaviors/interaction.md) define keyboard behavior and context retention. The [overview research](../references/product-overview-research.md) informs the shared reading flow. The [product overview](product-overview.md) includes the full active catalog. This assessment view stays within its recorded scope.
 
 Assessment tabs identify their panel through `aria-controls`. The current focusable panel identifies its selected tab through `aria-labelledby`. Category deep links open filtered checks with a visible category chip. Clearing that filter preserves the exact-check parameter, unrelated query parameters, and the URL fragment. Filters change the displayed checks, never readiness.
+
+The header trail exposes **Boards**, the named board, **Assessments**, and the current candidate. Parent items are links. The current candidate is plain text. At narrow widths, retain the immediate parent link and show the candidate in the page heading. The [wayfinding study](../references/ux-navigation-research.md) explains this hierarchy and its separation from assessment perspectives.
+
+Opening a finding changes its view, check, and capability focus in one history entry. Back, Forward, and reload restore the URL's view, check, category, capability, and component. Search, result, and needs-attention filters remain local to each view. Keep unrelated query parameters and the fragment. Do not create intermediate history entries that show a new view with an old check.
 
 # Examples
 

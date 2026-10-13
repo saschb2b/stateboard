@@ -3,8 +3,11 @@ type: Pattern
 title: Product overview
 description: One assessment summary followed by the active capability catalog and check coverage by discipline.
 status: stable
-generated: { by: codex/unversioned, at: 2026-10-13T22:27:18Z }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/ux-navigation-research.md
+  - resource: src/components/release/product-workspace.tsx
+  - resource: src/components/app/page-breadcrumbs.tsx
   - resource: docs/design-system/references/product-overview-research.md
   - resource: docs/product/model.md
   - resource: docs/product/readiness.md
@@ -23,8 +26,8 @@ The product overview answers what the product contains, which candidate the chec
 
 | Region                | Order and content                                                                                                    | Reflow                                                        |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Product heading       | Product name, short purpose, quiet contextual actions                                                                | Keep the heading first and wrap the purpose.                  |
-| Navigation            | Existing 184px rail with Overview selected, assessment history secondary                                             | Below 1200px, show horizontal navigation beneath the heading. |
+| Product heading       | Product name, short purpose, visible Edit board action for editors                                                   | Keep the heading first and wrap the purpose.                  |
+| Navigation            | Existing 184px rail with Overview selected, Board settings and History as tools                                      | Below 1200px, show horizontal navigation beneath the heading. |
 | Latest assessment     | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.              |
 | Findings              | A labelled disclosure inside the assessment band                                                                     | Expand beneath the band without opening another column.       |
 | Active capabilities   | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.     |
@@ -45,6 +48,8 @@ The six coverage rows describe the latest assessment's acceptance checks. Show n
 
 QA keeps a visible category chip outside its collapsed filters. Clearing the chip or resetting filters also removes the category from the URL.
 
+Keep **Edit board** beside the product identity for members with editing permission. It opens name and description settings. Keep **Board settings** and **History** visible in the product tools. Returning from these pages uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
+
 Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. They correspond to Assessments, Capabilities, Components, and Connections.
 
 Section changes preserve unrelated query parameters and the fragment. Browser Back restores the previous section. Each selected tab controls a labelled, focusable tab panel.
@@ -57,4 +62,6 @@ Use one route to the full assessment. Keep forms, revision history, and full dep
 
 The [example](product-overview.example.html) contains six illustrative StateBoard capabilities and two evidence gaps: a restore drill and independent human review. It includes one excluded capability and one unassessed definition. The values are a design specimen, not the live product's current assessment.
 
-The [wireframe](product-overview.wireframe.html) has the same body and structural CSS. Review it before the styled example at 390px, 900px, and 1440px. Check keyboard expansion, category links, visible filter reset, long names, and the distinction between check status and the human decision. Test the implementation with empty and populated assessments, expired evidence, URL reload, and browser Back. The specimen shows overview content and disclosure. The running product owns full section navigation and filtered assessment views.
+The [wireframe](product-overview.wireframe.html) has the same body and structural CSS. Review it before the styled example at 390px, 900px, and 1440px. Check keyboard expansion, category links, visible filter reset, long names, and the distinction between check status and the human decision. Test the implementation with empty and populated assessments, expired evidence, URL reload, and browser Back.
+
+The specimen shows overview content and disclosure. The running product owns full section navigation and filtered assessment views. Specimen management links open the [supporting screen contract](supporting-surfaces.md#board-details-and-return-paths). They do not edit product records.

@@ -2,6 +2,10 @@
 
 ## 2026-10-14
 
+- **Update**: Clarified mobile editing, sharing, presentation, and screen expansion in user guides. Distinguished assessment URL restoration from local view filters.
+
+- **Update**: Linked the board editing and wayfinding contracts, updated getting-started and sharing instructions, and added German editing and history terms to the localization glossary.
+
 - **Update**: Added English/German localization ownership, typed ICU catalog and formatting rules, the technical glossary, browser preference and server-rendering boundaries, and locale verification gates. Linked the design language behavior and updated README/agent contribution guidance.
 
 - **Update**: Documented the product overview default, retained capability scope, own-check qualifications, and declared mappings. Added the optional REST/MCP overview coverage projection, coherent reads, expiry handling, and missing-coverage semantics.

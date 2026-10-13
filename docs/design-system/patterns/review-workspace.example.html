@@ -8,10 +8,34 @@
     <link rel="stylesheet" href="../styles/components.css" />
   </head>
   <body>
-    <header class="app-bar">
-      <strong class="app-bar__brand">StateBoard</strong
-      ><span class="app-bar__context">Codex-assisted delivery</span
-      ><a class="app-bar__actions" href="#capabilities">Capabilities</a>
+    <header class="app-bar app-bar--hierarchy">
+      <a class="app-bar__brand" href="product-overview.example.html"
+        >StateBoard</a
+      >
+      <nav class="breadcrumbs" aria-label="Page location">
+        <ol class="breadcrumbs__trail">
+          <li>
+            <a href="supporting-surfaces.md#board-details-and-return-paths"
+              >Boards</a
+            >
+          </li>
+          <li><a href="product-overview.example.html">StateBoard</a></li>
+          <li>
+            <a href="product-overview.example.html#assessment-detail"
+              >Assessments</a
+            >
+          </li>
+          <li><span aria-current="page">StateBoard delivery</span></li>
+        </ol>
+        <a
+          class="breadcrumbs__parent"
+          href="product-overview.example.html#assessment-detail"
+          aria-label="Back to Assessments"
+        >
+          <span aria-hidden="true">←</span> Assessments
+        </a>
+      </nav>
+      <span class="app-bar__actions meta">Design specimen</span>
     </header>
     <div class="workspace">
       <nav class="workspace__nav" aria-label="Assessment perspective">

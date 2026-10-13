@@ -1,5 +1,15 @@
 ## 2026-10-14
 
+- **Verification**: Exercised board editing entry points, parent navigation, assessment history, architecture focus, and the visual editor on existing local boards in English and German at 390px and desktop widths. Form stories cover retained drafts, save errors, and short-dialog dismissal. The static export under `/stateboard` restores a focused check after Back, Forward, and reload. No board records were changed during these checks.
+
+- **Update**: Kept check and evidence dialog Close controls above scrolling content, with pending-save protection. Required parent links to synchronize product sections and the URL.
+
+- **Update**: Documented the visual editor's explicit Edit board route, responsive action menu, normal-flow search, and initially collapsed mobile screen rail. Qualified history restoration to URL-backed view/focus fields, excluding local search, result, and needs-attention filters.
+
+- **Verification**: Inspected changed product and assessment breadcrumbs in paired wireframe/styled specimens at 390px and 1440px. Confirmed no page-wide overflow, a visible mobile parent link with keyboard focus, and the assessment parent opening its linked disclosure. These checks cover specimens, not real-app usability.
+
+- **Update**: Added the board editing and wayfinding study, linked ancestor trails with mobile parent links, visible board management, explicit save/discard feedback, and atomic assessment history. Updated existing workspace specimens and their matching wireframes.
+
 - **Update**: Defined the English/Deutsch menu, selected-language semantics, stable forms and URLs, and German wrapping rules. Linked the technical glossary and locale checks without changing layout tokens.
 
 - **Verification**: Inspected the assessment wireframe before its styled example at 390px and 1440px. Checked the product specimen's category reload, keyboard clear, reset, preserved URL context, and 899px/900px capability reflow. No browser errors or horizontal overflow appeared in those checks.

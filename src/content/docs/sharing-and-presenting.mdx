@@ -14,7 +14,9 @@ Every board has one or more public read-only URLs of the form `/share/{token}`.
 - Anyone with the link can read the board — public and login-free by design, so a stakeholder reads it in seconds. Keep this in mind when uploading sensitive screenshots.
 - The share view strips every editor affordance: no upload, no draw, no delete. Tooltips on hover still show labels and notes.
 
-Copy the link from the **Share** button in the editor header. Its dropdown (the arrow beside it) opens the public view in a new tab or jumps to link management.
+On desktop, copy the link from **Share** in the editor header. Its dropdown opens the public view in a new tab or jumps to link management. On narrow screens, use **More board options → Copy share link**. The same menu contains **Open share view** and **Manage links**.
+
+The development build also exposes **Board settings** from the product workspace. Open **Share links** there to manage visual links. Use the named board breadcrumb to return to the product overview. To change the board's name or description, choose **Edit board** beside its product name or in the editor's **More board options** menu. These changes preserve existing share URLs.
 
 <Callout type="warn">
   Treat the share URL like a Google Drive "anyone with the link" share. The
@@ -25,7 +27,7 @@ Copy the link from the **Share** button in the editor header. Its dropdown (the 
 
 ## Present mode
 
-Press **`P`** anywhere in the editor or the share view, or click the **Present** button. Present mode is fullscreen and clutter-free: no header, no sidebars, no tabs. It's what you actually want on the screen during a quarterly review.
+Click **Present** in the editor or share view. In the narrow editor, use **More board options → Present**. Press **`P`** outside text fields to open it with the keyboard. Present mode shows the current screen without the editor header, sidebars, or tabs.
 
 ### Keyboard shortcuts
 

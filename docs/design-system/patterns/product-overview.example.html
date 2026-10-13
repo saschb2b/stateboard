@@ -8,10 +8,28 @@
     <link rel="stylesheet" href="../styles/components.css" />
   </head>
   <body>
-    <header class="app-bar">
-      <strong class="app-bar__brand">StateBoard</strong
-      ><span class="app-bar__context">Product workspace</span
-      ><span class="app-bar__actions meta">Design specimen</span>
+    <header class="app-bar app-bar--hierarchy">
+      <a class="app-bar__brand" href="product-overview.example.html"
+        >StateBoard</a
+      >
+      <nav class="breadcrumbs" aria-label="Page location">
+        <ol class="breadcrumbs__trail">
+          <li>
+            <a href="supporting-surfaces.md#board-details-and-return-paths"
+              >Boards</a
+            >
+          </li>
+          <li><span aria-current="page">StateBoard</span></li>
+        </ol>
+        <a
+          class="breadcrumbs__parent"
+          href="supporting-surfaces.md#board-details-and-return-paths"
+          aria-label="Back to Boards"
+        >
+          <span aria-hidden="true">←</span> Boards
+        </a>
+      </nav>
+      <span class="app-bar__actions meta">Design specimen</span>
     </header>
     <div class="workspace product-overview-shell">
       <nav class="workspace__nav" aria-label="Product views">
@@ -19,10 +37,19 @@
         ><a href="#assessment-detail" data-open="assessment-detail"
           >Assessments</a
         ><a href="#capabilities">Capabilities</a><a href="#coverage">Checks</a>
+        <a href="supporting-surfaces.md#board-details-and-return-paths"
+          >Board settings</a
+        >
+        <a href="supporting-surfaces.md#screen-contracts">History</a>
       </nav>
       <header class="workspace__header" id="product">
         <p class="meta">Illustrative StateBoard product · No live data</p>
-        <h1>StateBoard</h1>
+        <div class="product-overview-section-heading">
+          <h1>StateBoard</h1>
+          <a href="supporting-surfaces.md#board-details-and-return-paths"
+            >Edit board</a
+          >
+        </div>
         <p class="muted">
           Judge a release from capabilities, dependencies, checks, and evidence.
         </p>
@@ -345,6 +372,8 @@
       </main>
     </div>
     <script>
+      const linkedDetail = document.getElementById(location.hash.slice(1));
+      if (linkedDetail instanceof HTMLDetailsElement) linkedDetail.open = true;
       let categoryTrigger;
       const categoryLinks = [...document.querySelectorAll("[data-category]")];
       function showCategory(link) {

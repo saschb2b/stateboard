@@ -5,6 +5,7 @@ description: A compact review interface that keeps the release conclusion and su
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/ux-navigation-research.md
   - resource: src/components/release/release-workspace.tsx
   - resource: docs/design-system/references/interface-research.md
   - resource: src/app/(site)/page.tsx
@@ -24,6 +25,8 @@ The [product overview](patterns/product-overview.md) uses one reading flow: late
 The [landing pattern](patterns/product-landing.md) introduces the product through an illustrative assessment, role routes, and agent maintenance. Its [example](patterns/product-landing.example.html) and [wireframe](patterns/product-landing.wireframe.html) share one body. The [landing study](references/landing-research.md) records seven inspected Dribbble concepts and two first-party page references.
 
 The [supporting screen contracts](patterns/supporting-surfaces.md) cover boards, settings, signed reviews, visual sharing, and presentation. They identify the behavior to check without claiming a completed test run.
+
+The [wayfinding study](references/ux-navigation-research.md) informs linked board hierarchy, visible editing, and explicit save feedback across these surfaces.
 
 # Apply it
 

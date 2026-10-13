@@ -42,11 +42,23 @@ Already have a visual board that's close to what you need? Click **Duplicate** o
 
 Each board has an internal ID used in its workspace URLs. Public visual links use revocable tokens at `/share/{token}`; curated release links use separate tokens at `/share/releases/{token}`. Keep internal assessment URLs for workspace members and publish the public summary deliberately.
 
+### Edit a board and move between pages
+
+Choose **Edit board** beside the product name or on its row in the board list. Update the name and description under **Board settings**, then choose **Save changes**. **Discard changes** restores the last saved values. These actions require editing permission. Switching settings sections keeps the draft. Leaving settings closes the form, so save or discard first.
+
+Use the header breadcrumbs to return to a parent page. The named board returns to its product overview. **Assessments** returns from a candidate to that board's assessment list. On narrow screens, the header shows the immediate parent link. Product section tabs move between views within the board. **Board settings** and **History** are available from its product tools.
+
+From the visual editor, open **More board options → Edit board**. The empty editor also has an **Edit board** action. The board title is a parent link, so clicking it returns to the overview.
+
+Browser Back and Forward restore assessment views, selected checks, categories, capabilities, and components. Search, result, and needs-attention filters stay local to each view. The board ID and existing share links stay the same after a rename.
+
 ## 3. Upload a screen
 
 Choose **Screens** in the product workspace, then drop a screenshot onto the upload area or click to browse. Allowed formats: PNG, JPEG, WebP, GIF. Max 25 MB per file.
 
-You can upload as many screens as you want. They appear in the screen sidebar. Use its screen actions to reorder them; the order carries through to the share view and Present mode.
+Upload additional screens as needed. They appear in the screen sidebar. Use its screen actions to reorder them. This order carries through to the share view and Present mode.
+
+On narrow screens, choose **Expand screens** to open the collapsed screen rail. When header space is limited, **More board options** holds the remaining actions. These include search, visual-state filters, sharing, and Present.
 
 <Callout type="warn">
   Don't upload anything you can't show stakeholders. Share links are public by
@@ -67,7 +79,7 @@ Press **Esc** at any time to discard a draft region.
 
 ## 5. Share it
 
-Click **Share** in the header to copy the read-only URL. The arrow beside it opens a menu with **Open share view** (the public page in a new tab) and **Manage links** (mint extra links or revoke one).
+On desktop, click **Share** in the editor header to copy the read-only URL. Its arrow opens **Open share view** and **Manage links**. On narrow screens, open **More board options → Copy share link**. The same menu contains **Open share view** and **Manage links**.
 
 This visual link shows every screen and region on the board. A release review needs capabilities and verification too; publish a [curated recorded decision](/docs/release-readiness#record-and-share-a-decision) when sharing release readiness.
 

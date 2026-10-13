@@ -3,8 +3,11 @@ type: Guideline
 title: Supporting screen contracts
 description: Layout and interaction requirements for boards, settings, sharing, and presentation.
 status: draft
-generated: { by: codex/gpt-6, at: 2026-10-13 }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/ux-navigation-research.md
+  - resource: src/components/app/page-breadcrumbs.tsx
+  - resource: src/components/board/board-editor.tsx
   - resource: src/components/board/board-list.tsx
   - resource: src/components/board/board-settings.tsx
   - resource: src/components/workspace/settings-frame.tsx
@@ -37,6 +40,20 @@ Supporting screens use the [shared tokens](../foundations/tokens.md), [controls]
 | Region overlays    | Derive fills, borders, and focus treatment from theme/state tokens. Pair color with a state label.                                                | Theme changes, keyboard details, normalized positioning, and edit handles.                     |
 
 On compact screenshots, hide region titles while retaining the state chip. A tap or keyboard focus reveals the full label and notes. Use an opaque theme surface for labels so screenshot colors cannot reduce their contrast.
+
+# Visual editor
+
+Keep desktop search in the header's normal layout so it cannot overlap the board identity or actions. As the header narrows, move search, visual-state filters, sharing, and Present into **More board options**. Preserve their labels and selected filter state. The screen rail starts collapsed below 600px. **Expand screens** reveals its names and controls, and the user's choice remains active while the editor stays open.
+
+The editor's **More board options** menu exposes **Edit board** to members with editing permission. The empty state also exposes this action. Both open name and description settings. The board breadcrumb links to the overview and does not rename the board.
+
+# Board details and return paths
+
+The board list and product heading expose **Edit board** to members with editing permission. The action opens the existing board settings. **Board settings** and **History** remain labelled product tools. Keep the board name in the breadcrumb as a link to its product overview. Breadcrumbs on an assessment also expose its assessment list. The [wayfinding study](../references/ux-navigation-research.md) records the design rationale.
+
+Settings group the board name and description in one form. Use explicit **Save changes** and **Discard changes** controls. Disable them while saving and when the form has no changes. Keep unsaved values when switching settings sections. A failed request retains the draft and shows the error beside the form. Confirm a successful save with an announced status, and update the board identity from the saved response.
+
+Separate deletion from ordinary edits. A rename keeps the board ID and public tokens unchanged. Preserve the existing role restrictions and deletion rules.
 
 # Scope of this document
 

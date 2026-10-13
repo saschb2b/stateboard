@@ -17,6 +17,8 @@ sources:
     resource: src/i18n/catalog.ts
   - id: types
     resource: src/i18n/types.d.ts
+  - resource: src/components/app/page-breadcrumbs.tsx
+  - resource: src/components/board/board-settings.tsx
   - id: switcher
     resource: src/i18n/language-switcher.tsx
   - id: shell
@@ -83,6 +85,9 @@ Use these terms consistently. Inflect nouns and adjectives for their sentence. S
 | Functional / integration / UX     | Funktional / Integration / Bedienbarkeit | Check categories; overview may use Funktionalität as its area label.                         |
 | Data / security / operations      | Daten / Sicherheit / Betrieb             | Remaining check categories.                                                                  |
 | Workspace owner / editor / viewer | Inhaber / Bearbeitung / Lesen            | Display names for unchanged authorization roles.                                             |
+| Edit board / Board settings       | Board bearbeiten / Board-Einstellungen   | Edit the existing board's name and description.                                              |
+| Discard changes                   | Änderungen verwerfen                     | Restore the last saved form values without a request.                                        |
+| History                           | Verlauf                                  | Recorded board changes, distinct from assessment and evidence history.                       |
 | Accountable owner                 | Verantwortliche Person                   | Assigned responsibility for a capability, component, or release; does not grant permissions. |
 
 “Bereit” does not mean deployed or approved. Visual production state remains distinct from candidate verification. Preserve that distinction from [release readiness](../product/readiness.md) in every language.

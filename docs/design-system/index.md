@@ -34,3 +34,4 @@ okf_version: "0.2"
 - [Interface research coverage](references/coverage.md) - Bounded source ledger for the StateBoard interface study.
 - [Project management interface research](references/interface-research.md) - Observed interface patterns and their application to StateBoard release reviews.
 - [Product landing page research](references/landing-research.md) - Observed landing page patterns and a homepage direction for StateBoard.
+- [Board editing and wayfinding research](references/ux-navigation-research.md) - Inspected project interfaces and guidance for board editing, parent navigation, and save feedback.
