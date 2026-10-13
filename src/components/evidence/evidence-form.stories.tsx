@@ -1,0 +1,49 @@
+import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
+import { getReleaseDemo } from "@/lib/release-demo";
+import { EvidenceForm } from "./evidence-form";
+
+const example = getReleaseDemo();
+const meta = {
+  component: EvidenceForm,
+  tags: ["ai-generated"],
+  args: {
+    assessment: example.detail.assessment,
+    check: example.detail.checks[0]!,
+    now: example.now,
+    onSave: fn(async () => {}),
+    onCancel: fn(),
+  },
+} satisfies Meta<typeof EvidenceForm>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+export const ExactContextReview: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.type(
+      canvas.getByLabelText(/Observation/),
+      "Tax fields are present in the reviewed result.",
+    );
+    await userEvent.type(
+      canvas.getByLabelText(/Run or review reference/),
+      "review-42",
+    );
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Append evidence" }),
+    );
+    await expect(args.onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "evidence.create",
+        data: expect.objectContaining({
+          candidateRef: example.detail.assessment.candidateRef,
+          checkRevision: 1,
+          environment: example.detail.checks[0]!.environment,
+          result: "inconclusive",
+          audience: example.detail.assessment.audience,
+          configurationRef: example.detail.assessment.configurationRef,
+          runRef: "review-42",
+        }),
+      }),
+    );
+  },
+};
