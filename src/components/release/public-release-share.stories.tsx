@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
+import { expect, within } from "storybook/test";
 import { PublicReleaseShare } from "./public-release-share";
 const meta = {
   component: PublicReleaseShare,
@@ -30,3 +31,20 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const CuratedReview: Story = {};
+export const CapabilityVerificationMeaning: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Held release")).toBeVisible();
+    await expect(canvas.getByText("Blocked", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Ready · checks")).toBeVisible();
+    await expect(canvas.queryByText("Ready", { exact: true })).toBeNull();
+    await expect(
+      canvas.getByText(
+        "Check verification at this review; availability requires deployment verification.",
+      ),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText("Duplicate delivery passed verification."),
+    ).toBeVisible();
+  },
+};

@@ -69,8 +69,12 @@ export function PublicReleaseShare({
               <Stack spacing={1}>
                 <Stack direction="row" justifyContent="space-between" gap={1}>
                   <Typography variant="h6">{item.name}</Typography>
-                  <ReadinessChip state={item.state} />
+                  <ReadinessChip state={item.state} verification />
                 </Stack>
+                <Typography variant="caption" color="text.secondary">
+                  Check verification at this review; availability requires
+                  deployment verification.
+                </Typography>
                 <Typography>{item.outcome}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {item.explanation}
