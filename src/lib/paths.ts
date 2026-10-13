@@ -18,11 +18,14 @@ export const DATA_DIR = process.env.STATEBOARD_DATA_DIR
   : DEFAULT_DATA_DIR;
 
 export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
+/** Retained releases are private; never serve this directory through /api/uploads. */
+export const RELEASE_ASSETS_DIR = path.join(DATA_DIR, "release-assets");
 
 let initialized = false;
 
 export function ensureDataDirs(): void {
   if (initialized) return;
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  fs.mkdirSync(RELEASE_ASSETS_DIR, { recursive: true });
   initialized = true;
 }

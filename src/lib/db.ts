@@ -1,5 +1,40 @@
 import "server-only";
-import { Pool, type QueryResultRow } from "pg";
+import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { newId, newShareToken } from "./ids";
+import { evaluateRelease } from "./readiness";
+import {
+  captureDecisionAssets,
+  cleanupReleaseAssets,
+  readReleaseAssetBytes,
+} from "./release-assets";
+import {
+  CHECK_CATEGORIES,
+  COMPONENT_KINDS,
+  ReleaseError,
+  type Capability,
+  type ProductComponent,
+  type CapabilityComponent,
+  type ComponentDependency,
+  type RegionCapability,
+  type ReleaseAssessment,
+  type ReleaseCapability,
+  type ReleaseCheck,
+  type ReleaseEvidence,
+  type ReleaseDecision,
+  type ReleaseAsset,
+  type ReleaseShareLink,
+  type PublicReleaseProjection,
+  type ProductContext,
+  type ReleaseDetail,
+  type ProductMutation,
+  type ReleaseMutation,
+  type CreateAssessmentInput,
+  type DecisionInput,
+  type ReleaseActor,
+  type ReleaseSnapshot,
+  type ReleaseWorkspace,
+} from "./release-types";
 import type {
   ApiKey,
   Board,
@@ -36,6 +71,7 @@ import type {
  * Doing it in-process would make hot reload and concurrent boots racy.
  */
 let _pool: Pool | null = null;
+const releaseTransaction = new AsyncLocalStorage<PoolClient>();
 
 /**
  * Lazy Pool getter.
@@ -61,7 +97,10 @@ async function query<R extends QueryResultRow>(
   sql: string,
   params: unknown[] = [],
 ): Promise<R[]> {
-  const result = await getPool().query<R>(sql, params);
+  const result = await (releaseTransaction.getStore() ?? getPool()).query<R>(
+    sql,
+    params,
+  );
   return result.rows;
 }
 
@@ -444,7 +483,7 @@ export async function countOwners(workspaceId: string): Promise<number> {
   return row ? Number(row.count) : 0;
 }
 
-export async function addMember(input: {
+async function addMemberInternal(input: {
   workspaceId: string;
   userId: string;
   role: "owner" | "editor" | "viewer";
@@ -457,23 +496,23 @@ export async function addMember(input: {
   );
 }
 
-export async function updateMemberRole(input: {
+async function updateMemberRoleInternal(input: {
   workspaceId: string;
   userId: string;
   role: "owner" | "editor" | "viewer";
 }): Promise<boolean> {
-  const result = await getPool().query(
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
     `UPDATE workspace_members SET role = $3 WHERE workspace_id = $1 AND user_id = $2`,
     [input.workspaceId, input.userId, input.role],
   );
   return result.rowCount! > 0;
 }
 
-export async function removeMember(input: {
+async function removeMemberInternal(input: {
   workspaceId: string;
   userId: string;
 }): Promise<boolean> {
-  const result = await getPool().query(
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
     `DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2`,
     [input.workspaceId, input.userId],
   );
@@ -573,7 +612,7 @@ export async function createBoard(input: {
   return mapBoard(row!);
 }
 
-export async function updateBoard(
+async function updateBoardInternal(
   id: string,
   patch: { name?: string; description?: string | null },
   actorId: string,
@@ -594,10 +633,11 @@ export async function updateBoard(
   return row ? mapBoard(row) : null;
 }
 
-export async function deleteBoard(id: string): Promise<boolean> {
-  const result = await getPool().query(`DELETE FROM boards WHERE id = $1`, [
-    id,
-  ]);
+async function deleteBoardInternal(id: string): Promise<boolean> {
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
+    `DELETE FROM boards WHERE id = $1`,
+    [id],
+  );
   return result.rowCount! > 0;
 }
 
@@ -643,7 +683,7 @@ export async function getScreen(id: string): Promise<Screen | null> {
   return row ? mapScreen(row) : null;
 }
 
-export async function createScreen(
+async function createScreenInternal(
   input: {
     id: string;
     boardId: string;
@@ -681,7 +721,7 @@ export async function createScreen(
   return mapScreen(row!);
 }
 
-export async function updateScreen(
+async function updateScreenInternal(
   id: string,
   patch: { label?: string | null },
   actorId: string,
@@ -700,7 +740,7 @@ export async function updateScreen(
  * image, so "replace the screenshot, keep the rectangles" needs only an
  * UPDATE. Re-reads the row so the returned `mediaUrl` points at the new file.
  */
-export async function updateScreenImage(
+async function updateScreenImageInternal(
   id: string,
   image: { filename: string; mimeType: string; width: number; height: number },
   actorId: string,
@@ -715,15 +755,16 @@ export async function updateScreenImage(
   return getScreen(id);
 }
 
-export async function deleteScreen(
+async function deleteScreenInternal(
   id: string,
   actorId: string,
 ): Promise<boolean> {
   const existing = await getScreen(id);
   if (!existing) return false;
-  const result = await getPool().query(`DELETE FROM screens WHERE id = $1`, [
-    id,
-  ]);
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
+    `DELETE FROM screens WHERE id = $1`,
+    [id],
+  );
   if (result.rowCount! > 0) await touchBoard(existing.boardId, actorId);
   return result.rowCount! > 0;
 }
@@ -734,7 +775,7 @@ export async function deleteScreen(
  * duplicate, or foreign ids), or null is returned and nothing is written.
  * Positions become the array indices in one atomic UPDATE.
  */
-export async function reorderScreens(
+async function reorderScreensInternal(
   boardId: string,
   orderedIds: string[],
   actorId: string,
@@ -777,7 +818,7 @@ export async function getRegion(id: string): Promise<Region | null> {
   return row ? mapRegion(row) : null;
 }
 
-export async function createRegion(
+async function createRegionInternal(
   input: {
     id: string;
     screenId: string;
@@ -815,7 +856,7 @@ export async function createRegion(
   return mapRegion(row!);
 }
 
-export async function updateRegion(
+async function updateRegionInternal(
   id: string,
   patch: Partial<
     Pick<Region, "x" | "y" | "w" | "h" | "state" | "label" | "notes">
@@ -854,15 +895,16 @@ export async function updateRegion(
   return row ? mapRegion(row) : null;
 }
 
-export async function deleteRegion(
+async function deleteRegionInternal(
   id: string,
   actorId: string,
 ): Promise<boolean> {
   const existing = await getRegion(id);
   if (!existing) return false;
-  const result = await getPool().query(`DELETE FROM regions WHERE id = $1`, [
-    id,
-  ]);
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
+    `DELETE FROM regions WHERE id = $1`,
+    [id],
+  );
   if (result.rowCount! > 0) {
     const screen = await getScreen(existing.screenId);
     if (screen) await touchBoard(screen.boardId, actorId);
@@ -921,7 +963,7 @@ export async function createShareLink(input: {
 }
 
 export async function revokeShareLink(token: string): Promise<boolean> {
-  const result = await getPool().query(
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
     `UPDATE share_links SET revoked_at = $1 WHERE token = $2 AND revoked_at IS NULL`,
     [Date.now(), token],
   );
@@ -1013,7 +1055,7 @@ export async function createApiKey(input: {
 }
 
 export async function revokeApiKey(id: string): Promise<boolean> {
-  const result = await getPool().query(
+  const result = await (releaseTransaction.getStore() ?? getPool()).query(
     `UPDATE api_keys SET revoked_at = $1 WHERE id = $2 AND revoked_at IS NULL`,
     [Date.now(), id],
   );
@@ -1082,4 +1124,1928 @@ export async function findMemberByApiKeyHash(
       image: row.image,
     },
   };
+}
+
+// ----- release readiness ----------------------------------------------------
+
+async function inReleaseTransaction<T>(
+  operation: () => Promise<T>,
+): Promise<T> {
+  if (releaseTransaction.getStore()) return operation();
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const result = await releaseTransaction.run(client, operation);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "23505")
+        throw new ReleaseError(
+          409,
+          "This record or relationship already exists",
+        );
+      if (error.code === "23503" || error.code === "23514")
+        throw new ReleaseError(
+          400,
+          "The requested relationship or release context is invalid",
+        );
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** Shared lock order: workspace, board/source, assessment. All nested queries use this transaction. */
+async function lockReleaseWorkspace(workspaceId: string): Promise<void> {
+  await query(`SELECT id FROM workspaces WHERE id = $1 FOR UPDATE`, [
+    workspaceId,
+  ]);
+}
+
+async function lockReleaseBoard(
+  boardId: string,
+  workspaceId?: string,
+): Promise<Board> {
+  const row = await queryOne<BoardRow>(
+    `SELECT * FROM boards WHERE id = $1 FOR UPDATE`,
+    [boardId],
+  );
+  if (!row || (workspaceId && row.workspace_id !== workspaceId))
+    throw new ReleaseError(404, "board not found");
+  return mapBoard(row);
+}
+
+async function assertReleaseMember(
+  workspaceId: string,
+  actor: ReleaseActor,
+  owner = false,
+): Promise<void> {
+  if (owner && actor.credentialKind !== "session")
+    throw new ReleaseError(403, "A current owner browser session is required");
+  const row = await queryOne<{ role: string }>(
+    `SELECT role FROM workspace_members WHERE workspace_id=$1 AND user_id=$2 FOR SHARE`,
+    [workspaceId, actor.userId],
+  );
+  if (
+    !row ||
+    (owner ? row.role !== "owner" : !["owner", "editor"].includes(row.role))
+  )
+    throw new ReleaseError(
+      403,
+      owner
+        ? "Requires current owner membership"
+        : "Requires current editor membership",
+    );
+  if (actor.credentialKind === "api_key") {
+    if (!actor.credentialId)
+      throw new ReleaseError(403, "API key attribution is required");
+    const key = await queryOne<{ role: string }>(
+      `SELECT role FROM api_keys WHERE id=$1 AND workspace_id=$2 AND user_id=$3 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>$4) FOR SHARE`,
+      [actor.credentialId, workspaceId, actor.userId, Date.now()],
+    );
+    if (!key || !["owner", "editor"].includes(key.role))
+      throw new ReleaseError(
+        403,
+        "API key is revoked, expired, or lacks editor permission",
+      );
+  }
+}
+
+async function releaseAudit(
+  workspaceId: string,
+  boardId: string,
+  actor: ReleaseActor,
+  action: AuditAction,
+  targetType: string,
+  targetId: string,
+  meta: Record<string, unknown> = {},
+): Promise<void> {
+  await writeAudit({
+    workspaceId,
+    boardId,
+    actorId: actor.userId,
+    action,
+    targetType,
+    targetId,
+    meta: {
+      ...meta,
+      credentialKind: actor.credentialKind,
+      credentialId: actor.credentialId ?? null,
+    },
+  });
+}
+
+const RELEASE_NUMBER_FIELDS = new Set([
+  "definitionRevision",
+  "revision",
+  "createdAt",
+  "updatedAt",
+  "archivedAt",
+  "observedAt",
+  "receivedAt",
+  "sequence",
+  "checkRevision",
+  "maxAgeMs",
+  "expiresAt",
+  "revokedAt",
+  "sizeBytes",
+  "width",
+  "height",
+]);
+function releaseMap<T>(row: QueryResultRow): T {
+  const mapped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    const name = key.replace(/_([a-z])/g, (_, letter: string) =>
+      letter.toUpperCase(),
+    );
+    mapped[name] =
+      value !== null && RELEASE_NUMBER_FIELDS.has(name) ? Number(value) : value;
+  }
+  return mapped as T;
+}
+
+function releaseText(
+  data: Record<string, unknown>,
+  field: string,
+  max = 200,
+  fallback?: string,
+): string {
+  const value = data[field] === undefined ? fallback : data[field];
+  if (typeof value !== "string" || !value.trim() || value.trim().length > max)
+    throw new ReleaseError(
+      400,
+      `${field} must be nonempty text of at most ${max} characters`,
+    );
+  return value.trim();
+}
+function releaseOptionalText(
+  data: Record<string, unknown>,
+  field: string,
+  max = 2000,
+  fallback = "",
+): string {
+  const value = data[field] === undefined ? fallback : data[field];
+  if (typeof value !== "string" || value.trim().length > max)
+    throw new ReleaseError(
+      400,
+      `${field} must be text of at most ${max} characters`,
+    );
+  return value.trim();
+}
+function releaseBoolean(
+  data: Record<string, unknown>,
+  field: string,
+  fallback?: boolean,
+): boolean {
+  const value = data[field] === undefined ? fallback : data[field];
+  if (typeof value !== "boolean")
+    throw new ReleaseError(400, `${field} must be a boolean`);
+  return value;
+}
+function releaseInteger(
+  data: Record<string, unknown>,
+  field: string,
+  min: number,
+  max: number,
+  fallback?: number,
+): number {
+  const value = data[field] === undefined ? fallback : data[field];
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < min ||
+    value > max
+  )
+    throw new ReleaseError(
+      400,
+      `${field} must be a whole number between ${min} and ${max}`,
+    );
+  return value;
+}
+function releaseUrl(
+  data: Record<string, unknown>,
+  field: string,
+  fallback: string | null = null,
+): string | null {
+  const value = data[field] === undefined ? fallback : data[field];
+  if (value === null || value === "") return null;
+  if (typeof value !== "string" || value.length > 2000)
+    throw new ReleaseError(400, `${field} must be an HTTP(S) URL`);
+  try {
+    const url = new URL(value);
+    if (
+      !["http:", "https:"].includes(url.protocol) ||
+      url.username ||
+      url.password
+    )
+      throw new Error();
+    return url.toString();
+  } catch {
+    throw new ReleaseError(
+      400,
+      `${field} must be an HTTP(S) URL without embedded credentials`,
+    );
+  }
+}
+function releaseRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new ReleaseError(400, "data must be an object");
+  return value as Record<string, unknown>;
+}
+function releaseCommandId(type: string, supplied: unknown): string {
+  const creates = [
+    "capability.create",
+    "component.create",
+    "dependency.create",
+    "check.create",
+    "evidence.create",
+  ].includes(type);
+  const requiresId = [
+    "capability.update",
+    "capability.archive",
+    "component.update",
+    "component.archive",
+    "dependency.delete",
+    "check.revise",
+    "check.archive",
+  ].includes(type);
+  if (creates || !requiresId) {
+    if (supplied !== undefined)
+      throw new ReleaseError(
+        400,
+        "This command does not accept id; resource IDs are generated by the server",
+      );
+    return newId();
+  }
+  if (typeof supplied !== "string" || !/^[A-Za-z0-9_-]{1,200}$/.test(supplied))
+    throw new ReleaseError(400, "This command requires a valid resource id");
+  return supplied;
+}
+
+async function releaseOwnerUser(
+  data: Record<string, unknown>,
+  workspaceId: string,
+  fallback: string | null = null,
+): Promise<string | null> {
+  if (data.ownerUserId === undefined) return fallback;
+  if (data.ownerUserId === null || data.ownerUserId === "") return null;
+  const id = releaseText(data, "ownerUserId");
+  if (!(await getMembership(workspaceId, id)))
+    throw new ReleaseError(
+      400,
+      "ownerUserId must identify a current workspace member",
+    );
+  return id;
+}
+async function ensureGraphLimit(
+  workspaceId: string,
+  table: "components" | "component_dependencies",
+): Promise<void> {
+  const sql =
+    table === "components"
+      ? `SELECT COUNT(*)::int AS count FROM components WHERE workspace_id=$1`
+      : `SELECT COUNT(*)::int AS count FROM component_dependencies d JOIN components c ON c.id=d.consumer_id WHERE c.workspace_id=$1`;
+  const row = await queryOne<{ count: number }>(sql, [workspaceId]);
+  if ((row?.count ?? 0) >= (table === "components" ? 500 : 2000))
+    throw new ReleaseError(400, "Workspace architecture size limit reached");
+}
+
+export async function resolveCapabilityBoard(
+  id: string,
+  workspaceId: string,
+): Promise<string | null> {
+  const row = await queryOne<{ board_id: string }>(
+    `SELECT c.board_id FROM capabilities c JOIN boards b ON b.id=c.board_id WHERE c.id=$1 AND b.workspace_id=$2`,
+    [id, workspaceId],
+  );
+  return row?.board_id ?? null;
+}
+export async function resolveRegionBoard(
+  id: string,
+  workspaceId: string,
+): Promise<string | null> {
+  const row = await queryOne<{ board_id: string }>(
+    `SELECT s.board_id FROM regions r JOIN screens s ON s.id=r.screen_id JOIN boards b ON b.id=s.board_id WHERE r.id=$1 AND b.workspace_id=$2`,
+    [id, workspaceId],
+  );
+  return row?.board_id ?? null;
+}
+export async function readWorkspaceComponents(
+  workspaceId: string,
+): Promise<ProductComponent[]> {
+  return (
+    await query(
+      `SELECT c.*, (c.owner_user_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=c.workspace_id AND m.user_id=c.owner_user_id)) AS owner_needs_reassignment FROM components c WHERE c.workspace_id=$1 ORDER BY c.name,c.id`,
+      [workspaceId],
+    )
+  ).map((row) => releaseMap<ProductComponent>(row));
+}
+
+async function readProductContextInternal(
+  boardId: string,
+  workspaceId: string,
+): Promise<ProductContext | null> {
+  const board = await getBoard(boardId);
+  if (!board || board.workspaceId !== workspaceId) return null;
+  const capabilities = (
+    await query(
+      `SELECT c.*, (c.owner_user_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=$2 AND m.user_id=c.owner_user_id)) AS owner_needs_reassignment FROM capabilities c WHERE c.board_id=$1 ORDER BY c.created_at,c.id`,
+      [boardId, workspaceId],
+    )
+  ).map((row) => releaseMap<Capability>(row));
+  const components = await readWorkspaceComponents(workspaceId);
+  const capabilityComponents = (
+    await query(
+      `SELECT cc.* FROM capability_components cc JOIN capabilities c ON c.id=cc.capability_id WHERE c.board_id=$1 ORDER BY cc.capability_id,cc.component_id`,
+      [boardId],
+    )
+  ).map((row) => releaseMap<CapabilityComponent>(row));
+  const dependencies = (
+    await query(
+      `SELECT d.* FROM component_dependencies d JOIN components c ON c.id=d.consumer_id WHERE c.workspace_id=$1 ORDER BY d.id`,
+      [workspaceId],
+    )
+  ).map((row) => releaseMap<ComponentDependency>(row));
+  const regionCapabilities = (
+    await query(
+      `SELECT rc.* FROM region_capabilities rc JOIN capabilities c ON c.id=rc.capability_id WHERE c.board_id=$1 ORDER BY rc.region_id,rc.capability_id`,
+      [boardId],
+    )
+  ).map((row) => releaseMap<RegionCapability>(row));
+  const screens = (await getBoardWithScreens(boardId))?.screens ?? [];
+  const releases = (
+    await query(
+      `SELECT * FROM release_assessments WHERE board_id=$1 ORDER BY created_at DESC,id`,
+      [boardId],
+    )
+  ).map((row) => releaseMap<ReleaseAssessment>(row));
+  return {
+    board,
+    capabilities,
+    components,
+    capabilityComponents,
+    dependencies,
+    regionCapabilities,
+    screens,
+    releases,
+  };
+}
+
+async function readReleaseDetailInternal(
+  releaseId: string,
+  workspaceId: string,
+): Promise<ReleaseDetail | null> {
+  const row = await queryOne(
+    `SELECT r.* FROM release_assessments r JOIN boards b ON b.id=r.board_id WHERE r.id=$1 AND b.workspace_id=$2`,
+    [releaseId, workspaceId],
+  );
+  if (!row) return null;
+  const assessment = releaseMap<ReleaseAssessment>(row);
+  const scope = (
+    await query(
+      `SELECT * FROM release_capabilities WHERE assessment_id=$1 ORDER BY capability_id`,
+      [releaseId],
+    )
+  ).map((r) => releaseMap<ReleaseCapability>(r));
+  const checks = (
+    await query(
+      `SELECT c.id,c.assessment_id,c.subject_type,c.subject_id,c.archived_at,d.revision,d.claim,d.category,d.required,d.owner_label,d.method,d.environment,d.max_age_ms FROM release_checks c JOIN release_check_revisions d ON d.check_id=c.id AND d.revision=c.active_revision WHERE c.assessment_id=$1 ORDER BY c.id`,
+      [releaseId],
+    )
+  ).map((r) => releaseMap<ReleaseCheck>(r));
+  const evidence = (
+    await query(
+      `SELECT * FROM release_evidence WHERE assessment_id=$1 ORDER BY observed_at DESC,sequence DESC`,
+      [releaseId],
+    )
+  ).map((r) => releaseMap<ReleaseEvidence>(r));
+  const decisions = (
+    await query(
+      `SELECT * FROM release_decisions WHERE assessment_id=$1 ORDER BY created_at DESC,id`,
+      [releaseId],
+    )
+  ).map((r) => releaseMap<ReleaseDecision>(r));
+  const shares = (
+    await query(
+      `SELECT s.* FROM release_share_links s JOIN release_decisions d ON d.id=s.decision_id WHERE d.assessment_id=$1 ORDER BY s.created_at DESC`,
+      [releaseId],
+    )
+  ).map((r) => releaseMap<ReleaseShareLink>(r));
+  const assets = (
+    await query(
+      `SELECT * FROM release_assets WHERE assessment_id=$1 ORDER BY created_at,id`,
+      [releaseId],
+    )
+  ).map((r) => releaseMap<ReleaseAsset>(r));
+  return { assessment, scope, checks, evidence, decisions, shares, assets };
+}
+
+/** Existing visual writes call this while their board row is locked. */
+export async function bumpProductReviews(boardId: string): Promise<void> {
+  await query(
+    `SELECT id FROM release_assessments WHERE board_id=$1 ORDER BY id FOR UPDATE`,
+    [boardId],
+  );
+  await query(
+    `UPDATE release_assessments SET revision=revision+1,updated_at=$2 WHERE board_id=$1`,
+    [boardId, Date.now()],
+  );
+}
+export async function withReleaseSourceLock<T>(
+  boardId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  return inReleaseTransaction(async () => {
+    const board = await getBoard(boardId);
+    if (!board) throw new ReleaseError(404, "board not found");
+    await lockReleaseWorkspace(board.workspaceId);
+    await lockReleaseBoard(boardId);
+    return operation();
+  });
+}
+
+async function requireCapability(
+  id: string,
+  boardId: string,
+): Promise<Capability> {
+  const row = await queryOne(
+    `SELECT * FROM capabilities WHERE id=$1 AND board_id=$2`,
+    [id, boardId],
+  );
+  if (!row) throw new ReleaseError(404, "capability not found");
+  return releaseMap<Capability>(row);
+}
+async function requireComponent(
+  id: string,
+  workspaceId: string,
+): Promise<ProductComponent> {
+  const row = await queryOne(
+    `SELECT * FROM components WHERE id=$1 AND workspace_id=$2`,
+    [id, workspaceId],
+  );
+  if (!row) throw new ReleaseError(404, "component not found");
+  return releaseMap<ProductComponent>(row);
+}
+
+export async function mutateProduct(
+  workspaceId: string,
+  boardId: string,
+  command: ProductMutation,
+  actor: ReleaseActor,
+): Promise<ProductContext> {
+  const data = releaseRecord(command.data);
+  return inReleaseTransaction(async () => {
+    await lockReleaseWorkspace(workspaceId);
+    await lockReleaseBoard(boardId, workspaceId);
+    await assertReleaseMember(workspaceId, actor);
+    const now = Date.now();
+    const id = releaseCommandId(command.type, command.id);
+    let allBoards = false;
+    switch (command.type) {
+      case "capability.create": {
+        const count = await queryOne<{ count: number }>(
+          `SELECT COUNT(*)::int AS count FROM capabilities WHERE board_id=$1`,
+          [boardId],
+        );
+        if ((count?.count ?? 0) >= 500)
+          throw new ReleaseError(400, "Board capability size limit reached");
+        await query(
+          `INSERT INTO capabilities (id,board_id,name,outcome,owner_label,owner_user_id,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$7)`,
+          [
+            id,
+            boardId,
+            releaseText(data, "name"),
+            releaseText(data, "outcome", 2000),
+            releaseText(data, "ownerLabel"),
+            await releaseOwnerUser(data, workspaceId),
+            now,
+          ],
+        );
+        break;
+      }
+      case "capability.update": {
+        const capability = await requireCapability(id, boardId);
+        if (capability.archivedAt !== null)
+          throw new ReleaseError(409, "Archived capabilities cannot be edited");
+        if (
+          data.definitionRevision !== undefined &&
+          data.definitionRevision !== capability.definitionRevision
+        )
+          throw new ReleaseError(
+            409,
+            "Capability changed; refresh before editing",
+          );
+        const name = releaseText(data, "name", 200, capability.name);
+        const outcome = releaseText(data, "outcome", 2000, capability.outcome);
+        const meaningChanged = outcome !== capability.outcome;
+        await query(
+          `UPDATE capabilities SET name=$2,outcome=$3,owner_label=$4,owner_user_id=$5,definition_revision=definition_revision+$6,updated_at=$7 WHERE id=$1`,
+          [
+            id,
+            name,
+            outcome,
+            releaseText(data, "ownerLabel", 200, capability.ownerLabel),
+            await releaseOwnerUser(data, workspaceId, capability.ownerUserId),
+            meaningChanged ? 1 : 0,
+            now,
+          ],
+        );
+        // Metadata follows current ownership; only the outcome definition is pinned.
+        await query(
+          `UPDATE release_capabilities SET name=$2,owner_label=$3 WHERE capability_id=$1`,
+          [
+            id,
+            name,
+            releaseText(data, "ownerLabel", 200, capability.ownerLabel),
+          ],
+        );
+        break;
+      }
+      case "capability.archive":
+        await requireCapability(id, boardId);
+        await query(
+          `UPDATE capabilities SET archived_at=COALESCE(archived_at,$2),updated_at=$2 WHERE id=$1`,
+          [id, now],
+        );
+        break;
+      case "component.create":
+        await ensureGraphLimit(workspaceId, "components");
+        if (!COMPONENT_KINDS.includes(data.kind as ProductComponent["kind"]))
+          throw new ReleaseError(400, "Invalid component kind");
+        await query(
+          `INSERT INTO components(id,workspace_id,name,kind,owner_label,owner_user_id,description,reference_url,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)`,
+          [
+            id,
+            workspaceId,
+            releaseText(data, "name"),
+            data.kind,
+            releaseText(data, "ownerLabel"),
+            await releaseOwnerUser(data, workspaceId),
+            releaseOptionalText(data, "description"),
+            releaseUrl(data, "referenceUrl"),
+            now,
+          ],
+        );
+        allBoards = true;
+        break;
+      case "component.update": {
+        const component = await requireComponent(id, workspaceId);
+        if (component.archivedAt !== null)
+          throw new ReleaseError(409, "Archived components cannot be edited");
+        const kind = data.kind ?? component.kind;
+        if (!COMPONENT_KINDS.includes(kind as ProductComponent["kind"]))
+          throw new ReleaseError(400, "Invalid component kind");
+        await query(
+          `UPDATE components SET name=$2,kind=$3,owner_label=$4,owner_user_id=$5,description=$6,reference_url=$7,updated_at=$8 WHERE id=$1`,
+          [
+            id,
+            releaseText(data, "name", 200, component.name),
+            kind,
+            releaseText(data, "ownerLabel", 200, component.ownerLabel),
+            await releaseOwnerUser(data, workspaceId, component.ownerUserId),
+            releaseOptionalText(
+              data,
+              "description",
+              2000,
+              component.description,
+            ),
+            releaseUrl(data, "referenceUrl", component.referenceUrl),
+            now,
+          ],
+        );
+        allBoards = true;
+        break;
+      }
+      case "component.archive":
+        await requireComponent(id, workspaceId);
+        await query(
+          `UPDATE components SET archived_at=COALESCE(archived_at,$2),updated_at=$2 WHERE id=$1`,
+          [id, now],
+        );
+        allBoards = true;
+        break;
+      case "capability_component.put":
+      case "capability_component.delete": {
+        const capabilityId = releaseText(data, "capabilityId");
+        const componentId = releaseText(data, "componentId");
+        const capability = await requireCapability(capabilityId, boardId);
+        const component = await requireComponent(componentId, workspaceId);
+        if (command.type.endsWith("put")) {
+          if (capability.archivedAt !== null || component.archivedAt !== null)
+            throw new ReleaseError(409, "Archived entities cannot be linked");
+          await query(
+            `INSERT INTO capability_components(capability_id,component_id,relation,required,description) VALUES($1,$2,$3,$4,$5) ON CONFLICT(capability_id,component_id) DO UPDATE SET relation=EXCLUDED.relation,required=EXCLUDED.required,description=EXCLUDED.description`,
+            [
+              capabilityId,
+              componentId,
+              releaseText(data, "relation"),
+              releaseBoolean(data, "required", true),
+              releaseOptionalText(data, "description"),
+            ],
+          );
+        } else
+          await query(
+            `DELETE FROM capability_components WHERE capability_id=$1 AND component_id=$2`,
+            [capabilityId, componentId],
+          );
+        break;
+      }
+      case "dependency.create": {
+        await ensureGraphLimit(workspaceId, "component_dependencies");
+        const consumerId = releaseText(data, "consumerId");
+        const providerId = releaseText(data, "providerId");
+        const consumer = await requireComponent(consumerId, workspaceId);
+        const provider = await requireComponent(providerId, workspaceId);
+        if (consumer.archivedAt !== null || provider.archivedAt !== null)
+          throw new ReleaseError(409, "Archived components cannot be linked");
+        await query(
+          `INSERT INTO component_dependencies(id,consumer_id,provider_id,relation,required,description) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(consumer_id,provider_id,relation) DO UPDATE SET required=EXCLUDED.required,description=EXCLUDED.description`,
+          [
+            id,
+            consumerId,
+            providerId,
+            releaseText(data, "relation"),
+            releaseBoolean(data, "required", true),
+            releaseOptionalText(data, "description"),
+          ],
+        );
+        allBoards = true;
+        break;
+      }
+      case "dependency.delete":
+        if (
+          data.consumerId !== undefined &&
+          !(await queryOne(
+            `SELECT id FROM component_dependencies WHERE id=$1 AND consumer_id=$2`,
+            [id, releaseText(data, "consumerId")],
+          ))
+        )
+          throw new ReleaseError(404, "dependency not found for this consumer");
+        if (
+          !(await queryOne(
+            `SELECT d.id FROM component_dependencies d JOIN components c ON c.id=d.consumer_id WHERE d.id=$1 AND c.workspace_id=$2`,
+            [id, workspaceId],
+          ))
+        )
+          throw new ReleaseError(404, "dependency not found");
+        await query(`DELETE FROM component_dependencies WHERE id=$1`, [id]);
+        allBoards = true;
+        break;
+      case "region_capability.put":
+      case "region_capability.delete": {
+        const regionId = releaseText(data, "regionId");
+        const capabilityId = releaseText(data, "capabilityId");
+        if ((await resolveRegionBoard(regionId, workspaceId)) !== boardId)
+          throw new ReleaseError(404, "region not found in board");
+        const capability = await requireCapability(capabilityId, boardId);
+        if (command.type.endsWith("put")) {
+          if (capability.archivedAt !== null)
+            throw new ReleaseError(409, "Archived capability cannot be linked");
+          await query(
+            `INSERT INTO region_capabilities(region_id,capability_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,
+            [regionId, capabilityId],
+          );
+        } else
+          await query(
+            `DELETE FROM region_capabilities WHERE region_id=$1 AND capability_id=$2`,
+            [regionId, capabilityId],
+          );
+        break;
+      }
+      default:
+        throw new ReleaseError(400, "Unknown product mutation");
+    }
+    if (allBoards) {
+      const boards = await query<{ id: string }>(
+        `SELECT id FROM boards WHERE workspace_id=$1 ORDER BY id FOR UPDATE`,
+        [workspaceId],
+      );
+      for (const board of boards) await bumpProductReviews(board.id);
+    } else await bumpProductReviews(boardId);
+    await touchBoard(boardId, actor.userId);
+    await releaseAudit(
+      workspaceId,
+      boardId,
+      actor,
+      command.type,
+      command.type.startsWith("component") ? "component" : "capability",
+      id,
+      { type: command.type, data },
+    );
+    return (await readProductContext(boardId, workspaceId))!;
+  });
+}
+
+async function lockAssessment(
+  releaseId: string,
+  workspaceId: string,
+): Promise<ReleaseAssessment> {
+  const found = await queryOne<{ board_id: string }>(
+    `SELECT r.board_id FROM release_assessments r JOIN boards b ON b.id=r.board_id WHERE r.id=$1 AND b.workspace_id=$2`,
+    [releaseId, workspaceId],
+  );
+  if (!found) throw new ReleaseError(404, "assessment not found");
+  await lockReleaseWorkspace(workspaceId);
+  await lockReleaseBoard(found.board_id, workspaceId);
+  const row = await queryOne(
+    `SELECT * FROM release_assessments WHERE id=$1 FOR UPDATE`,
+    [releaseId],
+  );
+  if (!row) throw new ReleaseError(404, "assessment not found");
+  return releaseMap<ReleaseAssessment>(row);
+}
+function expectReleaseRevision(
+  assessment: ReleaseAssessment,
+  expected: unknown,
+): void {
+  if (
+    typeof expected !== "number" ||
+    !Number.isSafeInteger(expected) ||
+    expected < 1
+  )
+    throw new ReleaseError(400, "expectedRevision must be a positive integer");
+  if (expected !== assessment.revision)
+    throw new ReleaseError(
+      409,
+      "Assessment changed; refresh the reviewed revision",
+    );
+}
+async function incrementReleaseRevision(id: string): Promise<void> {
+  await query(
+    `UPDATE release_assessments SET revision=revision+1,updated_at=$2 WHERE id=$1`,
+    [id, Date.now()],
+  );
+}
+function validateCandidateRef(value: string): void {
+  if (
+    /^(latest|main|master|develop|development|head)$/i.test(value) ||
+    /^refs\/heads\//i.test(value) ||
+    /:latest$/i.test(value)
+  )
+    throw new ReleaseError(
+      400,
+      "candidateRef must identify an immutable artifact or pinned manifest, not a branch or latest tag",
+    );
+}
+export async function createReleaseAssessment(
+  workspaceId: string,
+  boardId: string,
+  input: CreateAssessmentInput,
+  actor: ReleaseActor,
+): Promise<ReleaseDetail> {
+  const data = releaseRecord(input);
+  const candidateRef = releaseText(data, "candidateRef", 4000);
+  validateCandidateRef(candidateRef);
+  if (
+    !Array.isArray(data.capabilityIds) ||
+    data.capabilityIds.length > 500 ||
+    !data.capabilityIds.every((id) => typeof id === "string") ||
+    new Set(data.capabilityIds).size !== data.capabilityIds.length
+  )
+    throw new ReleaseError(
+      400,
+      "capabilityIds must be a unique list of at most 500 IDs",
+    );
+  return inReleaseTransaction(async () => {
+    await lockReleaseWorkspace(workspaceId);
+    await lockReleaseBoard(boardId, workspaceId);
+    await assertReleaseMember(workspaceId, actor);
+    const id = newId();
+    const now = Date.now();
+    await query(
+      `INSERT INTO release_assessments(id,board_id,candidate_label,candidate_ref,validation_environment,target_environment,audience,configuration_ref,owner_label,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$10)`,
+      [
+        id,
+        boardId,
+        releaseText(data, "candidateLabel"),
+        candidateRef,
+        releaseText(data, "validationEnvironment"),
+        releaseText(data, "targetEnvironment"),
+        releaseText(data, "audience", 1000),
+        releaseText(data, "configurationRef", 4000),
+        releaseText(data, "ownerLabel"),
+        now,
+      ],
+    );
+    for (const capabilityId of data.capabilityIds as string[]) {
+      const capability = await requireCapability(capabilityId, boardId);
+      if (capability.archivedAt !== null)
+        throw new ReleaseError(400, "Cannot include an archived capability");
+      await query(
+        `INSERT INTO release_capabilities(assessment_id,capability_id,name,outcome,definition_revision,owner_label) VALUES($1,$2,$3,$4,$5,$6)`,
+        [
+          id,
+          capability.id,
+          capability.name,
+          capability.outcome,
+          capability.definitionRevision,
+          capability.ownerLabel,
+        ],
+      );
+    }
+    await releaseAudit(
+      workspaceId,
+      boardId,
+      actor,
+      "release.create",
+      "release",
+      id,
+      { capabilityIds: data.capabilityIds },
+    );
+    return (await readReleaseDetail(id, workspaceId))!;
+  });
+}
+
+async function insertCheckRevision(
+  check: ReleaseCheck,
+  now = Date.now(),
+): Promise<void> {
+  await query(
+    `INSERT INTO release_check_revisions(check_id,revision,claim,category,required,owner_label,method,environment,max_age_ms,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [
+      check.id,
+      check.revision,
+      check.claim,
+      check.category,
+      check.required,
+      check.ownerLabel,
+      check.method,
+      check.environment,
+      check.maxAgeMs,
+      now,
+    ],
+  );
+}
+function checkDefinition(
+  data: Record<string, unknown>,
+  assessment: ReleaseAssessment,
+  old?: ReleaseCheck,
+): Pick<
+  ReleaseCheck,
+  | "claim"
+  | "category"
+  | "required"
+  | "ownerLabel"
+  | "method"
+  | "environment"
+  | "maxAgeMs"
+> {
+  const category = data.category ?? old?.category ?? "functional";
+  if (!CHECK_CATEGORIES.includes(category as ReleaseCheck["category"]))
+    throw new ReleaseError(400, "Invalid check category");
+  const environment = releaseText(
+    data,
+    "environment",
+    200,
+    old?.environment ?? assessment.validationEnvironment,
+  );
+  if (
+    ![assessment.validationEnvironment, assessment.targetEnvironment].includes(
+      environment,
+    )
+  )
+    throw new ReleaseError(
+      400,
+      "Check environment must be the assessment validation or target environment",
+    );
+  return {
+    claim: releaseText(data, "claim", 2000, old?.claim),
+    category: category as ReleaseCheck["category"],
+    required: releaseBoolean(data, "required", old?.required ?? true),
+    ownerLabel: releaseText(
+      data,
+      "ownerLabel",
+      200,
+      old?.ownerLabel ?? assessment.ownerLabel,
+    ),
+    method: releaseText(data, "method", 1000, old?.method ?? "manual"),
+    environment,
+    maxAgeMs: releaseInteger(
+      data,
+      "maxAgeMs",
+      1,
+      366 * 86400000,
+      old?.maxAgeMs ?? 86400000,
+    ),
+  };
+}
+
+function evidenceInput(
+  data: Record<string, unknown>,
+  assessment: ReleaseAssessment,
+  actor: ReleaseActor,
+): Omit<ReleaseEvidence, "id" | "sequence" | "receivedAt"> {
+  const result = data.result;
+  if (!["pass", "fail", "inconclusive"].includes(result as string))
+    throw new ReleaseError(400, "result must be pass, fail or inconclusive");
+  return {
+    assessmentId: assessment.id,
+    checkId: releaseText(data, "checkId"),
+    checkRevision: releaseInteger(data, "checkRevision", 1, 2147483647),
+    candidateRef: releaseText(data, "candidateRef", 4000),
+    environment: releaseText(data, "environment"),
+    audience: releaseText(data, "audience", 1000),
+    configurationRef: releaseText(data, "configurationRef", 4000),
+    result: result as ReleaseEvidence["result"],
+    summary: releaseText(data, "summary", 10000),
+    source: releaseText(data, "source"),
+    runRef: releaseText(data, "runRef", 1000),
+    eventId: releaseText(data, "eventId", 1000),
+    observedAt: releaseInteger(data, "observedAt", 1, Date.now()),
+    actorId: actor.userId,
+    actorName: actor.name,
+    credentialKind: actor.credentialKind,
+    credentialId: actor.credentialId ?? null,
+    referenceUrl: releaseUrl(data, "referenceUrl"),
+  };
+}
+function sameEvidence(
+  existing: ReleaseEvidence,
+  input: Omit<ReleaseEvidence, "id" | "sequence" | "receivedAt">,
+): boolean {
+  const fields: (keyof typeof input)[] = [
+    "assessmentId",
+    "checkId",
+    "checkRevision",
+    "candidateRef",
+    "environment",
+    "audience",
+    "configurationRef",
+    "result",
+    "summary",
+    "source",
+    "runRef",
+    "eventId",
+    "observedAt",
+    "referenceUrl",
+  ];
+  return (
+    fields.every((field) => existing[field] === input[field]) &&
+    existing.actorId === input.actorId &&
+    existing.credentialKind === input.credentialKind &&
+    (existing.credentialId ?? null) === (input.credentialId ?? null)
+  );
+}
+
+export async function mutateRelease(
+  workspaceId: string,
+  releaseId: string,
+  command: ReleaseMutation,
+  actor: ReleaseActor,
+): Promise<ReleaseDetail> {
+  const data = releaseRecord(command.data);
+  return inReleaseTransaction(async () => {
+    const assessment = await lockAssessment(releaseId, workspaceId);
+    await assertReleaseMember(workspaceId, actor);
+    const id = releaseCommandId(command.type, command.id);
+    let evidence: ReturnType<typeof evidenceInput> | null = null;
+    if (command.type === "evidence.create") {
+      evidence = evidenceInput(data, assessment, actor);
+      const prior = await queryOne(
+        `SELECT * FROM release_evidence WHERE assessment_id=$1 AND source=$2 AND event_id=$3`,
+        [releaseId, evidence.source, evidence.eventId],
+      );
+      if (prior) {
+        if (!sameEvidence(releaseMap<ReleaseEvidence>(prior), evidence))
+          throw new ReleaseError(
+            409,
+            "Evidence event identity was already used with a different payload or producer",
+          );
+        return (await readReleaseDetail(releaseId, workspaceId))!;
+      }
+    }
+    expectReleaseRevision(assessment, command.expectedRevision);
+    const now = Date.now();
+    let action: AuditAction;
+    switch (command.type) {
+      case "scope.put": {
+        const capabilityId = releaseText(data, "capabilityId");
+        const capability = await requireCapability(
+          capabilityId,
+          assessment.boardId,
+        );
+        const included = releaseBoolean(data, "included", true);
+        if (included && capability.archivedAt !== null)
+          throw new ReleaseError(409, "Cannot include an archived capability");
+        const existingRow = await queryOne(
+          `SELECT * FROM release_capabilities WHERE assessment_id=$1 AND capability_id=$2`,
+          [releaseId, capabilityId],
+        );
+        const existing = existingRow
+          ? releaseMap<ReleaseCapability>(existingRow)
+          : null;
+        const adopt = releaseBoolean(data, "adoptLatest", false);
+        const pinned = adopt || !existing ? capability : existing;
+        const reason = releaseOptionalText(
+          data,
+          "scopeReason",
+          2000,
+          existing?.scopeReason ?? "",
+        );
+        if (!included && !reason)
+          throw new ReleaseError(400, "An exclusion requires a scopeReason");
+        await query(
+          `INSERT INTO release_capabilities(assessment_id,capability_id,name,outcome,definition_revision,owner_label,included,scope_reason) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(assessment_id,capability_id) DO UPDATE SET name=EXCLUDED.name,outcome=EXCLUDED.outcome,definition_revision=EXCLUDED.definition_revision,owner_label=EXCLUDED.owner_label,included=EXCLUDED.included,scope_reason=EXCLUDED.scope_reason`,
+          [
+            releaseId,
+            capabilityId,
+            pinned.name,
+            pinned.outcome,
+            pinned.definitionRevision,
+            pinned.ownerLabel,
+            included,
+            reason,
+          ],
+        );
+        if (!included)
+          await query(
+            `UPDATE release_checks SET archived_at=COALESCE(archived_at,$3) WHERE assessment_id=$1 AND subject_type='capability' AND subject_id=$2`,
+            [releaseId, capabilityId, now],
+          );
+        if (
+          adopt &&
+          existing &&
+          existing.definitionRevision !== capability.definitionRevision
+        ) {
+          const detail = (await readReleaseDetail(releaseId, workspaceId))!;
+          for (const check of detail.checks.filter(
+            (c) =>
+              c.subjectType === "capability" &&
+              c.subjectId === capabilityId &&
+              c.archivedAt === null,
+          )) {
+            await insertCheckRevision(
+              { ...check, revision: check.revision + 1 },
+              now,
+            );
+            await query(
+              `UPDATE release_checks SET active_revision=active_revision+1 WHERE id=$1`,
+              [check.id],
+            );
+          }
+        }
+        action = "release.scope";
+        break;
+      }
+      case "check.create": {
+        const detail = (await readReleaseDetail(releaseId, workspaceId))!;
+        if (detail.checks.length >= 500)
+          throw new ReleaseError(400, "Assessment check size limit reached");
+        const subjectType = data.subjectType;
+        if (
+          !["capability", "component", "release"].includes(
+            subjectType as string,
+          )
+        )
+          throw new ReleaseError(400, "Invalid check subjectType");
+        let subjectId: string | null = null;
+        if (subjectType === "release") {
+          if (
+            data.subjectId !== undefined &&
+            data.subjectId !== null &&
+            data.subjectId !== ""
+          )
+            throw new ReleaseError(
+              400,
+              "Release checks must not have subjectId",
+            );
+        } else {
+          subjectId = releaseText(data, "subjectId");
+          if (subjectType === "capability") {
+            if (
+              !detail.scope.some(
+                (c) => c.capabilityId === subjectId && c.included,
+              )
+            )
+              throw new ReleaseError(
+                400,
+                "Check capability must be included in this assessment",
+              );
+          } else {
+            const component = await requireComponent(subjectId, workspaceId);
+            if (component.archivedAt !== null)
+              throw new ReleaseError(409, "Cannot check an archived component");
+            const context = (await readProductContext(
+              assessment.boardId,
+              workspaceId,
+            ))!;
+            const related = new Set(
+              context.capabilityComponents
+                .filter((link) =>
+                  detail.scope.some(
+                    (c) => c.included && c.capabilityId === link.capabilityId,
+                  ),
+                )
+                .map((link) => link.componentId),
+            );
+            for (let changed = true; changed;) {
+              changed = false;
+              for (const edge of context.dependencies)
+                if (
+                  related.has(edge.consumerId) &&
+                  !related.has(edge.providerId)
+                ) {
+                  related.add(edge.providerId);
+                  changed = true;
+                }
+            }
+            if (!related.has(subjectId))
+              throw new ReleaseError(
+                400,
+                "Check component must be linked to an included capability or its dependencies",
+              );
+          }
+        }
+        const check: ReleaseCheck = {
+          id,
+          assessmentId: releaseId,
+          subjectType: subjectType as ReleaseCheck["subjectType"],
+          subjectId,
+          revision: 1,
+          archivedAt: null,
+          ...checkDefinition(data, assessment),
+        };
+        await query(
+          `INSERT INTO release_checks(id,assessment_id,subject_type,subject_id) VALUES($1,$2,$3,$4)`,
+          [id, releaseId, subjectType, subjectId],
+        );
+        await insertCheckRevision(check, now);
+        action = "release.check_create";
+        break;
+      }
+      case "check.revise": {
+        const check = (await readReleaseDetail(
+          releaseId,
+          workspaceId,
+        ))!.checks.find((c) => c.id === id);
+        if (!check) throw new ReleaseError(404, "check not found");
+        if (check.archivedAt !== null)
+          throw new ReleaseError(
+            409,
+            "Archived check cannot be revised; create a new check",
+          );
+        if (
+          (data.subjectType !== undefined &&
+            data.subjectType !== check.subjectType) ||
+          (data.subjectId !== undefined && data.subjectId !== check.subjectId)
+        )
+          throw new ReleaseError(
+            400,
+            "Check subjects are immutable; create another check",
+          );
+        await insertCheckRevision(
+          {
+            ...check,
+            ...checkDefinition(data, assessment, check),
+            revision: check.revision + 1,
+          },
+          now,
+        );
+        await query(
+          `UPDATE release_checks SET active_revision=active_revision+1 WHERE id=$1`,
+          [id],
+        );
+        action = "release.check_revise";
+        break;
+      }
+      case "check.archive":
+        if (
+          !(await queryOne(
+            `SELECT id FROM release_checks WHERE id=$1 AND assessment_id=$2`,
+            [id, releaseId],
+          ))
+        )
+          throw new ReleaseError(404, "check not found");
+        await query(
+          `UPDATE release_checks SET archived_at=COALESCE(archived_at,$2) WHERE id=$1`,
+          [id, now],
+        );
+        action = "release.check_archive";
+        break;
+      case "evidence.create": {
+        if (!evidence) throw new ReleaseError(400, "Invalid evidence");
+        const check = (await readReleaseDetail(
+          releaseId,
+          workspaceId,
+        ))!.checks.find((c) => c.id === evidence.checkId);
+        if (!check || check.archivedAt !== null)
+          throw new ReleaseError(404, "active check not found");
+        if (evidence.checkRevision !== check.revision)
+          throw new ReleaseError(
+            409,
+            "Check definition changed; submit evidence for its current revision",
+          );
+        if (
+          evidence.candidateRef !== assessment.candidateRef ||
+          evidence.environment !== check.environment ||
+          evidence.audience !== assessment.audience ||
+          evidence.configurationRef !== assessment.configurationRef
+        )
+          throw new ReleaseError(
+            400,
+            "Evidence candidate, environment, audience or configuration does not match this check",
+          );
+        await query(
+          `INSERT INTO release_evidence(id,assessment_id,check_id,check_revision,candidate_ref,environment,audience,configuration_ref,result,summary,source,run_ref,event_id,observed_at,received_at,actor_id,actor_name,credential_kind,reference_url,credential_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+          [
+            id,
+            releaseId,
+            evidence.checkId,
+            evidence.checkRevision,
+            evidence.candidateRef,
+            evidence.environment,
+            evidence.audience,
+            evidence.configurationRef,
+            evidence.result,
+            evidence.summary,
+            evidence.source,
+            evidence.runRef,
+            evidence.eventId,
+            evidence.observedAt,
+            now,
+            actor.userId,
+            actor.name,
+            actor.credentialKind,
+            evidence.referenceUrl,
+            actor.credentialId ?? null,
+          ],
+        );
+        action = "release.evidence";
+        break;
+      }
+      default:
+        throw new ReleaseError(400, "Unknown release mutation");
+    }
+    await incrementReleaseRevision(releaseId);
+    await releaseAudit(
+      workspaceId,
+      assessment.boardId,
+      actor,
+      action,
+      command.type.startsWith("check")
+        ? "release_check"
+        : command.type === "evidence.create"
+          ? "release_evidence"
+          : "release",
+      id,
+      { assessmentId: releaseId, reviewedRevision: assessment.revision },
+    );
+    return (await readReleaseDetail(releaseId, workspaceId))!;
+  });
+}
+
+export async function readReleaseCheckRevisions(
+  workspaceId: string,
+  releaseId: string,
+  checkId: string,
+): Promise<ReleaseCheck[]> {
+  if (!(await readReleaseDetail(releaseId, workspaceId)))
+    throw new ReleaseError(404, "assessment not found");
+  return (
+    await query(
+      `SELECT c.id,c.assessment_id,c.subject_type,c.subject_id,c.archived_at,d.revision,d.claim,d.category,d.required,d.owner_label,d.method,d.environment,d.max_age_ms FROM release_checks c JOIN release_check_revisions d ON d.check_id=c.id WHERE c.id=$1 AND c.assessment_id=$2 ORDER BY d.revision DESC`,
+      [checkId, releaseId],
+    )
+  ).map((row) => releaseMap<ReleaseCheck>(row));
+}
+
+async function insertReleaseAsset(asset: ReleaseAsset): Promise<void> {
+  await query(
+    `INSERT INTO release_assets(id,assessment_id,decision_id,filename,mime_type,width,height,size_bytes,digest,label,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+    [
+      asset.id,
+      asset.assessmentId,
+      asset.decisionId,
+      asset.filename,
+      asset.mimeType,
+      asset.width,
+      asset.height,
+      asset.sizeBytes,
+      asset.digest,
+      asset.label,
+      asset.createdAt,
+    ],
+  );
+}
+export async function createReleaseAsset(
+  workspaceId: string,
+  releaseId: string,
+  metadata: ReleaseAsset,
+  actor: ReleaseActor,
+  expectedRevision: number,
+): Promise<ReleaseDetail> {
+  const data = releaseRecord(metadata);
+  if (
+    metadata.assessmentId !== releaseId ||
+    metadata.decisionId !== null ||
+    !/^[A-Za-z0-9_-]{12}\.(png|jpg|jpeg|webp|gif)$/.test(metadata.filename) ||
+    !/^[a-f0-9]{64}$/.test(metadata.digest)
+  )
+    throw new ReleaseError(400, "Invalid private asset metadata");
+  releaseInteger(data, "sizeBytes", 1, 25 * 1024 * 1024);
+  releaseInteger(data, "width", 1, 20000);
+  releaseInteger(data, "height", 1, 20000);
+  releaseText(data, "id");
+  releaseText(data, "label");
+  if (
+    !["image/png", "image/jpeg", "image/webp", "image/gif"].includes(
+      metadata.mimeType,
+    ) ||
+    metadata.width * metadata.height > 100000000
+  )
+    throw new ReleaseError(400, "Invalid private image dimensions or MIME");
+  return inReleaseTransaction(async () => {
+    const assessment = await lockAssessment(releaseId, workspaceId);
+    await assertReleaseMember(workspaceId, actor);
+    expectReleaseRevision(assessment, expectedRevision);
+    const count = await queryOne<{ count: number }>(
+      `SELECT COUNT(*)::int AS count FROM release_assets WHERE assessment_id=$1`,
+      [releaseId],
+    );
+    if ((count?.count ?? 0) >= 500)
+      throw new ReleaseError(400, "Assessment asset limit reached");
+    await insertReleaseAsset(metadata);
+    await incrementReleaseRevision(releaseId);
+    await releaseAudit(
+      workspaceId,
+      assessment.boardId,
+      actor,
+      "release.asset",
+      "release_asset",
+      metadata.id,
+      { assessmentId: releaseId },
+    );
+    return (await readReleaseDetail(releaseId, workspaceId))!;
+  });
+}
+
+export async function recordReleaseDecision(
+  workspaceId: string,
+  releaseId: string,
+  input: DecisionInput,
+  actor: ReleaseActor,
+): Promise<ReleaseDetail> {
+  const data = releaseRecord(input);
+  if (!["approved", "held"].includes(data.decision as string))
+    throw new ReleaseError(400, "decision must be approved or held");
+  const rationale = releaseText(data, "rationale", 10000);
+  if (
+    !Array.isArray(data.screenIds) ||
+    data.screenIds.length > 50 ||
+    !data.screenIds.every((id) => typeof id === "string") ||
+    new Set(data.screenIds).size !== data.screenIds.length
+  )
+    throw new ReleaseError(
+      400,
+      "screenIds must be a unique list of at most 50 IDs",
+    );
+  if (
+    data.assetIds !== undefined &&
+    (!Array.isArray(data.assetIds) ||
+      data.assetIds.length > 50 ||
+      !data.assetIds.every((id) => typeof id === "string") ||
+      new Set(data.assetIds).size !== data.assetIds.length)
+  )
+    throw new ReleaseError(
+      400,
+      "assetIds must be a unique list of at most 50 IDs",
+    );
+  const staged: ReleaseAsset[] = [];
+  try {
+    return await inReleaseTransaction(async () => {
+      const assessment = await lockAssessment(releaseId, workspaceId);
+      await assertReleaseMember(workspaceId, actor, true);
+      expectReleaseRevision(assessment, input.expectedRevision);
+      const detail = (await readReleaseDetail(releaseId, workspaceId))!;
+      const context = (await readProductContext(
+        assessment.boardId,
+        workspaceId,
+      ))!;
+      const selected = (data.screenIds as string[]).map((id) => {
+        const screen = context.screens.find((s) => s.id === id);
+        if (!screen)
+          throw new ReleaseError(
+            400,
+            "Selected screenshot is not in this product board",
+          );
+        return screen;
+      });
+      const assetIds =
+        data.assetIds === undefined
+          ? detail.assets
+              .filter((asset) => asset.decisionId === null)
+              .map((asset) => asset.id)
+          : (data.assetIds as string[]);
+      if (assetIds.length > 50)
+        throw new ReleaseError(400, "Select at most 50 retained images");
+      const selectedAssets = assetIds.map((assetId) => {
+        const asset = detail.assets.find(
+          (candidate) => candidate.id === assetId,
+        );
+        if (!asset)
+          throw new ReleaseError(
+            400,
+            "Selected retained image is not in this assessment",
+          );
+        return asset;
+      });
+      for (const asset of selectedAssets) await readReleaseAssetBytes(asset);
+      // Source board lock remains held while copying. Existing visual mutations acquire it first.
+      const id = newId();
+      const captured = await captureDecisionAssets(selected, releaseId, id);
+      staged.push(...captured.assets);
+      const now = Date.now();
+      const readiness = evaluateRelease(detail, now);
+      if (input.decision === "approved" && readiness.state !== "ready")
+        throw new ReleaseError(
+          409,
+          "Approval requires fresh passing evidence for every required claim",
+        );
+      const included = new Set(
+        detail.scope.filter((c) => c.included).map((c) => c.capabilityId),
+      );
+      const capabilityComponents = context.capabilityComponents.filter((link) =>
+        included.has(link.capabilityId),
+      );
+      const componentIds = new Set([
+        ...capabilityComponents.map((link) => link.componentId),
+        ...detail.checks
+          .filter((c) => c.subjectType === "component")
+          .map((c) => c.subjectId!),
+      ]);
+      for (let changed = true; changed;) {
+        changed = false;
+        for (const edge of context.dependencies)
+          if (
+            componentIds.has(edge.consumerId) &&
+            !componentIds.has(edge.providerId)
+          ) {
+            componentIds.add(edge.providerId);
+            changed = true;
+          }
+      }
+      const assets = [
+        ...selectedAssets.map((asset) => ({
+          ...asset,
+          decisionId: asset.decisionId ?? id,
+        })),
+        ...captured.assets,
+      ];
+      const retainedRegionIds = new Set(
+        captured.screens.flatMap((screen) =>
+          screen.regions.map((region) => region.id),
+        ),
+      );
+      const snapshot: ReleaseSnapshot = {
+        assessment,
+        scope: detail.scope,
+        checks: detail.checks,
+        evidence: detail.evidence,
+        readiness,
+        components: context.components.filter((c) => componentIds.has(c.id)),
+        capabilityComponents,
+        dependencies: context.dependencies.filter(
+          (d) =>
+            componentIds.has(d.consumerId) && componentIds.has(d.providerId),
+        ),
+        screens: captured.screens,
+        regionCapabilities: context.regionCapabilities.filter(
+          (link) =>
+            included.has(link.capabilityId) &&
+            retainedRegionIds.has(link.regionId),
+        ),
+        assets,
+      };
+      await query(
+        `INSERT INTO release_decisions(id,assessment_id,revision,decision,rationale,actor_id,actor_name,created_at,expires_at,snapshot) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [
+          id,
+          releaseId,
+          assessment.revision,
+          input.decision,
+          rationale,
+          actor.userId,
+          actor.name,
+          now,
+          readiness.validUntil,
+          JSON.stringify(snapshot),
+        ],
+      );
+      for (const asset of captured.assets) await insertReleaseAsset(asset);
+      await query(
+        `UPDATE release_assets SET decision_id=$2 WHERE assessment_id=$1 AND id=ANY($3::text[]) AND decision_id IS NULL`,
+        [releaseId, id, selectedAssets.map((asset) => asset.id)],
+      );
+      await releaseAudit(
+        workspaceId,
+        assessment.boardId,
+        actor,
+        "release.decision",
+        "release_decision",
+        id,
+        {
+          assessmentId: releaseId,
+          reviewedRevision: assessment.revision,
+          decision: input.decision,
+          readiness: readiness.state,
+        },
+      );
+      return (await readReleaseDetail(releaseId, workspaceId))!;
+    });
+  } catch (error) {
+    await cleanupReleaseAssets(staged);
+    throw error;
+  }
+}
+
+function safeReleaseProjection(
+  value: PublicReleaseProjection,
+  decision: ReleaseDecision,
+): PublicReleaseProjection {
+  const data = releaseRecord(value);
+  if (
+    !Array.isArray(data.capabilities) ||
+    data.capabilities.length > 100 ||
+    !Array.isArray(data.images) ||
+    data.images.length > 50
+  )
+    throw new ReleaseError(400, "Invalid publication selection");
+  const capabilities = data.capabilities.map((raw) => {
+    const row = releaseRecord(raw);
+    if (!["ready", "blocked", "needs_evidence"].includes(row.state as string))
+      throw new ReleaseError(400, "Invalid outcome readiness");
+    return {
+      name: releaseText(row, "name"),
+      outcome: releaseText(row, "outcome", 2000),
+      explanation: releaseOptionalText(row, "explanation"),
+      state:
+        row.state as PublicReleaseProjection["capabilities"][number]["state"],
+    };
+  });
+  const seen = new Set<string>();
+  const images = data.images.map((raw) => {
+    const row = releaseRecord(raw);
+    const assetId = releaseText(row, "assetId");
+    const asset = decision.snapshot.assets.find((a) => a.id === assetId);
+    if (!asset || seen.has(assetId))
+      throw new ReleaseError(
+        400,
+        "Publication assets must belong to this recorded decision",
+      );
+    seen.add(assetId);
+    return {
+      assetId,
+      label: asset.label,
+      width: asset.width,
+      height: asset.height,
+    };
+  });
+  return {
+    candidateLabel: decision.snapshot.assessment.candidateLabel,
+    targetEnvironment: releaseText(data, "targetEnvironment"),
+    audience: releaseText(data, "audience", 1000),
+    reviewedAt: decision.createdAt,
+    decision: decision.decision,
+    readiness: decision.snapshot.readiness.state,
+    validUntil: decision.snapshot.readiness.validUntil,
+    summary: releaseText(data, "summary", 2000),
+    capabilities,
+    images,
+  };
+}
+
+export async function createReleaseShare(
+  workspaceId: string,
+  releaseId: string,
+  decisionId: string,
+  projection: PublicReleaseProjection,
+  actor: ReleaseActor,
+): Promise<ReleaseShareLink> {
+  return inReleaseTransaction(async () => {
+    const assessment = await lockAssessment(releaseId, workspaceId);
+    await assertReleaseMember(workspaceId, actor, true);
+    const row = await queryOne(
+      `SELECT * FROM release_decisions WHERE id=$1 AND assessment_id=$2`,
+      [decisionId, releaseId],
+    );
+    if (!row) throw new ReleaseError(404, "decision not found");
+    const decision = releaseMap<ReleaseDecision>(row);
+    const safe = safeReleaseProjection(projection, decision);
+    for (const image of safe.images) {
+      const assetRow = await queryOne(
+        `SELECT * FROM release_assets WHERE id=$1 AND assessment_id=$2`,
+        [image.assetId, releaseId],
+      );
+      if (!assetRow)
+        throw new ReleaseError(400, "Retained publication asset not found");
+      const asset = releaseMap<ReleaseAsset>(assetRow);
+      const historical = decision.snapshot.assets.find(
+        (candidate) => candidate.id === image.assetId,
+      )!;
+      if (
+        asset.digest !== historical.digest ||
+        asset.filename !== historical.filename
+      )
+        throw new ReleaseError(
+          409,
+          "Retained image no longer matches the recorded decision",
+        );
+      await readReleaseAssetBytes(asset);
+    }
+    const token = newShareToken();
+    const createdAt = Date.now();
+    await query(
+      `INSERT INTO release_share_links(token,decision_id,projection,created_at) VALUES($1,$2,$3,$4)`,
+      [token, decisionId, JSON.stringify(safe), createdAt],
+    );
+    await releaseAudit(
+      workspaceId,
+      assessment.boardId,
+      actor,
+      "release.share_create",
+      "release_share_link",
+      token,
+      { assessmentId: releaseId, decisionId },
+    );
+    return { token, decisionId, projection: safe, createdAt, revokedAt: null };
+  });
+}
+
+export async function revokeReleaseShare(
+  workspaceId: string,
+  token: string,
+  actor: ReleaseActor,
+): Promise<void> {
+  return inReleaseTransaction(async () => {
+    const row = await queryOne<{ assessment_id: string }>(
+      `SELECT d.assessment_id FROM release_share_links s JOIN release_decisions d ON d.id=s.decision_id JOIN release_assessments r ON r.id=d.assessment_id JOIN boards b ON b.id=r.board_id WHERE s.token=$1 AND b.workspace_id=$2`,
+      [token, workspaceId],
+    );
+    if (!row) throw new ReleaseError(404, "release share link not found");
+    const assessment = await lockAssessment(row.assessment_id, workspaceId);
+    await assertReleaseMember(workspaceId, actor, true);
+    await query(
+      `UPDATE release_share_links SET revoked_at=COALESCE(revoked_at,$2) WHERE token=$1`,
+      [token, Date.now()],
+    );
+    await releaseAudit(
+      workspaceId,
+      assessment.boardId,
+      actor,
+      "release.share_revoke",
+      "release_share_link",
+      token,
+      { assessmentId: assessment.id },
+    );
+  });
+}
+
+export async function getPublicReleaseShare(
+  token: string,
+): Promise<ReleaseShareLink | null> {
+  const row = await queryOne(
+    `SELECT * FROM release_share_links WHERE token=$1 AND revoked_at IS NULL`,
+    [token],
+  );
+  return row ? releaseMap<ReleaseShareLink>(row) : null;
+}
+export async function getReleaseAsset(
+  assetId: string,
+  workspaceId: string,
+): Promise<ReleaseAsset | null> {
+  const row = await queryOne(
+    `SELECT a.* FROM release_assets a JOIN release_assessments r ON r.id=a.assessment_id JOIN boards b ON b.id=r.board_id WHERE a.id=$1 AND b.workspace_id=$2`,
+    [assetId, workspaceId],
+  );
+  return row ? releaseMap<ReleaseAsset>(row) : null;
+}
+export async function getPublicReleaseAsset(
+  token: string,
+  assetId: string,
+): Promise<ReleaseAsset | null> {
+  const row = await queryOne(
+    `SELECT a.* FROM release_share_links s JOIN release_decisions d ON d.id=s.decision_id JOIN release_assets a ON a.assessment_id=d.assessment_id WHERE s.token=$1 AND s.revoked_at IS NULL AND a.id=$2 AND EXISTS(SELECT 1 FROM jsonb_array_elements(s.projection->'images') image WHERE image->>'assetId'=a.id)`,
+    [token, assetId],
+  );
+  return row ? releaseMap<ReleaseAsset>(row) : null;
+}
+export async function hasReleaseHistory(boardId: string): Promise<boolean> {
+  return !!(await queryOne(
+    `SELECT id FROM release_assessments WHERE board_id=$1 LIMIT 1`,
+    [boardId],
+  ));
+}
+
+// Compatibility wrappers: visual editor/REST/MCP use the same locks as release snapshots.
+export async function updateBoard(
+  ...args: Parameters<typeof updateBoardInternal>
+): Promise<Board | null> {
+  return withReleaseSourceLock(args[0], async () => {
+    const result = await updateBoardInternal(...args);
+    if (result) await bumpProductReviews(args[0]);
+    return result;
+  });
+}
+export async function deleteBoard(id: string): Promise<boolean> {
+  return withReleaseSourceLock(id, async () => {
+    if (await hasReleaseHistory(id))
+      throw new ReleaseError(
+        409,
+        "This board has release history; archive its content instead of deleting it",
+      );
+    return deleteBoardInternal(id);
+  });
+}
+export async function createScreen(
+  ...args: Parameters<typeof createScreenInternal>
+): Promise<Screen> {
+  return withReleaseSourceLock(args[0].boardId, async () => {
+    const result = await createScreenInternal(...args);
+    await bumpProductReviews(args[0].boardId);
+    return result;
+  });
+}
+export async function reorderScreens(
+  ...args: Parameters<typeof reorderScreensInternal>
+): Promise<Screen[] | null> {
+  return withReleaseSourceLock(args[0], async () => {
+    const result = await reorderScreensInternal(...args);
+    if (result) await bumpProductReviews(args[0]);
+    return result;
+  });
+}
+async function withScreenReview<T>(
+  screenId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const screen = await getScreen(screenId);
+  if (!screen) return operation();
+  return withReleaseSourceLock(screen.boardId, async () => {
+    const result = await operation();
+    await bumpProductReviews(screen.boardId);
+    return result;
+  });
+}
+async function withRegionReview<T>(
+  regionId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const region = await getRegion(regionId);
+  if (!region) return operation();
+  return withScreenReview(region.screenId, operation);
+}
+export async function updateScreen(
+  ...args: Parameters<typeof updateScreenInternal>
+): Promise<Screen | null> {
+  return withScreenReview(args[0], () => updateScreenInternal(...args));
+}
+export async function updateScreenImage(
+  ...args: Parameters<typeof updateScreenImageInternal>
+): Promise<Screen | null> {
+  return withScreenReview(args[0], () => updateScreenImageInternal(...args));
+}
+export async function deleteScreen(
+  ...args: Parameters<typeof deleteScreenInternal>
+): Promise<boolean> {
+  return withScreenReview(args[0], () => deleteScreenInternal(...args));
+}
+export async function createRegion(
+  ...args: Parameters<typeof createRegionInternal>
+): Promise<Region> {
+  return withScreenReview(args[0].screenId, () =>
+    createRegionInternal(...args),
+  );
+}
+export async function updateRegion(
+  ...args: Parameters<typeof updateRegionInternal>
+): Promise<Region | null> {
+  return withRegionReview(args[0], () => updateRegionInternal(...args));
+}
+export async function deleteRegion(
+  ...args: Parameters<typeof deleteRegionInternal>
+): Promise<boolean> {
+  return withRegionReview(args[0], () => deleteRegionInternal(...args));
+}
+
+/** Local retention tooling only; no HTTP endpoint exposes private filenames. */
+export async function getRetainedReleaseAssetFilenames(): Promise<string[]> {
+  return (
+    await query<{ filename: string }>(
+      `SELECT filename FROM release_assets ORDER BY filename`,
+    )
+  ).map((row) => row.filename);
+}
+
+async function inReleaseReadTransaction<T>(
+  operation: () => Promise<T>,
+): Promise<T> {
+  if (releaseTransaction.getStore()) return operation();
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+    const result = await releaseTransaction.run(client, operation);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+export async function readProductContext(
+  boardId: string,
+  workspaceId: string,
+): Promise<ProductContext | null> {
+  return inReleaseReadTransaction(() =>
+    readProductContextInternal(boardId, workspaceId),
+  );
+}
+export async function readReleaseDetail(
+  releaseId: string,
+  workspaceId: string,
+): Promise<ReleaseDetail | null> {
+  return inReleaseReadTransaction(() =>
+    readReleaseDetailInternal(releaseId, workspaceId),
+  );
+}
+
+async function memberOwnsReleaseRecords(
+  workspaceId: string,
+  userId: string,
+): Promise<boolean> {
+  return !!(await queryOne(
+    `SELECT c.id FROM capabilities c JOIN boards b ON b.id=c.board_id WHERE b.workspace_id=$1 AND c.owner_user_id=$2 UNION ALL SELECT id FROM components WHERE workspace_id=$1 AND owner_user_id=$2 LIMIT 1`,
+    [workspaceId, userId],
+  ));
+}
+async function bumpWorkspaceProductReviews(workspaceId: string): Promise<void> {
+  // Shared component ownership can affect any product dependency path. Conservatively
+  // refresh all workspace reviews; matching check revisions/evidence remain untouched.
+  const boards = await query<{ id: string }>(
+    `SELECT id FROM boards WHERE workspace_id=$1 ORDER BY id FOR UPDATE`,
+    [workspaceId],
+  );
+  for (const board of boards) await bumpProductReviews(board.id);
+}
+export async function addMember(
+  input: Parameters<typeof addMemberInternal>[0],
+): Promise<void> {
+  return inReleaseTransaction(async () => {
+    await lockReleaseWorkspace(input.workspaceId);
+    const alreadyMember = await getMembership(input.workspaceId, input.userId);
+    await addMemberInternal(input);
+    if (
+      !alreadyMember &&
+      (await memberOwnsReleaseRecords(input.workspaceId, input.userId))
+    )
+      await bumpWorkspaceProductReviews(input.workspaceId);
+  });
+}
+export async function updateMemberRole(
+  input: Parameters<typeof updateMemberRoleInternal>[0],
+): Promise<boolean> {
+  return inReleaseTransaction(async () => {
+    await lockReleaseWorkspace(input.workspaceId);
+    return updateMemberRoleInternal(input);
+  });
+}
+export async function removeMember(
+  input: Parameters<typeof removeMemberInternal>[0],
+): Promise<boolean> {
+  return inReleaseTransaction(async () => {
+    await lockReleaseWorkspace(input.workspaceId);
+    const assigned = await memberOwnsReleaseRecords(
+      input.workspaceId,
+      input.userId,
+    );
+    const removed = await removeMemberInternal(input);
+    if (removed && assigned)
+      await bumpWorkspaceProductReviews(input.workspaceId);
+    return removed;
+  });
+}
+
+/** One snapshot feeds every role: scope, evidence, architecture and readiness cannot mix revisions. */
+export async function readReleaseWorkspace(
+  releaseId: string,
+  workspaceId: string,
+): Promise<ReleaseWorkspace | null> {
+  return inReleaseReadTransaction(async () => {
+    const detail = await readReleaseDetailInternal(releaseId, workspaceId);
+    if (!detail) return null;
+    const product = await readProductContextInternal(
+      detail.assessment.boardId,
+      workspaceId,
+    );
+    if (!product) return null;
+    return {
+      ...detail,
+      product,
+      readiness: evaluateRelease(detail, Date.now()),
+    };
+  });
 }
