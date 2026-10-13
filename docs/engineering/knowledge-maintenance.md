@@ -5,7 +5,7 @@ description: Update instructions, knowledge, design, and published guides with t
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:15:41Z
+  at: 2026-10-13T22:08:45Z
 sources:
   - id: request
     resource: "User request on 2026-10-13: central root docs, a cohesive design system, and same-change synchronization."
@@ -17,6 +17,10 @@ sources:
     resource: "AGENTS.md"
   - id: package
     resource: "package.json"
+  - id: skill-sources
+    resource: ".agents/skills/sources.json"
+  - id: browser-config
+    resource: "agent-browser.json"
 ---
 
 Keep instructions, knowledge, design, and implementation consistent in the same change. This bundle is the central repository knowledge base. It explains how to work on StateBoard and points to the files that own executable behavior and published contracts.[^request]
@@ -33,6 +37,12 @@ Keep instructions, knowledge, design, and implementation consistent in the same 
 | Upstream repository skills                                  | `.agents/skills/`                                 | AGENTS links and skill provenance when an upstream bundle changes.          |
 
 `src/content/docs/` remains the published human usage and hosting documentation. This bundle explains engineering relationships without copying those guides in full. Avoid adding a second authoritative API schema or release history here.
+
+Keep vendored skill files unchanged and record their upstream repository, revision, and hashes in `.agents/skills/sources.json`. A skill's repository and revision override the manifest defaults.[^skill-sources] Preserve each source's license. Update its AGENTS link and Git allowlist with the installed files.
+
+Agent Browser's checked-in skill discovers workflows from the pinned CLI. Update the dependency and discovery skill together after reviewing upstream changes.[^package]
+
+Keep project defaults in `agent-browser.json` and browser work artifacts under ignored `.agents/browser/`.[^browser-config] Refresh [local development](local-development.md) and [verification](verification.md) when its setup or work loop changes.
 
 ## Update procedure
 
@@ -66,3 +76,7 @@ The knowledge check should catch broken links, missing source files, stale index
 [^agents]: Canonical repository work instructions.
 
 [^package]: Repository validation and generation commands.
+
+[^skill-sources]: Pinned upstream sources, per-skill overrides, and file hashes.
+
+[^browser-config]: Shared browser defaults without machine settings or credentials.

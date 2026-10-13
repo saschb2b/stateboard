@@ -81,7 +81,9 @@ Source-derived wiring is declared context; only actual observations support chec
 
 Full guide: [Agents & API](./src/content/docs/agents.mdx). The installable workflow lives in [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md).
 
-For repository development, start with [`AGENTS.md`](./AGENTS.md), the [knowledge base](./docs/index.md), and the [design system](./docs/design-system/overview.md). `CLAUDE.md` imports the same operating manual. The five repository skills live in `.agents/skills/` and are checked in with the project.
+For repository development, start with [`AGENTS.md`](./AGENTS.md), the [knowledge base](./docs/index.md), and the [design system](./docs/design-system/overview.md). `CLAUDE.md` imports the same operating manual. Repository skills live in `.agents/skills/` and are checked in with the project.
+
+The repository includes a pinned [Agent Browser](https://agent-browser.dev/) development CLI for browser review. Run `pnpm browser:install` once, then read `pnpm browser skills get core`. Use a named session for each task and agent. The [local browser workflow](./docs/engineering/local-development.md#browser-review) covers screenshots, session cleanup, and private artifacts. This CLI runs in the development environment. Product record updates still use StateBoard's REST or MCP API.
 
 ## Quick start (local dev)
 
@@ -155,6 +157,8 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 | `pnpm typecheck`              | Generate Fumadocs types, then run `tsc --noEmit`                                           |
 | `pnpm test`                   | Unit tests on Node's built-in runner (`node:test`)                                         |
 | `pnpm test:stories`           | Component interaction tests in Chromium                                                    |
+| `pnpm browser`                | Run the pinned Agent Browser CLI for browser review                                        |
+| `pnpm browser:install`        | Download Agent Browser's browser for local use                                             |
 | `pnpm test:integration`       | Release and MCP integration tests against `STATEBOARD_INTEGRATION_DB_URL`                  |
 | `pnpm cleanup:release-assets` | Dry-run of orphan media cleanup; `--delete` removes unreferenced files older than 24 hours |
 | `pnpm format:check`           | Prettier check                                                                             |

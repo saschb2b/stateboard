@@ -1,5 +1,9 @@
 # Knowledge changes
 
+## 2026-10-14
+
+- **Update**: Added Agent Browser setup, named-session browser review, private artifact storage, CLI verification, and upstream skill provenance to engineering concepts. Kept browser execution in the development environment and product upkeep through REST/MCP.
+
 ## 2026-10-13
 
 - **Update**: Documented standalone artifact exclusions, generated environment-file cleanup, read-only verification, and runtime media storage in persistence and verification concepts. Added source references to the packaging scripts and tests.

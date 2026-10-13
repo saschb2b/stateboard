@@ -20,15 +20,20 @@ Routine edits and verification within the task do not require repeated approval.
 
 Read the applicable skill before using it. These checked-in copies guide work on this repository:
 
-| Skill                                                      | Apply when                                                                                                                   |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| [React Compiler](./.agents/skills/react-compiler/SKILL.md) | Writing or reviewing React code. The compiler is enabled. Avoid manual memoization unless a documented boundary requires it. |
-| [React Stinky](./.agents/skills/react-stinky/SKILL.md)     | Reviewing component APIs, state, effects, accessibility, TypeScript, or duplication.                                         |
-| [OKF](./.agents/skills/okf/SKILL.md)                       | Reading or changing the `docs/` knowledge bundle. Select the narrowest capability.                                           |
-| [ODSF](./.agents/skills/odsf/SKILL.md)                     | Reading or changing the design system, tokens, components, patterns, or behavior rules.                                      |
-| [No Slop](./.agents/skills/no-slop/SKILL.md)               | Writing human-facing copy, documentation, comments, commits, or errors.                                                      |
+| Skill                                                      | Apply when                                                                                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [React Compiler](./.agents/skills/react-compiler/SKILL.md) | Writing or reviewing React code. The compiler is enabled. Avoid manual memoization unless a documented boundary requires it.   |
+| [React Stinky](./.agents/skills/react-stinky/SKILL.md)     | Reviewing component APIs, state, effects, accessibility, TypeScript, or duplication.                                           |
+| [OKF](./.agents/skills/okf/SKILL.md)                       | Reading or changing the `docs/` knowledge bundle. Select the narrowest capability.                                             |
+| [ODSF](./.agents/skills/odsf/SKILL.md)                     | Reading or changing the design system, tokens, components, patterns, or behavior rules.                                        |
+| [No Slop](./.agents/skills/no-slop/SKILL.md)               | Writing human-facing copy, documentation, comments, commits, or errors.                                                        |
+| [Agent Browser](./.agents/skills/agent-browser/SKILL.md)   | Browser checks, exploratory testing, and app review when the host permits this CLI. Read `pnpm browser skills get core` first. |
 
 The installable [StateBoard skill](./skills/stateboard/SKILL.md) has a separate audience: agents maintaining another product's StateBoard instance. Keep its workflow consistent with the product API.
+
+For CLI browser work, use the pinned `pnpm browser` command. Load `pnpm browser skills get dogfood` for exploratory testing. Give each task and agent its own named session. Use snapshot refs, refresh the snapshot after page changes, and close only your session.
+
+Save screenshots, recordings, profiles, and explicit state files under ignored `.agents/browser/`. Follow host-required browser tools and permissions when they apply. See [local development](./docs/engineering/local-development.md) for setup and the browser work loop.
 
 ## Boundaries to preserve
 

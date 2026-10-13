@@ -53,6 +53,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Agent browser tooling
+        run: |
+          pnpm browser --version
+          pnpm browser skills get core > /dev/null
+
       - name: Typecheck
         run: pnpm typecheck
 

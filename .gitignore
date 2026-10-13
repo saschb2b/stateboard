@@ -46,6 +46,7 @@ Thumbs.db
 !.agents/skills/okf/
 !.agents/skills/odsf/
 !.agents/skills/no-slop/
+!.agents/skills/agent-browser/
 !.agents/skills/sources.json
 !.agents/skills/LICENSE
 skills-lock.json

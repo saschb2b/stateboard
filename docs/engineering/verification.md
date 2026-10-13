@@ -5,7 +5,7 @@ description: Run the required gates and boundary-specific checks before commits 
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:37:05Z
+  at: 2026-10-13T22:08:45Z
 sources:
   - id: package
     resource: "package.json"
@@ -23,6 +23,8 @@ sources:
     resource: "scripts/standalone-artifact.mjs"
   - id: packaging-tests
     resource: "scripts/standalone-artifact.test.mjs"
+  - id: browser-skill
+    resource: ".agents/skills/agent-browser/SKILL.md"
 ---
 
 Run focused checks while implementing. Before committing or reporting completion, run all six application gates and the knowledge check:[^package]
@@ -55,6 +57,10 @@ Integration suites create and remove isolated schemas and media directories. Nev
 
 Story tests use Chromium. If unavailable, install it with `pnpm exec playwright install chromium`. Component tests do not replace browser review of complete workflows.[^storybook]
 
+For CLI browser review, follow the [Agent Browser setup and session rules](local-development.md#browser-review). Read the installed core workflow and load `pnpm browser skills get dogfood` for exploratory testing.[^browser-skill] Record the URL, candidate, viewport, actions, and observed result. Capture screenshots for layout findings and repeat the failing interaction after a fix. Keep artifacts under `.agents/browser/` and close only your session.
+
+CI checks the pinned CLI version and core skill discovery without downloading its browser. These checks establish tool availability, not browser behavior.[^ci] Storybook remains the automated component gate. Review complete workflows separately.
+
 The [readiness rules](../product/readiness.md) apply to any evidence recorded from these runs. Identify the exact tested candidate and environment. A simulated persona review does not establish independent human comprehension or production behavior.
 
 [Local development](local-development.md) describes service reuse. [Knowledge maintenance](knowledge-maintenance.md) describes what to update when verification changes the documented behavior.
@@ -74,3 +80,5 @@ The [readiness rules](../product/readiness.md) apply to any evidence recorded fr
 [^packaging]: Cleanup and independent read-only build verification.
 
 [^packaging-tests]: Private-path rejection, custom storage, and source-preserving cleanup fixtures.
+
+[^browser-skill]: Upstream discovery entry for the installed browser and exploratory-testing workflows.

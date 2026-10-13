@@ -12,7 +12,7 @@ test("knowledge checks reject documentation drift in an isolated copy", async (t
   const fixture = await fs.mkdtemp(path.join(os.tmpdir(), "stateboard-docs-"));
   t.after(() => fs.rm(fixture, { recursive: true, force: true }));
   const entries = [
-    ".agents",
+    ".agents/skills",
     ".github",
     ".storybook",
     "docs",
@@ -27,6 +27,7 @@ test("knowledge checks reject documentation drift in an isolated copy", async (t
     "next.config.mjs",
     ".env.example",
     ".mcp.json",
+    "agent-browser.json",
     "docker-compose.yaml",
   ];
   await Promise.all(

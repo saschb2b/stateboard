@@ -128,6 +128,17 @@
         "references/structure.md": "d3326544189eb94e33402c4014092770691580872403a4ee9f600a6b17d02c1b",
         "slop-lint.mjs": "455e193587a536246eed228b99481cd7f878003a9046db18868a42ff330a9262"
       }
+    },
+    {
+      "name": "agent-browser",
+      "source": "https://agent-browser.dev/skills",
+      "repository": "https://github.com/vercel-labs/agent-browser",
+      "revision": "1165952d74ceed98fdc2dd97190ad41f44dd0e24",
+      "path": "skills/agent-browser",
+      "files": {
+        "LICENSE": "014bb31e83d5c2e76aea1cc6e82217346ab41362f32cb355ad0f5c10aa0aeaff",
+        "SKILL.md": "3a7520e64de2dfaa516b6721c001e84e06e3c06a187b82af029ae721540ebfac"
+      }
     }
   ]
 }

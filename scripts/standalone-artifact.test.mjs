@@ -50,6 +50,8 @@ test("rejects private data, secrets, and agent inputs in file traces", async (t)
     ".env",
     ".env.production.local",
     ".agents/skills/skill.md",
+    ".agents/browser/auth.json",
+    "agent-browser.json",
     ".git/config",
     "docs/product/model.md",
   ]) {

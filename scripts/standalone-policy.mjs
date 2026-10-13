@@ -11,7 +11,12 @@ export const privateDirectories = [
   ".storybook",
   "docs",
 ];
-export const privateFiles = [".mcp.json", "AGENTS.md", "CLAUDE.md"];
+export const privateFiles = [
+  ".mcp.json",
+  "agent-browser.json",
+  "AGENTS.md",
+  "CLAUDE.md",
+];
 
 export function isWithin(parent, filename) {
   const relative = path.relative(parent, filename);

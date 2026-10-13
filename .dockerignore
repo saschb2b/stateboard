@@ -1,6 +1,8 @@
 node_modules
 .next
 .git
+.agents
+agent-browser.json
 data
 *.log
 README.md

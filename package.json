@@ -21,6 +21,8 @@
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/release-db.test.mjs scripts/mcp-release.test.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
+    "browser": "agent-browser",
+    "browser:install": "agent-browser install",
     "design:generate": "node scripts/design-tokens.mjs",
     "docs:check": "node scripts/check-docs.mjs"
   },
@@ -55,6 +57,7 @@
     "@types/react-dom": "19.2.7",
     "@vitest/browser-playwright": "^4.1.10",
     "@vitest/coverage-v8": "^4.1.10",
+    "agent-browser": "0.39.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.3.5",
@@ -73,6 +76,9 @@
   },
   "packageManager": "pnpm@10.20.0",
   "pnpm": {
+    "ignoredBuiltDependencies": [
+      "agent-browser"
+    ],
     "overrides": {
       "next>postcss": "^8.5.15"
     }

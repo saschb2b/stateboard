@@ -22,6 +22,7 @@ const repositorySourceDirectories = new Set([
 const repositorySourceFiles = new Set([
   ".env.example",
   ".mcp.json",
+  "agent-browser.json",
   "AGENTS.md",
   "CHANGELOG.md",
   "CLAUDE.md",
