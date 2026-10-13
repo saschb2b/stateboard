@@ -8,6 +8,7 @@ sources:
   - resource: src/components/release/workspace-navigation.tsx
   - resource: src/components/release/use-release-view.ts
   - resource: src/lib/theme.ts
+  - resource: src/lib/design-tokens.test.ts
 ---
 
 # Behavior
@@ -17,6 +18,8 @@ Views change the presentation of one assessment. The URL retains the selected vi
 Use real buttons, links, tabs, and disclosures. The current tab has `aria-selected`. Its arrow-key behavior follows its orientation. At 1200px and above, view navigation is vertical. Smaller screens use a horizontal, scrollable tab list. Keep an explicit text label on every view.
 
 Every control has a visible keyboard focus ring. Status labels state Ready, Blocked, or Needs evidence and do not rely on hue alone. Keep label text visible at narrow widths. Wrap long names and references inside their container.
+
+Body, metadata, status, and primary-button text must reach a 4.5:1 contrast ratio. Token tests check these pairs in both palettes.
 
 Async actions show pending state, reject duplicate submissions, and report errors next to the action. A failed save must not appear successful. Dialogs retain focus management from MUI. Respect reduced motion through the shared theme.
 
