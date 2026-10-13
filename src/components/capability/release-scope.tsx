@@ -2,21 +2,21 @@
 
 import { useState } from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
   Button,
   Chip,
   Dialog,
   DialogContent,
   DialogTitle,
-  Paper,
   Stack,
   Typography,
 } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { MutationForm } from "@/components/release/mutation-form";
-import {
-  ReadinessChip,
-  VerificationContext,
-} from "@/components/release/readiness-summary";
-import { ReleaseFindings } from "@/components/release/release-findings";
+import { ReadinessChip } from "@/components/release/readiness-summary";
 import type {
   ProductContext,
   ReleaseCapability,
@@ -51,83 +51,173 @@ export function ReleaseScope({
       !detail.scope.some((scope) => scope.capabilityId === item.id),
   );
   return (
-    <Stack spacing={2}>
-      <Stack direction="row" justifyContent="space-between">
-        <Typography variant="h6">Capabilities in this assessment</Typography>
+    <Stack spacing={1.5}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="subtitle1" component="h2">
+          Capabilities
+          <Box
+            component="span"
+            sx={{ ml: 1, color: "text.secondary", fontWeight: 400 }}
+          >
+            {detail.scope.length}
+          </Box>
+        </Typography>
         {editable && available.length > 0 && (
-          <Button onClick={() => setEditing("add")}>Add to scope</Button>
+          <Button size="small" onClick={() => setEditing("add")}>
+            Add to scope
+          </Button>
         )}
       </Stack>
-      <VerificationContext detail={detail} now={readiness.evaluatedAt} />
-      <ReleaseFindings
-        detail={detail}
-        readiness={readiness}
-        subjectTypes={["release", "component"]}
-        includePassing
-        title="Release-wide and component gates"
-        onInspectCheck={onInspectCheck}
-        editable={editable}
-      />
-      {detail.scope.map((item) => {
-        const evaluation = readiness.capabilities.find(
-          (result) => result.capabilityId === item.capabilityId,
-        );
-        const latest = product.capabilities.find(
-          (capability) => capability.id === item.capabilityId,
-        );
-        return (
-          <Paper
-            key={item.capabilityId}
-            sx={{ p: 2.5, opacity: item.included ? 1 : 0.75 }}
-          >
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              justifyContent="space-between"
-              gap={1}
+      <Box sx={{ borderTop: 1, borderColor: "divider" }}>
+        {detail.scope.length === 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+            No capabilities in this assessment.
+          </Typography>
+        )}
+        {detail.scope.map((item) => {
+          const evaluation = readiness.capabilities.find(
+            (result) => result.capabilityId === item.capabilityId,
+          );
+          const latest = product.capabilities.find(
+            (capability) => capability.id === item.capabilityId,
+          );
+          const newerDefinition =
+            latest && latest.definitionRevision > item.definitionRevision;
+          const acceptanceCheck = detail.checks.find(
+            (check) =>
+              check.subjectType === "capability" &&
+              check.subjectId === item.capabilityId &&
+              check.category === "functional" &&
+              check.required &&
+              check.archivedAt === null,
+          );
+          return (
+            <Accordion
+              key={item.capabilityId}
+              disableGutters
+              square
+              slotProps={{ transition: { unmountOnExit: true } }}
+              sx={{
+                bgcolor: "background.default",
+                border: 0,
+                borderBottom: 1,
+                borderColor: "divider",
+                "&::before": { display: "none" },
+              }}
             >
-              <Stack spacing={0.5}>
-                <Typography variant="h6">{item.name}</Typography>
-                <Typography>{item.outcome}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {item.ownerLabel} · Definition {item.definitionRevision}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {item.scopeReason}
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={1} alignItems="flex-start">
-                {item.included && evaluation ? (
-                  <Stack spacing={0.5} alignItems="flex-start">
-                    <ReadinessChip state={evaluation.state} verification />
-                    <Typography variant="caption" color="text.secondary">
-                      Validation: {detail.assessment.validationEnvironment}
+              <AccordionSummary
+                expandIcon={<ExpandMoreIcon fontSize="small" />}
+                aria-label={`Details for ${item.name}`}
+                aria-describedby={`capability-status-${item.capabilityId}`}
+                sx={{
+                  px: 0,
+                  py: 0.25,
+                  gap: 1.5,
+                  "& .MuiAccordionSummary-content": { minWidth: 0 },
+                }}
+              >
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  alignItems={{ xs: "flex-start", sm: "center" }}
+                  justifyContent="space-between"
+                  gap={{ xs: 0.5, sm: 2 }}
+                  sx={{ width: "100%", minWidth: 0 }}
+                >
+                  <Box sx={{ minWidth: 0, maxWidth: "100%" }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        color: item.included
+                          ? "text.primary"
+                          : "text.secondary",
+                      }}
+                    >
+                      {item.name}
                     </Typography>
-                  </Stack>
-                ) : (
-                  <Chip size="small" label="Excluded from release" />
-                )}
-                {editable && (
-                  <Button size="small" onClick={() => setEditing(item)}>
-                    Edit scope
-                  </Button>
-                )}
-              </Stack>
-            </Stack>
-            {item.included &&
-              evaluation?.reasons.map((reason, index) => (
-                <Typography key={index} variant="body2" sx={{ mt: 1 }}>
-                  {reason}
-                </Typography>
-              ))}
-            {latest && latest.definitionRevision > item.definitionRevision && (
-              <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
-                Product definition {latest.definitionRevision} is newer. Review
-                and adopt it explicitly to update this assessment.
-              </Typography>
-            )}
-          </Paper>
-        );
-      })}
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {item.outcome}
+                    </Typography>
+                    {newerDefinition && (
+                      <Typography variant="caption" color="warning.main">
+                        Newer definition available
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box
+                    id={`capability-status-${item.capabilityId}`}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    {item.included && evaluation ? (
+                      <ReadinessChip state={evaluation.state} verification />
+                    ) : (
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={item.included ? "Not evaluated" : "Excluded"}
+                      />
+                    )}
+                  </Box>
+                </Stack>
+              </AccordionSummary>
+              <AccordionDetails sx={{ px: 0, pt: 0.5, pb: 2.5 }}>
+                <Stack spacing={1.5} sx={{ maxWidth: 760 }}>
+                  <Typography variant="body2">{item.outcome}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.ownerLabel} · Definition {item.definitionRevision}
+                  </Typography>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {item.included ? "Included because" : "Excluded because"}
+                    </Typography>
+                    <Typography variant="body2">{item.scopeReason}</Typography>
+                  </Box>
+                  {item.included &&
+                    evaluation?.reasons.map((reason, index) => (
+                      <Typography
+                        key={index}
+                        variant="body2"
+                        color="text.secondary"
+                      >
+                        {reason}
+                      </Typography>
+                    ))}
+                  {newerDefinition && (
+                    <Typography variant="body2" color="warning.main">
+                      Product definition {latest.definitionRevision} is newer.
+                      {editable
+                        ? " Edit scope to review and adopt it."
+                        : ` This assessment uses definition ${item.definitionRevision}.`}
+                    </Typography>
+                  )}
+                  {(editable ||
+                    (item.included && acceptanceCheck && onInspectCheck)) && (
+                    <Stack direction="row" gap={1} flexWrap="wrap">
+                      {item.included && acceptanceCheck && onInspectCheck && (
+                        <Button
+                          size="small"
+                          onClick={() => onInspectCheck(acceptanceCheck.id)}
+                        >
+                          Inspect acceptance check
+                        </Button>
+                      )}
+                      {editable && (
+                        <Button
+                          size="small"
+                          color="inherit"
+                          onClick={() => setEditing(item)}
+                        >
+                          Edit scope
+                        </Button>
+                      )}
+                    </Stack>
+                  )}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+          );
+        })}
+      </Box>
       <Dialog
         open={editing !== null}
         onClose={() => setEditing(null)}
