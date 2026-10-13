@@ -4,11 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogContent,
   DialogTitle,
-  Paper,
   Stack,
   Typography,
 } from "@mui/material";
@@ -56,32 +56,29 @@ export function DecisionPanel({
   );
   return (
     <Stack spacing={3}>
-      <Paper sx={{ p: 2.5 }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          gap={2}
-        >
-          <Stack>
-            <Typography variant="h6">Human release decision</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Approval requires every required check to pass with current
-              evidence. A held decision can record the blockers and gaps.
-            </Typography>
-          </Stack>
-          {canRecord && (
-            <Button variant="contained" onClick={() => setRecording(true)}>
-              Record decision
-            </Button>
-          )}
-        </Stack>
-        {!canRecord && (
-          <Typography variant="caption" color="text.secondary">
-            Only a workspace owner using a signed-in session can record or
-            publish a decision.
+      <Stack
+        direction="row"
+        alignItems="center"
+        flexWrap="wrap"
+        justifyContent="space-between"
+        gap={1.5}
+      >
+        <Box>
+          <Typography variant="subtitle1" component="h2">
+            Release decision
           </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {canRecord
+              ? `Owner review · Revision ${detail.assessment.revision}`
+              : "A signed-in workspace owner records and publishes decisions."}
+          </Typography>
+        </Box>
+        {canRecord && (
+          <Button variant="contained" onClick={() => setRecording(true)}>
+            Record decision
+          </Button>
         )}
-      </Paper>
+      </Stack>
       <DecisionHistory
         detail={detail}
         now={now}
@@ -89,24 +86,45 @@ export function DecisionPanel({
         onPublish={setPublishing}
       />
       <Stack spacing={1}>
-        <Typography variant="h6">Public review links</Typography>
-        {activeLinks.map((link) => (
-          <Paper key={link.token} sx={{ p: 2 }}>
+        <Typography variant="subtitle1" component="h2">
+          Public review links
+        </Typography>
+        <Box>
+          {activeLinks.map((link) => (
             <Stack
+              key={link.token}
               direction={{ xs: "column", sm: "row" }}
+              alignItems={{ sm: "center" }}
               justifyContent="space-between"
               gap={1}
+              sx={{ py: 1.5, borderBottom: 1, borderColor: "divider" }}
             >
-              <Stack>
-                <Typography variant="body2">
-                  {link.projection.candidateLabel} · {link.projection.decision}
+              <Box>
+                <Typography variant="body2" fontWeight={600}>
+                  {link.projection.candidateLabel}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Published {new Date(link.createdAt).toISOString()}
+                  {link.projection.decision === "approved"
+                    ? "Approved"
+                    : "Held"}{" "}
+                  · Published{" "}
+                  <Box
+                    component="time"
+                    dateTime={new Date(link.createdAt).toISOString()}
+                    title={new Date(link.createdAt).toISOString()}
+                  >
+                    {new Date(link.createdAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      timeZone: "UTC",
+                    })}
+                  </Box>
                 </Typography>
-              </Stack>
-              <Stack direction="row">
+              </Box>
+              <Stack direction="row" sx={{ flexShrink: 0 }}>
                 <Button
+                  size="small"
                   component={Link}
                   href={`/share/releases/${link.token}`}
                   target="_blank"
@@ -115,7 +133,8 @@ export function DecisionPanel({
                 </Button>
                 {canRecord && (
                   <Button
-                    color="warning"
+                    size="small"
+                    color="inherit"
                     onClick={() => setRevoking(link.token)}
                   >
                     Revoke
@@ -123,19 +142,15 @@ export function DecisionPanel({
                 )}
               </Stack>
             </Stack>
-          </Paper>
-        ))}
-        {activeLinks.length === 0 && (
-          <Typography color="text.secondary">
-            {detail.decisions.length === 0
-              ? "Ask the release owner to record a review before preparing a public update."
-              : "Prepare a curated share view from a recorded decision."}
-          </Typography>
-        )}
-        <Typography variant="body2" color="text.secondary">
-          Public updates include the chosen outcomes, review conclusion, summary
-          and explicitly selected images.
-        </Typography>
+          ))}
+          {activeLinks.length === 0 && (
+            <Typography variant="body2" color="text.secondary">
+              {detail.decisions.length === 0
+                ? "Record a decision to prepare a public review."
+                : "No public links. Open a recorded decision to prepare one."}
+            </Typography>
+          )}
+        </Box>
       </Stack>
       <Dialog
         open={recording}

@@ -3,7 +3,7 @@ import { expect, fn, userEvent, within } from "storybook/test";
 import { getReleaseDemo } from "@/lib/release-demo";
 import { DecisionHistory } from "./decision-history";
 const example = getReleaseDemo();
-/** Render-only variant; actions are exercised by the authenticated application workflow. */
+/** Snapshot inspection is local; publication remains a callback preview. */
 const meta = {
   component: DecisionHistory,
   tags: ["ai-generated"],
@@ -63,14 +63,19 @@ export const FrozenReviewAfterChanges: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByText(/Reviewed .*Example release owner/));
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Decision by Example release owner at revision 1",
+      }),
+    );
+    await userEvent.click(canvas.getByText("Reviewed scope and evidence"));
     await expect(
-      canvas.getByText(`Candidate: ${frozen.snapshot.assessment.candidateRef}`),
+      canvas.getByText(frozen.snapshot.assessment.candidateRef),
     ).toBeVisible();
-    await expect(canvas.getByText("Validation: staging-eu")).toBeVisible();
+    await expect(canvas.getByText("staging-eu", { exact: true })).toBeVisible();
     await expect(
       canvas.getByText(
-        `Recorded evidence freshness limit: ${new Date(frozen.expiresAt!).toISOString()}`,
+        `Evidence valid until ${new Date(frozen.expiresAt!).toISOString()}`,
       ),
     ).toBeVisible();
     await expect(canvas.getByText("Linked to Export an invoice")).toBeVisible();
@@ -86,5 +91,52 @@ export const FrozenReviewAfterChanges: Story = {
     await expect(
       canvas.getByText(/live assessment has changed since this review/),
     ).toBeVisible();
+  },
+};
+
+export const CurrentAndExpiredHistory: Story = {
+  args: {
+    detail: {
+      ...example.detail,
+      assessment: { ...example.detail.assessment, revision: 2 },
+      decisions: [
+        {
+          ...frozen,
+          id: "older-review",
+          createdAt: example.now - 86_400_000,
+          expiresAt: example.now - 1,
+        },
+        {
+          ...frozen,
+          id: "latest-review",
+          revision: 2,
+          createdAt: example.now,
+          expiresAt: example.now + 3_600_000,
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Latest · Current revision")).toBeVisible();
+    await expect(
+      canvas.getByText("Historical revision", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText("Evidence expired", { exact: true }),
+    ).toBeVisible();
+    const decisions = canvas.getAllByRole("button", {
+      name: /Decision by Example release owner/,
+    });
+    await expect(decisions[0]).toHaveAccessibleName(
+      "Decision by Example release owner at revision 2",
+    );
+    await expect(decisions[0]).toHaveAttribute("aria-expanded", "false");
+    await expect(decisions[0]).toHaveAccessibleDescription(
+      "Held Latest · Current revision",
+    );
+    await expect(decisions[1]).toHaveAccessibleDescription(
+      "Held Historical revision Evidence expired",
+    );
   },
 };

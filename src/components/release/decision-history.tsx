@@ -1,22 +1,17 @@
 "use client";
 
+import { useId } from "react";
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Alert,
   Box,
   Button,
-  Chip,
   Stack,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { ReadinessChip } from "./readiness-summary";
-import { EvidenceHistory } from "@/components/evidence/evidence-history";
-import { ReleaseContext } from "./release-context";
-import { SnapshotVisuals } from "./snapshot-visuals";
-import { SnapshotDependencies } from "./snapshot-dependencies";
+import { DecisionSnapshotDetails } from "./decision-snapshot-details";
 import type { ReleaseDecision, ReleaseDetail } from "@/lib/release-types";
 
 export function DecisionHistory({
@@ -30,140 +25,142 @@ export function DecisionHistory({
   canPublish: boolean;
   onPublish: (decision: ReleaseDecision) => void;
 }) {
+  const descriptionPrefix = useId();
+  const decisions = [...detail.decisions].sort(
+    (a, b) => b.createdAt - a.createdAt,
+  );
   return (
-    <Stack spacing={2}>
-      {detail.decisions.map((decision) => (
-        <Accordion key={decision.id}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              flexWrap="wrap"
+    <Box sx={{ borderTop: decisions.length ? 1 : 0, borderColor: "divider" }}>
+      {decisions.map((decision, index) => {
+        const historical = decision.revision !== detail.assessment.revision;
+        const expired =
+          decision.expiresAt !== null && decision.expiresAt <= now;
+        return (
+          <Accordion
+            key={decision.id}
+            disableGutters
+            square
+            slotProps={{ transition: { unmountOnExit: true } }}
+            sx={{
+              bgcolor: "background.default",
+              border: 0,
+              borderBottom: 1,
+              borderColor: "divider",
+              "&::before": { display: "none" },
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon fontSize="small" />}
+              aria-label={`Decision by ${decision.actorName} at revision ${decision.revision}`}
+              aria-describedby={`${descriptionPrefix}-${decision.id}-state`}
+              sx={{
+                px: 0,
+                py: 0.5,
+                gap: 2,
+                "& .MuiAccordionSummary-content": { minWidth: 0 },
+              }}
             >
-              <Chip
-                size="small"
-                label={
-                  decision.decision === "approved"
-                    ? "Approved release"
-                    : "Held release"
-                }
-                color={decision.decision === "approved" ? "success" : "warning"}
-              />
-              <ReadinessChip state={decision.snapshot.readiness.state} />
-              <Typography variant="body2">
-                Reviewed {new Date(decision.createdAt).toISOString()} ·{" "}
-                {decision.actorName}
-              </Typography>
-            </Stack>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Stack spacing={2}>
-              <Typography>{decision.rationale}</Typography>
-              <ReleaseContext assessment={decision.snapshot.assessment} />
-              <Typography variant="body2" color="text.secondary">
-                Recorded at assessment revision {decision.revision}. This review
-                preserves its scope, checks, evidence, dependencies, and images.
-              </Typography>
-              {decision.revision < detail.assessment.revision && (
-                <Alert severity="info">
-                  The live assessment has changed since this review. This
-                  decision remains a historical record.
-                </Alert>
-              )}
-              {decision.expiresAt !== null && decision.expiresAt <= now && (
-                <Alert severity="warning">
-                  Evidence used in this decision has expired. Review the current
-                  assessment before a new release decision.
-                </Alert>
-              )}
-              {decision.expiresAt !== null && (
-                <Typography variant="caption" color="text.secondary">
-                  Recorded evidence freshness limit:{" "}
-                  {new Date(decision.expiresAt).toISOString()}
-                </Typography>
-              )}
-              {decision.snapshot.scope.map((item) => (
-                <Stack key={item.capabilityId} spacing={0.5}>
-                  <Typography variant="subtitle2">
-                    {item.name} · {item.included ? "Included" : "Excluded"}
+              <Stack spacing={0.5} sx={{ minWidth: 0, width: "100%" }}>
+                <Stack
+                  id={`${descriptionPrefix}-${decision.id}-state`}
+                  direction="row"
+                  alignItems="center"
+                  flexWrap="wrap"
+                  gap={1}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                      color:
+                        decision.decision === "approved"
+                          ? "success.main"
+                          : "warning.main",
+                    }}
+                  >
+                    {decision.decision === "approved" ? "Approved" : "Held"}
                   </Typography>
-                  <Typography variant="body2">{item.outcome}</Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {item.scopeReason}
+                    {index === 0 ? "Latest · " : ""}
+                    {historical ? "Historical revision" : "Current revision"}
                   </Typography>
+                  {expired && (
+                    <Typography variant="caption" color="warning.main">
+                      Evidence expired
+                    </Typography>
+                  )}
                 </Stack>
-              ))}
-              {decision.snapshot.checks
-                .filter((check) => check.archivedAt === null)
-                .map((check) => {
-                  const evaluation = decision.snapshot.readiness.checks.find(
-                    (item) => item.checkId === check.id,
-                  );
-                  const evidence = decision.snapshot.evidence.find(
-                    (item) => item.id === evaluation?.evidenceId,
-                  );
-                  return (
-                    <Box
-                      key={check.id}
-                      sx={{
-                        p: 1.5,
-                        border: 1,
-                        borderColor: "divider",
-                        borderRadius: 1,
-                      }}
+                <Typography variant="body2" noWrap>
+                  {decision.rationale}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {decision.actorName} ·{" "}
+                  <Box
+                    component="time"
+                    dateTime={new Date(decision.createdAt).toISOString()}
+                    title={new Date(decision.createdAt).toISOString()}
+                  >
+                    {new Date(decision.createdAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      timeZone: "UTC",
+                    })}
+                  </Box>{" "}
+                  · Revision {decision.revision}
+                </Typography>
+              </Stack>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 0, pt: 0.5, pb: 2.5 }}>
+              <Stack spacing={2}>
+                <Typography variant="body2">{decision.rationale}</Typography>
+                <Stack spacing={0.5}>
+                  <Typography variant="caption" color="text.secondary">
+                    Recorded {new Date(decision.createdAt).toISOString()}
+                  </Typography>
+                  {decision.expiresAt !== null && (
+                    <Typography
+                      variant="caption"
+                      color={expired ? "warning.main" : "text.secondary"}
                     >
-                      <Typography variant="subtitle2">
-                        {check.claim} · {evaluation?.state ?? "Not evaluated"}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {check.required ? "Required" : "Optional"} · Revision{" "}
-                        {check.revision} · {check.category} · {check.ownerLabel}{" "}
-                        · {check.environment}
-                      </Typography>
-                      <Typography variant="body2">{check.method}</Typography>
-                      <Typography variant="body2">
-                        {evaluation?.reason}
-                      </Typography>
-                      {evidence && (
-                        <Typography variant="caption" color="text.secondary">
-                          {evidence.summary} · {evidence.actorName} ·{" "}
-                          {new Date(evidence.observedAt).toISOString()}
-                        </Typography>
-                      )}
-                      <EvidenceHistory
-                        detail={{
-                          assessment: decision.snapshot.assessment,
-                          scope: decision.snapshot.scope,
-                          checks: decision.snapshot.checks,
-                          evidence: decision.snapshot.evidence,
-                          assets: decision.snapshot.assets,
-                          decisions: [],
-                          shares: [],
-                        }}
-                        check={check}
-                        evaluation={evaluation}
-                        now={decision.createdAt}
-                      />
-                    </Box>
-                  );
-                })}
-              <SnapshotDependencies snapshot={decision.snapshot} />
-              <SnapshotVisuals snapshot={decision.snapshot} />
-              {canPublish && (
-                <Button variant="outlined" onClick={() => onPublish(decision)}>
-                  Prepare public review link
-                </Button>
-              )}
-            </Stack>
-          </AccordionDetails>
-        </Accordion>
-      ))}
-      {detail.decisions.length === 0 && (
-        <Typography color="text.secondary">
-          No release decision has been recorded yet.
+                      Evidence valid until{" "}
+                      {new Date(decision.expiresAt).toISOString()}
+                    </Typography>
+                  )}
+                  {historical && (
+                    <Typography variant="body2" color="text.secondary">
+                      The live assessment has changed since this review. This
+                      decision is a historical record.
+                    </Typography>
+                  )}
+                  {expired && (
+                    <Typography variant="body2" color="warning.main">
+                      Recorded evidence has expired. Review the current
+                      assessment before a new decision.
+                    </Typography>
+                  )}
+                </Stack>
+                {canPublish && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    sx={{ alignSelf: "flex-start" }}
+                    onClick={() => onPublish(decision)}
+                  >
+                    Prepare public review link
+                  </Button>
+                )}
+                <DecisionSnapshotDetails decision={decision} />
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+        );
+      })}
+      {decisions.length === 0 && (
+        <Typography variant="body2" color="text.secondary">
+          No decision recorded.
         </Typography>
       )}
-    </Stack>
+    </Box>
   );
 }

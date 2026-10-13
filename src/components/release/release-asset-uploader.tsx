@@ -3,8 +3,8 @@
 import { useState } from "react";
 import {
   Alert,
+  Box,
   Button,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -23,12 +23,20 @@ export function ReleaseAssetUploader({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   return (
-    <Paper sx={{ p: 2.5 }}>
-      <Stack spacing={2}>
-        <Typography variant="subtitle1">Supporting review images</Typography>
+    <Box
+      component="details"
+      sx={{ pt: 2, borderTop: 1, borderColor: "divider" }}
+    >
+      <Typography
+        component="summary"
+        variant="body2"
+        sx={{ cursor: "pointer", width: "fit-content" }}
+      >
+        Supporting review images{assets.length > 0 ? ` · ${assets.length}` : ""}
+      </Typography>
+      <Stack spacing={2} sx={{ pt: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Uploaded images are retained with a recorded decision. Public sharing
-          selects images explicitly.
+          Private until explicitly selected for a public review.
         </Typography>
         <Stack
           component="form"
@@ -82,6 +90,6 @@ export function ReleaseAssetUploader({
           </Typography>
         ))}
       </Stack>
-    </Paper>
+    </Box>
   );
 }

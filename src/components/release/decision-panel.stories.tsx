@@ -28,9 +28,7 @@ export const PreviewReviewBeforeRecording: Story = {
     );
     const dialog = within(await within(document.body).findByRole("dialog"));
     await waitFor(() =>
-      expect(
-        dialog.getByText("Candidate: sha256:demo-rc3-immutable"),
-      ).toBeVisible(),
+      expect(dialog.getByText("sha256:demo-rc3-immutable")).toBeVisible(),
     );
     await expect(
       dialog.getByText("Review revision 1 · October release · RC 3"),
@@ -40,5 +38,49 @@ export const PreviewReviewBeforeRecording: Story = {
     ).toBeVisible();
     await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
     await expect(args.record).not.toHaveBeenCalled();
+  },
+};
+
+export const PublishedReview: Story = {
+  args: {
+    detail: {
+      ...example.detail,
+      shares: [
+        {
+          token: "example-public-review",
+          decisionId: "decision-example",
+          createdAt: example.now,
+          revokedAt: null,
+          projection: {
+            candidateLabel: example.detail.assessment.candidateLabel,
+            targetEnvironment: "production-eu",
+            audience: "Existing business accounts",
+            reviewedAt: example.now,
+            decision: "held",
+            readiness: "blocked",
+            summary: "Invoice export needs a fix before release.",
+            capabilities: [],
+            images: [],
+          },
+        },
+      ],
+    },
+  },
+};
+export const ReadOnlyReview: Story = {
+  args: { canRecord: false },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("button", { name: "Record decision" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Decision by Example release owner at revision 1",
+      }),
+    );
+    await expect(
+      canvas.queryByRole("button", { name: "Prepare public review link" }),
+    ).not.toBeInTheDocument();
   },
 };

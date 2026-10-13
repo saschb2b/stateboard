@@ -44,17 +44,11 @@ export const ExactReviewScope: Story = {
     await expect(
       canvas.getByText("Review revision 1 · October release · RC 3"),
     ).toBeVisible();
-    await expect(
-      canvas.getByText("Candidate: sha256:demo-rc3-immutable"),
-    ).toBeVisible();
-    await expect(canvas.getByText("Validation: staging-eu")).toBeVisible();
-    await expect(canvas.getByText("Target: production-eu")).toBeVisible();
-    await expect(
-      canvas.getByText("Audience: Existing business accounts"),
-    ).toBeVisible();
-    await expect(
-      canvas.getByText("Configuration: flags:invoice-export-v3"),
-    ).toBeVisible();
+    await expect(canvas.getByText("sha256:demo-rc3-immutable")).toBeVisible();
+    await expect(canvas.getByText("staging-eu")).toBeVisible();
+    await expect(canvas.getByText("production-eu")).toBeVisible();
+    await expect(canvas.getByText("Existing business accounts")).toBeVisible();
+    await expect(canvas.getByText("flags:invoice-export-v3")).toBeVisible();
     await expect(
       canvas.getByText("Required blockers: 1 · Evidence gaps: 3"),
     ).toBeVisible();
