@@ -16,6 +16,8 @@ sources:
 
 This ledger supports [interface research](interface-research.md) and the [design system](../overview.md). It records a comparative study, not a source-site clone.
 
+The later [landing study](landing-research.md) has its own bounded page and image ledger. The [supporting screen contracts](../patterns/supporting-surfaces.md) record app requirements separately from external research coverage.
+
 The bound was 13 reference pages, plus their directly linked public images, at one link depth. Hosts were `dribbble.com`, `cdn.dribbble.com`, `linear.app`, `plane.so`, `docs.plane.so`, and `media.docs.plane.so`. Search pages served discovery only. Profiles, recommended shots, signup flows, and private workspaces were outside scope.
 
 # Pages

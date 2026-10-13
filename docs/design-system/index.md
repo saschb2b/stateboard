@@ -17,7 +17,9 @@ okf_version: "0.2"
 
 ## Patterns
 
+- [Product landing page](patterns/product-landing.md) - An editorial introduction, interactive assessment preview, role routes, and agent maintenance explanation.
 - [Release review workspace](patterns/review-workspace.md) - Stable navigation, one candidate heading, and grouped evidence and capability rows.
+- [Supporting screen contracts](patterns/supporting-surfaces.md) - Layout and interaction requirements for boards, settings, sharing, and presentation.
 
 ## Behaviors
 
@@ -27,3 +29,4 @@ okf_version: "0.2"
 
 - [Interface research coverage](references/coverage.md) - Bounded source ledger for the StateBoard interface study.
 - [Project management interface research](references/interface-research.md) - Observed interface patterns and their application to StateBoard release reviews.
+- [Product landing page research](references/landing-research.md) - Observed landing page patterns and a homepage direction for StateBoard.

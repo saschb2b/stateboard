@@ -25,3 +25,31 @@ h2 .status::before,
 .workspace__nav a {
   color: black;
 }
+.landing-preview,
+.landing-preview__summary,
+.landing-preview__summary dt,
+.landing__primary,
+.landing-preview__tabs button,
+.landing-preview__tabs [aria-selected="true"] {
+  background: white;
+  color: black;
+  border-color: gray;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: monospace;
+}
+.landing__hero > *,
+.landing-preview__header > *,
+.landing-preview__body > *,
+.landing-preview__dependency-path > *,
+.landing-preview__panel,
+.landing-preview__rows li,
+.landing__section-heading,
+.landing__role-list a,
+.landing__maintenance > *,
+.landing__footer > * {
+  outline: 1px dashed gray;
+}
+.landing__role-list a > :nth-child(2) {
+  color: black;
+}

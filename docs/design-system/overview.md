@@ -7,6 +7,8 @@ generated: { by: codex/gpt-6, at: 2026-10-13 }
 sources:
   - resource: src/components/release/release-workspace.tsx
   - resource: docs/design-system/references/interface-research.md
+  - resource: src/app/(site)/page.tsx
+  - resource: docs/design-system/references/landing-research.md
 ---
 
 # Use the system
@@ -14,6 +16,10 @@ sources:
 StateBoard helps a reviewer judge a candidate, find uncertainty, and inspect the supporting claim. The interface starts with that task. [Research](references/interface-research.md) informed the hierarchy and disclosure. It does not establish usability results.
 
 Read the [workspace pattern](patterns/review-workspace.md), then the [tokens](foundations/tokens.md) and [interaction rules](behaviors/interaction.md). The [example](patterns/review-workspace.example.html) composes the system. Its [wireframe](patterns/review-workspace.wireframe.html) uses the same markup to expose structure.
+
+The [landing pattern](patterns/product-landing.md) introduces the product through an illustrative assessment, role routes, and agent maintenance. Its [example](patterns/product-landing.example.html) and [wireframe](patterns/product-landing.wireframe.html) share one body. The [landing study](references/landing-research.md) records seven inspected Dribbble concepts and two first-party page references.
+
+The [supporting screen contracts](patterns/supporting-surfaces.md) cover boards, settings, signed reviews, visual sharing, and presentation. They identify the behavior to check without claiming a completed test run.
 
 # Apply it
 

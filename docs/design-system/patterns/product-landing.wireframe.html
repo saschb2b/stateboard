@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>StateBoard product landing page wireframe</title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <link rel="stylesheet" href="../styles/components.css" />
+    <link rel="stylesheet" href="../styles/wireframe.css" />
+  </head>
+  <body>
+    <header class="app-bar landing__bar">
+      <a class="app-bar__brand" href="#top">StateBoard</a>
+      <nav class="app-bar__actions" aria-label="Page navigation">
+        <a href="#assessment">Example</a>
+        <a href="#maintenance">For agents</a>
+      </nav>
+    </header>
+    <main class="landing" id="top">
+      <section class="landing__hero" aria-labelledby="landing-title">
+        <div>
+          <p class="meta landing__eyebrow">Product state, backed by evidence</p>
+          <h1 id="landing-title">Know what’s ready to release.</h1>
+        </div>
+        <div class="landing__intro">
+          <p>
+            See what works, what it depends on, and what still needs proof. Give
+            every role a clear view of the same release.
+          </p>
+          <div class="landing__actions">
+            <a class="landing__primary" href="#assessment"
+              >Explore the example →</a
+            >
+            <a href="#roles">Find your view</a>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="landing-preview"
+        id="assessment"
+        aria-labelledby="assessment-title"
+      >
+        <header class="landing-preview__header">
+          <strong>StateBoard / Next release</strong>
+          <span class="meta">Illustrative assessment · no live data</span>
+        </header>
+        <div class="landing-preview__body">
+          <aside class="landing-preview__summary">
+            <p class="meta">Release assessment</p>
+            <h2 id="assessment-title">Needs evidence</h2>
+            <p class="muted">One open check before approval.</p>
+            <dl>
+              <dt>Candidate</dt>
+              <dd>Example RC 1</dd>
+              <dt>Validation</dt>
+              <dd>Staging</dd>
+              <dt>Target</dt>
+              <dd>Production</dd>
+            </dl>
+          </aside>
+          <div class="landing-preview__views">
+            <div
+              class="landing-preview__tabs"
+              role="tablist"
+              aria-label="Assessment view"
+            >
+              <button
+                id="overview-tab"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="overview-panel"
+                tabindex="0"
+              >
+                Overview
+              </button>
+              <button
+                id="architecture-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="architecture-panel"
+                tabindex="-1"
+              >
+                Architecture
+              </button>
+              <button
+                id="checks-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="checks-panel"
+                tabindex="-1"
+              >
+                Checks
+              </button>
+            </div>
+            <div
+              id="overview-panel"
+              class="landing-preview__panel"
+              role="tabpanel"
+              aria-labelledby="overview-tab"
+              tabindex="0"
+            >
+              <div class="landing-preview__caption">
+                <h3>Capabilities in scope</h3>
+                <span class="meta">Outcome · Check state</span>
+              </div>
+              <ul class="landing-preview__rows">
+                <li>
+                  <div>
+                    <strong>Trace a release dependency</strong
+                    ><span class="meta"
+                      >Review UI → Release API → PostgreSQL</span
+                    >
+                  </div>
+                  <span class="status status--ready">Ready · verification</span>
+                </li>
+                <li>
+                  <div>
+                    <strong>Preserve the review baseline</strong
+                    ><span class="meta"
+                      >Scope, evidence, and rationale saved together</span
+                    >
+                  </div>
+                  <span class="status status--ready">Ready · verification</span>
+                </li>
+                <li>
+                  <div>
+                    <strong>Restore product data</strong
+                    ><span class="meta"
+                      >A recovery drill still needs evidence</span
+                    >
+                  </div>
+                  <span class="status status--missing">Needs evidence</span>
+                </li>
+              </ul>
+            </div>
+            <div
+              id="architecture-panel"
+              class="landing-preview__panel"
+              role="tabpanel"
+              aria-labelledby="architecture-tab"
+              tabindex="0"
+              hidden
+            >
+              <p class="muted">What supports the release review?</p>
+              <div class="landing-preview__dependency-path">
+                <div>
+                  <strong>Review UI</strong><span class="meta">Frontend</span>
+                </div>
+                <span aria-hidden="true">→</span>
+                <div>
+                  <strong>Release API</strong><span class="meta">Backend</span>
+                </div>
+                <span aria-hidden="true">→</span>
+                <div>
+                  <strong>PostgreSQL</strong><span class="meta">Data</span>
+                </div>
+              </div>
+              <p class="muted">
+                Declared dependencies explain the path. Matching checks
+                establish whether it works.
+              </p>
+            </div>
+            <div
+              id="checks-panel"
+              class="landing-preview__panel"
+              role="tabpanel"
+              aria-labelledby="checks-tab"
+              tabindex="0"
+              hidden
+            >
+              <div class="landing-preview__caption">
+                <h3>Required acceptance checks</h3>
+                <span class="meta">Illustrative observations</span>
+              </div>
+              <ul class="landing-preview__rows">
+                <li>
+                  <div>
+                    <strong>Dependencies stay within the workspace</strong
+                    ><span class="meta"
+                      >Boundary tests · matching candidate</span
+                    >
+                  </div>
+                  <span class="status status--ready">Ready · verification</span>
+                </li>
+                <li>
+                  <div>
+                    <strong>Later edits preserve the saved review</strong
+                    ><span class="meta"
+                      >Snapshot checks · matching candidate</span
+                    >
+                  </div>
+                  <span class="status status--ready">Ready · verification</span>
+                </li>
+                <li>
+                  <div>
+                    <strong>A backup restores without data loss</strong
+                    ><span class="meta"
+                      >No observation submitted · Operations</span
+                    >
+                  </div>
+                  <span class="status status--missing">Needs evidence</span>
+                </li>
+              </ul>
+            </div>
+            <footer class="landing-preview__footer meta">
+              The views share one candidate. This specimen contains illustrative
+              records, not a live release result.
+            </footer>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="landing__section landing__roles"
+        id="roles"
+        aria-labelledby="roles-title"
+      >
+        <div class="landing__section-heading">
+          <p class="meta landing__eyebrow">One assessment</p>
+          <h2 id="roles-title">A useful view for every role.</h2>
+        </div>
+        <div class="landing__role-list">
+          <a href="#assessment" data-view="overview-tab"
+            ><span
+              ><span class="meta">Product &amp; delivery</span
+              ><strong>Which outcomes can we release?</strong></span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <a href="#assessment" data-view="architecture-tab"
+            ><span
+              ><span class="meta">Backend &amp; architecture</span
+              ><strong>What does this capability depend on?</strong></span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <a href="#assessment" data-view="checks-tab"
+            ><span
+              ><span class="meta">QA &amp; testing</span
+              ><strong>What passed for this exact candidate?</strong></span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <a href="#assessment" data-view="overview-tab"
+            ><span
+              ><span class="meta">Frontend &amp; design</span
+              ><strong>What works behind this screen?</strong></span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <a href="#assessment" data-view="checks-tab"
+            ><span
+              ><span class="meta">Operations</span
+              ><strong>Can we deploy and recover it?</strong></span
+            ><span aria-hidden="true">↗</span></a
+          >
+          <a href="#assessment" data-view="overview-tab"
+            ><span
+              ><span class="meta">Release owners</span
+              ><strong>What supports the decision?</strong></span
+            ><span aria-hidden="true">↗</span></a
+          >
+        </div>
+      </section>
+
+      <section
+        class="landing__section landing__maintenance"
+        id="maintenance"
+        aria-labelledby="maintenance-title"
+      >
+        <div>
+          <p class="meta landing__eyebrow">Maintained where the work happens</p>
+          <h2 id="maintenance-title">
+            Agents keep the assessment current.<br />People decide when to
+            release.
+          </h2>
+          <p class="muted">
+            Coding agents and CI use the API or MCP to maintain product context
+            and append observations for the candidate they tested.
+          </p>
+        </div>
+        <ol class="landing__steps">
+          <li>
+            <strong>Inspect the current assessment</strong
+            ><span class="muted"
+              >Read scope, dependencies, checks, and prior evidence.</span
+            >
+          </li>
+          <li>
+            <strong>Update the product context</strong
+            ><span class="muted"
+              >Keep capabilities and implementation references aligned.</span
+            >
+          </li>
+          <li>
+            <strong>Append observed evidence</strong
+            ><span class="muted"
+              >Record the result for the exact candidate and check
+              revision.</span
+            >
+          </li>
+          <li>
+            <strong>Leave the decision to an owner</strong
+            ><span class="muted"
+              >A person reviews uncertainty and records approval or hold.</span
+            >
+          </li>
+        </ol>
+      </section>
+      <footer class="landing__footer">
+        <strong>StateBoard</strong
+        ><span class="muted">Self-hosted · Airgap-ready · MIT</span
+        ><a href="#assessment">Explore the assessment ↑</a>
+      </footer>
+    </main>
+    <script>
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      function selectTab(tab, focus) {
+        tabs.forEach((candidate) => {
+          const selected = candidate === tab;
+          candidate.setAttribute("aria-selected", String(selected));
+          candidate.tabIndex = selected ? 0 : -1;
+          document.getElementById(
+            candidate.getAttribute("aria-controls"),
+          ).hidden = !selected;
+        });
+        if (focus) tab.focus();
+      }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => selectTab(tab, false));
+        tab.addEventListener("keydown", (event) => {
+          let next;
+          if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+          if (event.key === "ArrowLeft")
+            next = (index + tabs.length - 1) % tabs.length;
+          if (event.key === "Home") next = 0;
+          if (event.key === "End") next = tabs.length - 1;
+          if (next === undefined) return;
+          event.preventDefault();
+          selectTab(tabs[next], true);
+        });
+      });
+      document.querySelectorAll("[data-view]").forEach((link) => {
+        link.addEventListener("click", () =>
+          selectTab(document.getElementById(link.dataset.view), true),
+        );
+      });
+    </script>
+  </body>
+</html>
