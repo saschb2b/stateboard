@@ -7,7 +7,7 @@ const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
   title: {
-    default: "StateBoard · Show, don't tell.",
+    default: "StateBoard · Know what’s ready to release.",
     template: "%s · StateBoard",
   },
   description:

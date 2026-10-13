@@ -1,55 +1,45 @@
-import Link from "next/link";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Container from "@mui/material/Container";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import GitHubIcon from "@mui/icons-material/GitHub";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import CloudOffOutlinedIcon from "@mui/icons-material/CloudOffOutlined";
-import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { AppHeader } from "@/components/app/app-header";
-import { LandingMockup } from "@/components/site/landing-mockup";
-import { ReadinessChip } from "@/components/release/readiness-summary";
+import { ReleasePreview } from "@/components/site/release-preview";
+import { SiteLink } from "@/components/site/site-link";
+import { designTokens } from "@/lib/design-tokens";
 import { version } from "../../../package.json";
 
-const PROBLEMS = [
-  {
-    title: "A screen shows only part of the product",
-    body: "A visible button cannot explain the API, worker, event, or data it depends on. Some critical capabilities have no screen at all.",
-  },
-  {
-    title: "Different roles need different views",
-    body: "Product teams follow outcomes. Backend developers follow dependencies. QA follows acceptance checks. They need a shared assessment they can each inspect.",
-  },
-  {
-    title: "A passing result needs context",
-    body: "Evidence belongs to a candidate, environment, audience, and check definition. A result from last week or another build cannot quietly make this release ready.",
-  },
-  {
-    title: "A decision needs a baseline",
-    body: "Keep the scope, evidence, rationale, and selected images that informed a review, so later edits cannot change what a release owner approved.",
-  },
-];
+const landingType = designTokens.typography.landing;
 
-const STEPS = [
+const perspectives = [
   {
-    n: "01",
-    title: "Define the release",
-    body: "Choose a candidate and its intended users. Describe the capabilities, owners, and dependencies that matter. Link screenshots where they help.",
+    role: "Product & delivery",
+    question: "Which outcomes can we release?",
+    view: "release",
   },
   {
-    n: "02",
-    title: "Verify the claims",
-    body: "Set acceptance checks and attach matching manual or API-submitted evidence. See failures and evidence gaps through the view relevant to your work.",
+    role: "Backend & architecture",
+    question: "What does this capability depend on?",
+    view: "backend",
   },
   {
-    n: "03",
-    title: "Review and share",
-    body: "A release owner records an approval or hold with a preserved baseline. Publish a curated summary and explicitly selected safe images through a revocable link.",
+    role: "QA & testing",
+    question: "What passed for this exact candidate?",
+    view: "qa",
+  },
+  {
+    role: "Frontend & design",
+    question: "What works behind this screen?",
+    view: "visual",
+  },
+  {
+    role: "Operations",
+    question: "Can we deploy and recover it?",
+    view: "operations",
+  },
+  {
+    role: "Release owners",
+    question: "What supports the decision?",
+    view: "decision",
   },
 ];
 
@@ -59,539 +49,385 @@ export default function LandingPage() {
       <AppHeader
         actions={
           <>
-            <Link
-              href="/docs"
-              style={{ textDecoration: "none", color: "inherit" }}
+            <SiteLink
+              href="#agents"
+              color="inherit"
+              size="small"
+              sx={{ display: { xs: "none", md: "inline-flex" } }}
             >
-              <Button
-                size="small"
-                color="inherit"
-                startIcon={<MenuBookIcon />}
-                sx={{ display: { xs: "none", sm: "inline-flex" } }}
-              >
-                Docs
-              </Button>
-            </Link>
-            <Link
-              href="https://github.com/saschb2b/stateboard"
-              target="_blank"
-              rel="noopener"
-              style={{
-                textDecoration: "none",
-                color: "inherit",
-              }}
+              For agents
+            </SiteLink>
+            <SiteLink href="/docs" color="inherit" size="small">
+              Docs
+            </SiteLink>
+            <SiteLink
+              href="/boards"
+              variant="outlined"
+              color="inherit"
+              size="small"
             >
-              <Button
-                size="small"
-                color="inherit"
-                startIcon={<GitHubIcon />}
-                sx={{ display: { xs: "none", sm: "inline-flex" } }}
-              >
-                GitHub
-              </Button>
-            </Link>
-            <Link href="/boards" style={{ textDecoration: "none" }}>
-              <Button
-                size="small"
-                variant="contained"
-                color="primary"
-                endIcon={<ArrowForwardIcon />}
-              >
-                Open boards
-              </Button>
-            </Link>
+              Open workspace
+            </SiteLink>
           </>
         }
       />
-
-      {/* Hero */}
-      <Container
-        maxWidth="lg"
-        sx={{ pt: { xs: 8, md: 12 }, pb: { xs: 6, md: 10 } }}
-      >
-        <Stack
-          spacing={3}
-          alignItems="center"
-          sx={{ textAlign: "center", mb: { xs: 6, md: 9 } }}
+      <Box component="main">
+        <Container
+          maxWidth="lg"
+          sx={{ pt: { xs: 6, md: 10 }, pb: { xs: 6, md: 8 } }}
         >
-          <Stack direction="row" spacing={1.25} alignItems="center">
-            <ReadinessChip state="ready" />
-            <ReadinessChip state="blocked" />
-            <ReadinessChip state="needs_evidence" />
-          </Stack>
-          <Typography
-            variant="h1"
+          <Box
             sx={{
-              fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4.5rem" },
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              lineHeight: 1.05,
-              maxWidth: 900,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1.5fr 1fr" },
+              gap: { xs: 3, md: 8 },
+              alignItems: "end",
+              mb: { xs: 5, md: 7 },
             }}
           >
-            Show, don&apos;t tell
-            <Box
-              component="span"
-              aria-hidden
-              sx={{
-                display: "inline-block",
-                width: { xs: 14, md: 22 },
-                height: { xs: 14, md: 22 },
-                bgcolor: "primary.main",
-                ml: 0.75,
-                mb: { xs: 0.5, md: 1 },
-                verticalAlign: "baseline",
-                borderRadius: 0.5,
-              }}
-            />
-          </Typography>
-          <Typography
-            variant="h6"
-            sx={{
-              maxWidth: 760,
-              color: "text.secondary",
-              fontWeight: 400,
-              fontSize: { xs: "1.05rem", md: "1.25rem" },
-              lineHeight: 1.55,
-            }}
-          >
-            See what works, what it depends on, and why it is ready to release.
-            One shared assessment, with a view for everyone involved.
-          </Typography>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{ pt: 2 }}
-          >
-            <Link href="/boards" style={{ textDecoration: "none" }}>
-              <Button
-                size="large"
-                variant="contained"
-                color="primary"
-                endIcon={<ArrowForwardIcon />}
-                sx={{ px: 3.5, py: 1.25 }}
-              >
-                Open your boards
-              </Button>
-            </Link>
-            <Link
-              href="/share/demo/releases"
-              style={{ textDecoration: "none" }}
-            >
-              <Button
-                size="large"
-                variant="outlined"
-                startIcon={<ArticleOutlinedIcon />}
-                sx={{ px: 3.5, py: 1.25 }}
-              >
-                Explore a release assessment
-              </Button>
-            </Link>
-          </Stack>
-        </Stack>
-
-        <LandingMockup />
-        <Typography
-          variant="caption"
-          sx={{
-            display: "block",
-            textAlign: "center",
-            mt: 2,
-            color: "text.secondary",
-            fontStyle: "italic",
-          }}
-        >
-          Screenshots remain the visual view. Capabilities and evidence connect
-          them to the rest of the product.
-        </Typography>
-      </Container>
-
-      {/* The problem */}
-      <Box sx={{ borderTop: "1px solid", borderColor: "divider" }}>
-        <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-          <Stack spacing={1.5} sx={{ mb: 6, maxWidth: 760 }}>
-            <Typography
-              variant="overline"
-              sx={{
-                color: "primary.main",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-              }}
-            >
-              01 · The problem
-            </Typography>
-            <Typography
-              variant="h2"
-              sx={{ fontSize: { xs: "2rem", md: "2.75rem" } }}
-            >
-              Can everyone explain whether this release is ready?
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ pt: 1 }}>
-              A polished screen and a completed ticket each tell part of the
-              story. A release review also needs the working outcome, its
-              dependencies, and the verification behind it.
-            </Typography>
-            <Box
-              sx={{
-                mt: 3,
-                p: 3,
-                border: 1,
-                borderColor: "divider",
-                bgcolor: "background.paper",
-                borderRadius: 1,
-              }}
-            >
+            <Box>
               <Typography
-                variant="h6"
-                sx={{
-                  fontStyle: "italic",
-                  color: "text.primary",
-                  fontWeight: 500,
-                }}
+                variant="body2"
+                sx={{ color: "primary.main", fontWeight: 500, mb: 2.5 }}
               >
-                &quot;What works for these users? What blocks this candidate?
-                What evidence would change our decision?&quot;
+                Release readiness for the whole team
               </Typography>
               <Typography
-                variant="caption"
-                sx={{ color: "text.secondary", mt: 1, display: "block" }}
+                variant="h1"
+                sx={{
+                  fontSize: {
+                    xs: landingType.displayCompact,
+                    sm: landingType.displayMedium,
+                    md: landingType.display,
+                  },
+                  fontWeight: landingType.weight,
+                  letterSpacing: landingType.displayTracking,
+                  lineHeight: landingType.displayLeading,
+                  maxWidth: 680,
+                }}
               >
-                The questions a shared release assessment should answer
+                Know what’s ready to release.
               </Typography>
             </Box>
-          </Stack>
-          <Box
-            sx={{
-              display: "grid",
-              gap: 2,
-              gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
-            }}
-          >
-            {PROBLEMS.map((p) => (
-              <Paper key={p.title} sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ mb: 1 }}>
-                  {p.title}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ lineHeight: 1.6 }}
-                >
-                  {p.body}
-                </Typography>
-              </Paper>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* The thesis + how it works */}
-      <Box
-        sx={{
-          borderTop: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-        }}
-      >
-        <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-          <Stack spacing={1.5} sx={{ mb: 6, maxWidth: 760 }}>
-            <Typography
-              variant="overline"
-              sx={{
-                color: "primary.main",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-              }}
-            >
-              02 · The thesis
-            </Typography>
-            <Typography
-              variant="h2"
-              sx={{ fontSize: { xs: "2rem", md: "2.75rem" } }}
-            >
-              Start with a{" "}
-              <Box component="span" sx={{ color: "primary.main" }}>
-                capability supported by evidence
-              </Box>
-              .
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ pt: 1 }}>
-              Describe an outcome people can verify, such as exporting an
-              invoice or processing a partner event. Connect it to the screens,
-              services, checks, and owners that explain its current state.
-            </Typography>
-          </Stack>
-
-          <Box
-            sx={{
-              display: "grid",
-              gap: 3,
-              gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
-            }}
-          >
-            {STEPS.map((s) => (
-              <Box
-                key={s.n}
+            <Stack spacing={3} sx={{ pb: 0.5 }}>
+              <Typography
                 sx={{
-                  position: "relative",
-                  p: 3,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 1,
-                  bgcolor: "background.default",
+                  fontSize: landingType.lead,
+                  lineHeight: 1.65,
+                  color: "text.secondary",
+                  maxWidth: 410,
                 }}
               >
-                <Typography
-                  variant="overline"
-                  sx={{
-                    color: "primary.main",
-                    fontWeight: 700,
-                    letterSpacing: "0.12em",
-                  }}
+                Connect product capabilities to their dependencies and evidence.
+                Give every role a clear view of what works, what’s missing, and
+                what needs a decision.
+              </Typography>
+              <Stack
+                direction="row"
+                gap={1.5}
+                flexWrap="wrap"
+                alignItems="center"
+              >
+                <SiteLink
+                  href="/share/demo/releases"
+                  variant="contained"
+                  endIcon={<ArrowForwardIcon />}
                 >
-                  {s.n}
-                </Typography>
-                <Typography variant="h5" sx={{ mb: 1, mt: 0.5 }}>
-                  {s.title}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ lineHeight: 1.6 }}
-                >
-                  {s.body}
-                </Typography>
-              </Box>
-            ))}
+                  Explore the demo
+                </SiteLink>
+                <SiteLink href="/docs/getting-started" color="inherit">
+                  Get started
+                </SiteLink>
+              </Stack>
+            </Stack>
           </Box>
-        </Container>
-      </Box>
-
-      {/* Distribution / airgap */}
-      <Box sx={{ borderTop: "1px solid", borderColor: "divider" }}>
-        <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={{ xs: 4, md: 8 }}
-            alignItems={{ xs: "flex-start", md: "center" }}
-          >
-            <Stack spacing={2} sx={{ flex: 1, maxWidth: 560 }}>
-              <Typography
-                variant="overline"
-                sx={{
-                  color: "primary.main",
-                  fontWeight: 700,
-                  letterSpacing: "0.12em",
-                }}
-              >
-                Distribution
-              </Typography>
-              <Typography
-                variant="h2"
-                sx={{ fontSize: { xs: "1.75rem", md: "2.5rem" } }}
-              >
-                Open source. Self-hosted. Airgap-ready.
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                One Docker image. MIT license. Designed from day one for the
-                teams that aren&apos;t allowed to send screenshots of their
-                product to a third-party server in the first place.
-              </Typography>
-            </Stack>
-
-            <Stack spacing={2} sx={{ flex: 1, width: "100%" }}>
-              <Highlight
-                icon={<CloudOffOutlinedIcon />}
-                title="Airgap by default"
-                body="No outbound calls except to your configured identity provider. No license server, phone-home, or analytics."
-              />
-              <Highlight
-                icon={<LockOutlinedIcon />}
-                title="One app + Postgres"
-                body="Run the app with Postgres, your OIDC provider, and local persistent file storage."
-              />
-              <Highlight
-                icon={<ArticleOutlinedIcon />}
-                title="MIT license"
-                body="Use it, fork it, ship it inside your product. The license means what it says."
-              />
-            </Stack>
-          </Stack>
-        </Container>
-      </Box>
-
-      {/* Final CTA */}
-      <Box
-        sx={{
-          borderTop: "1px solid",
-          borderColor: "divider",
-          bgcolor: "background.paper",
-        }}
-      >
-        <Container
-          maxWidth="md"
-          sx={{ py: { xs: 8, md: 12 }, textAlign: "center" }}
-        >
-          <Typography
-            variant="h2"
-            sx={{ fontSize: { xs: "2rem", md: "2.75rem" }, mb: 2 }}
-          >
-            Stop telling them. Start showing them.
-          </Typography>
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
-          >
-            Create a product board, define its critical capabilities, and assess
-            a candidate. Each person can inspect the evidence and dependencies
-            that matter to their work.
-          </Typography>
-          <Link href="/boards" style={{ textDecoration: "none" }}>
-            <Button
-              size="large"
-              variant="contained"
-              color="primary"
-              endIcon={<ArrowForwardIcon />}
-              sx={{ px: 4, py: 1.5 }}
-            >
-              Open your boards
-            </Button>
-          </Link>
-        </Container>
-      </Box>
-
-      <Box
-        component="footer"
-        sx={{
-          borderTop: "1px solid",
-          borderColor: "divider",
-          py: 3,
-          px: 3,
-        }}
-      >
-        <Container maxWidth="lg">
+          <ReleasePreview />
           <Stack
             direction={{ xs: "column", sm: "row" }}
             justifyContent="space-between"
-            spacing={1}
-            sx={{ color: "text.secondary" }}
+            gap={1}
+            sx={{ mt: 2 }}
           >
-            <Typography variant="caption">
-              StateBoard · MIT · Show, don&apos;t tell.
+            <Typography variant="caption" color="text.secondary">
+              A screen is one part of the product. See the work behind it.
             </Typography>
-            <Stack direction="row" spacing={2}>
-              <Link
-                href={`https://github.com/saschb2b/stateboard/releases/tag/v${version}`}
-                target="_blank"
-                rel="noopener"
-                style={{ color: "inherit", textDecoration: "none" }}
+            <Typography variant="caption" color="text.secondary">
+              Open source · Self-hosted · API + MCP
+            </Typography>
+          </Stack>
+        </Container>
+        <Container
+          component="section"
+          maxWidth="lg"
+          aria-labelledby="perspectives-heading"
+          sx={{ py: { xs: 5, md: 8 }, borderTop: 1, borderColor: "divider" }}
+        >
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1.5fr" },
+              gap: { xs: 4, md: 10 },
+            }}
+          >
+            <Box>
+              <Typography
+                id="perspectives-heading"
+                component="h2"
+                sx={{
+                  fontSize: {
+                    xs: landingType.headingCompact,
+                    md: landingType.heading,
+                  },
+                  lineHeight: landingType.headingLeading,
+                  fontWeight: landingType.weight,
+                  letterSpacing: landingType.headingTracking,
+                  mb: 2,
+                }}
               >
+                A useful view
+                <br />
+                for every role.
+              </Typography>
+              <Typography color="text.secondary" sx={{ maxWidth: 340 }}>
+                Review the same candidate from the perspective that matters to
+                your work.
+              </Typography>
+            </Box>
+            <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
+              {perspectives.map((item) => (
+                <Box
+                  component="li"
+                  key={item.view}
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    "&:first-child": { borderTop: 1 },
+                  }}
+                >
+                  <SiteLink
+                    href={`/share/demo/releases?view=${item.view}`}
+                    color="inherit"
+                    fullWidth
+                    endIcon={
+                      <ArrowOutwardIcon sx={{ color: "text.secondary" }} />
+                    }
+                    sx={{
+                      py: 2,
+                      px: 0,
+                      justifyContent: "space-between",
+                      textAlign: "left",
+                      "& .MuiButton-endIcon": { mr: 0.5 },
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        component="span"
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        sx={{ mb: 0.5 }}
+                      >
+                        {item.role}
+                      </Typography>
+                      <Typography component="span" variant="body1">
+                        {item.question}
+                      </Typography>
+                    </Box>
+                  </SiteLink>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Container>
+        <Box
+          component="section"
+          id="agents"
+          aria-labelledby="agents-heading"
+          sx={{
+            bgcolor: "background.paper",
+            borderBlock: 1,
+            borderColor: "divider",
+            scrollMarginTop: 80,
+          }}
+        >
+          <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                gap: { xs: 4, md: 10 },
+                alignItems: "center",
+              }}
+            >
+              <Box>
+                <Typography variant="body2" color="primary.main" sx={{ mb: 2 }}>
+                  Built for agent upkeep
+                </Typography>
+                <Typography
+                  id="agents-heading"
+                  component="h2"
+                  sx={{
+                    fontSize: {
+                      xs: landingType.headingCompact,
+                      md: landingType.heading,
+                    },
+                    lineHeight: landingType.headingLeading,
+                    fontWeight: landingType.weight,
+                    letterSpacing: landingType.headingTracking,
+                    mb: 2,
+                  }}
+                >
+                  Let agents keep
+                  <br />
+                  the record current.
+                </Typography>
+                <Typography
+                  color="text.secondary"
+                  sx={{ mb: 2, maxWidth: 420 }}
+                >
+                  Your coding agent can map capabilities, update dependencies,
+                  and submit observed results through MCP or REST. CI can append
+                  evidence from the checks it runs.
+                </Typography>
+                <SiteLink
+                  href="/docs/agents"
+                  color="inherit"
+                  endIcon={<ArrowForwardIcon />}
+                  sx={{ px: 0 }}
+                >
+                  Connect your agent
+                </SiteLink>
+              </Box>
+              <Box
+                sx={{
+                  borderLeft: 1,
+                  borderColor: "divider",
+                  pl: { xs: 3, md: 4 },
+                }}
+              >
+                <Stack
+                  component="ol"
+                  spacing={3}
+                  sx={{ listStyle: "none", p: 0, m: 0 }}
+                >
+                  {[
+                    [
+                      "01",
+                      "Read the product",
+                      "Reuse its capabilities, owners, and dependencies.",
+                    ],
+                    [
+                      "02",
+                      "Record what was observed",
+                      "Keep passing, failing, and inconclusive results tied to the candidate.",
+                    ],
+                    [
+                      "03",
+                      "Bring it back for review",
+                      "A human owner records the release decision and its rationale.",
+                    ],
+                  ].map(([number, title, body]) => (
+                    <Stack
+                      component="li"
+                      key={number}
+                      direction="row"
+                      spacing={2}
+                    >
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ pt: 0.4 }}
+                      >
+                        {number}
+                      </Typography>
+                      <Box>
+                        <Typography fontWeight={550} sx={{ mb: 0.5 }}>
+                          {title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {body}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  ))}
+                </Stack>
                 <Typography
                   variant="caption"
-                  sx={{ "&:hover": { color: "primary.main" } }}
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 3 }}
                 >
-                  v{version}
+                  Runs in your agent or CI workflow. Connecting MCP does not
+                  start background maintenance.
                 </Typography>
-              </Link>
-              <Link
-                href="/docs/changelog"
-                style={{ color: "inherit", textDecoration: "none" }}
+              </Box>
+            </Box>
+          </Container>
+        </Box>
+        <Container
+          component="section"
+          maxWidth="lg"
+          sx={{ py: { xs: 5, md: 7 } }}
+        >
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="space-between"
+            gap={3}
+            alignItems={{ xs: "flex-start", md: "center" }}
+          >
+            <Box>
+              <Typography
+                component="h2"
+                variant="h5"
+                sx={{ fontWeight: landingType.weight, mb: 1 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{ "&:hover": { color: "primary.main" } }}
-                >
-                  Changelog
-                </Typography>
-              </Link>
-              <Link
-                href="/docs"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ "&:hover": { color: "primary.main" } }}
-                >
-                  Docs
-                </Typography>
-              </Link>
-              <Link
-                href="https://github.com/saschb2b/stateboard"
-                target="_blank"
-                rel="noopener"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ "&:hover": { color: "primary.main" } }}
-                >
-                  GitHub
-                </Typography>
-              </Link>
-              <Link
-                href="/boards"
-                style={{ color: "inherit", textDecoration: "none" }}
-              >
-                <Typography
-                  variant="caption"
-                  sx={{ "&:hover": { color: "primary.main" } }}
-                >
-                  Boards
-                </Typography>
-              </Link>
-            </Stack>
+                Keep the assessment with your team.
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Self-host StateBoard with PostgreSQL and your company’s identity
+                provider.
+              </Typography>
+            </Box>
+            <SiteLink
+              href="/docs/self-hosting"
+              variant="outlined"
+              color="inherit"
+              endIcon={<ArrowForwardIcon />}
+            >
+              Self-hosting guide
+            </SiteLink>
           </Stack>
         </Container>
       </Box>
-    </>
-  );
-}
-
-function Highlight({
-  icon,
-  title,
-  body,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-}) {
-  return (
-    <Stack
-      direction="row"
-      spacing={2}
-      sx={{
-        p: 2.5,
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 1,
-        bgcolor: "background.default",
-      }}
-    >
-      <Box
-        sx={{
-          width: 40,
-          height: 40,
-          borderRadius: 1,
-          bgcolor: "primary.main",
-          color: "primary.contrastText",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
+      <Container
+        component="footer"
+        maxWidth="lg"
+        sx={{ py: 3, borderTop: 1, borderColor: "divider" }}
       >
-        {icon}
-      </Box>
-      <Box>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
-          {title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {body}
-        </Typography>
-      </Box>
-    </Stack>
+        <Stack
+          direction="row"
+          gap={2}
+          alignItems="center"
+          justifyContent="space-between"
+          flexWrap="wrap"
+        >
+          <Typography variant="caption" color="text.secondary">
+            Development preview · baseline v{version} · MIT
+          </Typography>
+          <Stack direction="row" gap={1}>
+            <SiteLink
+              href="https://github.com/saschb2b/stateboard"
+              color="inherit"
+              size="small"
+              startIcon={<GitHubIcon />}
+            >
+              GitHub
+            </SiteLink>
+            <SiteLink href="/docs/changelog" color="inherit" size="small">
+              Changelog
+            </SiteLink>
+          </Stack>
+        </Stack>
+      </Container>
+    </>
   );
 }

@@ -33,6 +33,17 @@
   --typography-body: 0.875rem;
   --typography-detail: 0.8125rem;
   --typography-caption: 0.75rem;
+  --typography-landing-displayCompact: 2.75rem;
+  --typography-landing-displayMedium: 4rem;
+  --typography-landing-display: 4.5rem;
+  --typography-landing-headingCompact: 2rem;
+  --typography-landing-heading: 2.5rem;
+  --typography-landing-lead: 1.0625rem;
+  --typography-landing-weight: 550;
+  --typography-landing-displayTracking: -0.06em;
+  --typography-landing-headingTracking: -0.045em;
+  --typography-landing-displayLeading: 1.06;
+  --typography-landing-headingLeading: 1.15;
   --spacing-unit: 8px;
   --spacing-xs: 4px;
   --spacing-sm: 8px;

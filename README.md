@@ -12,7 +12,7 @@
 
 > Show what works, what it depends on, and why it is ready to release — with a view for everyone involved.
 
-**Show, don't tell.** Describe product capabilities, connect their dependencies, and assess a named candidate using matching verification evidence. Product, frontend, backend, QA, operations, and release owners inspect the same assessment through six views. Annotated screenshots remain the visual delivery view.
+**Know what’s ready to release.** Describe product capabilities, connect their dependencies, and assess a named candidate using matching verification evidence. Product, frontend, backend, QA, operations, and release owners inspect the same assessment through six views. Annotated screenshots remain the visual delivery view.
 
 Open source. Self-hosted. Airgap-ready (except for your own SSO). MIT.
 
@@ -50,7 +50,7 @@ This working tree implements the full MVP; the latest published release remains 
 - Private image uploads and curated public decision summaries with selected safe media and revocable tokens
 - An in-memory example at `/share/demo/releases`, without seeded workspace data
 
-Board cards open the readiness workspace; **Screens** opens the existing visual editor. Required functional acceptance checks determine readiness, while `shipped` / `mock` / `missing` retain their existing visual meanings. Approval records a decision and does not deploy a release.
+Product rows open the readiness workspace; **Screens** opens the existing visual editor. Required functional acceptance checks determine readiness, while `shipped` / `mock` / `missing` retain their existing visual meanings. Approval records a decision and does not deploy a release.
 
 **Upgrade:** run `pnpm migrate` to apply `0008`–`0010`. Keep `STATEBOARD_DATA_DIR` persistent and backed up alongside Postgres, including both `uploads` and `release-assets`. Existing board images remain public/cached; confidential release images use the separate private directory. Boards with release history cannot be deleted through ordinary deletion.
 

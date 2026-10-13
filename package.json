@@ -2,7 +2,7 @@
   "name": "stateboard",
   "version": "2026.8.0",
   "private": true,
-  "description": "Release readiness for every role. Show, don't tell.",
+  "description": "Release readiness for every role.",
   "license": "MIT",
   "scripts": {
     "dev": "next dev --port 3000",

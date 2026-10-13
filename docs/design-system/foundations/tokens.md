@@ -41,6 +41,18 @@ tokens:
     body: "0.875rem"
     detail: "0.8125rem"
     caption: "0.75rem"
+    landing:
+      displayCompact: "2.75rem"
+      displayMedium: "4rem"
+      display: "4.5rem"
+      headingCompact: "2rem"
+      heading: "2.5rem"
+      lead: "1.0625rem"
+      weight: "550"
+      displayTracking: "-0.06em"
+      headingTracking: "-0.045em"
+      displayLeading: "1.06"
+      headingLeading: "1.15"
   spacing:
     unit: "8px"
     xs: "4px"
@@ -78,6 +90,8 @@ These tokens are the canonical values. `pnpm design:generate` projects them into
 The spacing unit is 8px, with a 4px half-step. Body text is 14px at the default root size. Metadata is 12px. Do not shrink it to fit a column.
 
 The [workspace](../patterns/review-workspace.md) reflows at the shared breakpoints. Controls use a 6px radius. Panels use 10px. Borders establish groups without shadows.
+
+The `typography.landing` scale gives the public homepage larger display and section headings. It uses the shared font and palette. The compact, medium, and desktop display sizes are 2.75rem, 4rem, and 4.5rem. Section headings use 2rem and 2.5rem. These values do not change the denser workspace type scale.
 
 # Examples
 
