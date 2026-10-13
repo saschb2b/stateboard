@@ -55,6 +55,8 @@ Board cards open the readiness workspace; **Screens** opens the existing visual 
 
 Read the [usage guide](./src/content/docs/release-readiness.mdx) and [implementation contract](./src/content/docs/release-readiness-mvp.mdx). The real team pilot and external GitHub milestone reconciliation are follow-up work.
 
+The [persona iteration journal](./src/content/docs/persona-iteration.mdx) records local use of StateBoard to review its own Codex-assisted delivery, including simulated-role findings, refinements, validation and unresolved claims. It does not replace the external team pilot.
+
 ## Agent access (API keys + MCP)
 
 Agents, scripts, and CI can't complete an OIDC sign-in — they authenticate with **API keys** instead (avatar menu → **API keys**). Keys are hash-only server-side, role-capped, expire after 90 days by default, and every edit they make lands in the audit log. Owners can inventory and revoke every key in the workspace. A key unlocks two surfaces:

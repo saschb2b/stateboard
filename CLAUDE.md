@@ -23,6 +23,8 @@ Protect these principles:
 
 StateBoard assesses the current product and release candidate. It does not manage epics, sprints, scheduling, ticket workflows, a complete organization-wide service catalog, or raw telemetry storage.
 
+For product refinement, use a real bounded assessment and concrete tasks for several professions. Record observed confusion, make scoped changes, run the required gates, and repeat the tasks. Simulated personas and root-mediated browser retests are not human customer research. Pin a new candidate before recording verification of changed code; never copy a prior candidate's passing evidence. The [local iteration journal](./src/content/docs/persona-iteration.mdx) records the Codex-assisted StateBoard delivery case and its unresolved production/customer claims.
+
 ## Scope guardrails
 
 The adopted sequence lives in [`src/content/docs/roadmap.mdx`](./src/content/docs/roadmap.mdx), rendered at `/docs/roadmap`. The concrete next-stage contract is [`src/content/docs/release-readiness-mvp.mdx`](./src/content/docs/release-readiness-mvp.mdx). Existing [GitHub milestones](https://github.com/saschb2b/stateboard/milestones) describe the earlier screenshot-led roadmap and need reconciliation; do not claim that their scope has already changed.

@@ -18,6 +18,8 @@ Explore the [example assessment](/share/demo/releases) to switch between all six
 
 Open a board from the overview to enter its product workspace. From the screen editor, choose **Release readiness**. The workspace has **Release assessments**, **Capabilities**, **Components**, and **Connections** tabs.
 
+Board cards show the newest candidate's readiness and gaps, validation environment, and recorded decision context. This is one candidate's assessment, not a product-wide availability score. Product assessment cards show the same scoped summary.
+
 1. Add a capability with a name, observable outcome, and accountable owner. For example, **Export an invoice** could require an authorized finance user to download a valid PDF.
 2. Add the services, API operations, events, workers, data stores, or external dependencies that implement it. Components can be reused across boards in the workspace.
 3. Connect capabilities to components and components to their dependencies. Name the actual relationship, such as “calls POST /exports” or “consumes invoice.requested.”
@@ -56,6 +58,12 @@ StateBoard selects the newest matching observation by verification time, with a 
 ## Choose a view
 
 All six views use the same assessment. The selected view is preserved in the URL so a colleague can open the same perspective.
+
+The summary shows required verification actions with accountable owner, expected environment and method. **Inspect / record evidence** opens the exact check; its `check` URL parameter can be shared. **Show all** reveals the complete findings. Passing check badges describe verification, not deployment or production availability.
+
+In **Backend**, choosing a capability or component narrows the architecture and checks, retaining release-wide gates. Selecting a new architecture scope replaces any earlier exact-check focus. **QA** offers **Needs attention**, claim/owner search and result/category filters. These filters never change calculated readiness. **Operations / security / data** starts with those explicit categories; **Include functional checks** also shows outcome checks that may cover those concerns.
+
+Component editing starts with this product's linked components. **Browse workspace catalog** exposes reusable components when needed. A component with no component-specific check can still support a verified capability; the two claims are shown separately.
 
 | View                         | What to inspect                                                                                                             |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |

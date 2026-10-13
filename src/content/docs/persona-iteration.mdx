@@ -1,0 +1,90 @@
+---
+title: StateBoard persona iteration journal
+description: Simulated UI reviews, the resulting release readiness refinements, their validation, and the limits of this local delivery case.
+---
+
+Six simulated personas used the actual StateBoard UI on 13 October 2026 to review **Codex-assisted StateBoard delivery**. They found the candidate and missing evidence, but encountered avoidable work locating relevant checks, interpreting local passes and reviewing decision context. The resulting refinements support those tasks. They do not establish production availability, customer demand or comprehension by actual human customers.
+
+This case assesses StateBoard delivery operated through Codex. The Codex task and tool harness is an external component describing observed local work; its internal architecture, overall security and release readiness remain unverified. See the [usage guide](./release-readiness) and [MVP implementation contract](./release-readiness-mvp).
+
+## Case and probe boundaries
+
+The assessment pins StateBoard candidate `git:60d0a3a611c3e59f0e55675d52ee3b7198158021`, with local-development validation, a self-hosted-production target and local Postgres/Keycloak configuration without integrated evidence providers. Its reviewers span product, backend, QA, frontend, operations and release ownership.
+
+The independent first round observed revision 13: **Needs evidence**, zero failed required checks and four evidence gaps. Eight required checks had four passing local observations and four missing claims. Six capability cards did not independently cover the two release-wide gates. A passing capability badge did not imply approval of the assessment.
+
+Passing histories were recorded local attestations with actor, source/run reference, observation/receipt times and exact candidate/check/environment/audience/configuration. Inspecting them was not an independent test rerun. Source text and optional supporting links do not authenticate a producer; StateBoard does not fetch those links.
+
+The personas opened and canceled forms without appending evidence, recording decisions, publishing reviews or changing access. No private raw evidence, media, credentials or share tokens appear here. Automation wall time is not a human usability measurement.
+
+## Six simulated reviewers
+
+| Persona                                | Distinct concern                                                                            | First-round task outcome                                                                                                                                                           |
+| -------------------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mira, product manager                  | Needs a short meeting briefing; dislikes technical identifiers and generic reasons.         | Found candidate, gaps and owners. Next verification required QA navigation; overview readiness/counts were absent.                                                                 |
+| Leon, external reviewer                | Reads Ready and present-tense outcomes literally as possible customer availability.         | Found local validation and no recorded review. Customer availability and an actual curated summary could not be established. Publication tests did not prove comprehension.        |
+| Pavel, backend maintainer              | Refuses screenshot-led status; follows operations, persistence and owners.                  | Traced evidence recording through `POST /api/releases/:id/evidence`, transactional store, Postgres, identity and media. Relevant checks still required scanning the whole release. |
+| Noor, operations and security reviewer | Distrusts green badges and manual attestations; checks origin, freshness and restore scope. | Identified local provenance, no production restore observation, an environment mismatch and security claims hidden by the operations preset.                                       |
+| Emma, QA reviewer                      | Works methodically with keyboard controls; wants gaps before passing history.               | Named all four missing claims and inspected exact evidence context. Eight full cards lacked actionable filters; entry omitted the method. Keyboard order and cancellation worked.  |
+| Rafa, release owner                    | Requires exact reviewed scope before committing a decision.                                 | Confirmed only Hold release was offered and canceled. The form omitted candidate/context and named unresolved gates. Restore and sharing remained unverified.                      |
+
+These constructed perspectives supplied task hypotheses and observations. They are not recruited customers or evidence of market demand.
+
+## First iteration changes and checks
+
+| Original confusion                                                  | Implemented refinement                                                                                                                                                         | Applicable validation                                                                                                                                                              |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview required drilling down to learn readiness.                 | Board/product entries show latest candidate state, blocker/gap counts, validation and recorded or earlier decision context.                                                    | Stories and Postgres assertions compare overview results with the full evaluator; root inspected the real overview.                                                                |
+| Generic summary reasons hid the next action.                        | Findings show claim, owner, revision, expected environment, method and direct check action. Summary previews three with Show all; decision review retains every finding.       | Root saw real owners/methods and five findings. Stories cover limited and complete lists.                                                                                          |
+| Passing cards obscured QA work.                                     | All/Needs attention, search, counts, result/category filters, reset and exact check focus change presentation only.                                                            | Root saw five attention checks, then one after searching backend. Pure/component tests cover scope and focus.                                                                      |
+| Architecture selection left unrelated checks visible.               | Assessment-related picker and declared dependency closure feed scoped checks while keeping release-wide gates. Component verification is separated from linked outcome claims. | Root's Trace slice showed six of ten components and three checks. Tests cover configured component subjects, other-product exclusion, supporting relationships, cycles and bounds. |
+| Workspace catalog obscured product wiring.                          | Default linked-component view, explicit browse/search, shared-component counts and capability reuse.                                                                           | Stories exercise browse/search and canceled reuse without an API call. No authorization boundary changes.                                                                          |
+| Operations title implied complete professional coverage.            | Explicit operational/security/data category disclosure and Include functional checks; no classification inferred from claim text.                                              | Root observed one default check and eight with functional checks, including permission/private-media claims.                                                                       |
+| Evidence entry required remembering the procedure.                  | Method/owner accompany exact context; definition history has Close.                                                                                                            | Interaction stories cover both. First-round UI established keyboard order and cancellation.                                                                                        |
+| Finalization relied on dimmed page context.                         | Decision review repeats candidate/revision, environments, audience/configuration and unresolved required claims before rationale/media selection.                              | Root saw revision 17 and all five gaps in the real form; only Hold was offered. Nothing was submitted.                                                                             |
+| Local technical passes could imply production use or comprehension. | Check-verification labels, validation/target/current approval context, and a separate required external-comprehension claim.                                                   | The comprehension claim remains missing; publication-boundary tests do not establish human understanding.                                                                          |
+
+The coordinated Postgres/private-media restore check was revised to expect **self-hosted-production** evidence. Root observed revision 2 with no observation. Correcting the definition fixes the mismatch; it does not perform restoration or justify a pass. Supporting Codex/Git connections explain verification work and source context; only explicit required checks are release gates.
+
+## Validation and commits
+
+Before the four implementation commits, root reported all six repository gates passing: typecheck, lint, formatting, unit tests, Storybook tests and production build. The checkpoint contained **180 passing unit tests** and **91 passing component tests across 38 Storybook files**. The real Postgres integration suite also passed. These results support the tested local implementation, not production restoration.
+
+| Commit    | Change                                                      |
+| --------- | ----------------------------------------------------------- |
+| `5d75baa` | QA filters, exact check focus and evidence/history context. |
+| `b8c17f4` | Scoped architecture/checks and explicit workspace reuse.    |
+| `3ed8cd1` | Actionable findings and exact decision review.              |
+| `5d88b9f` | Latest candidate overview and evaluator-backed queries.     |
+
+Independent code review confirmed exact evidence-context selection and newest applicable observation ordering without preferring passes, with workspace isolation and repeatable-read consistency. An overview expiry timer loop was corrected. Single-assessment reads omit unnecessary historical overview computation. Decision creation still performs the full current evaluation.
+
+## Second round and follow-ups
+
+Three persona agents independently operated the first round, two reviewers each, before source review. Their browser surfaces subsequently disconnected; documented recovery still yielded unavailable browsers and empty inventories. They handed retest tasks to root. **The successful second round was root-mediated actual UI use, not six new independent walkthroughs.**
+
+The running refined UI retained the original pinned case. Revision 17 had nine required checks: four passing local observations and five missing claims after separating external comprehension. The retest validates interaction changes; it does not create evidence for changed source under an old candidate reference. It established scoped checks, the functional-check toggle, accurate restore expectation and exact held-review context, without creating a decision or curated summary.
+
+Root's additional frontend probe found no screenshots or anchors and listed all six capabilities without visual anchors. All screens incorrectly used wording for a single unanchored capability. Root implemented this correction and a check-focus collision fix after the second round. All six gates passed again, with 180 unit tests, 93 component tests across 38 files, and the real Postgres suite.
+
+| Follow-up                                | Implemented fix and test case                                                                                                                          | Completion commit | Actual UI retest result                            |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | -------------------------------------------------- |
+| Exact focus overrides architecture scope | Selecting a new backend scope clears exact check focus. Story covers exact focus → Backend → new scope; ordinary filters remain visible and clearable. | `372e081`         | Root observed the expected navigation and context. |
+| Empty visual view                        | Accurate no-screenshot state with Inspect dependencies, Inspect checks and Open editor actions. Stories cover empty-state navigation.                  | `372e081`         | Root observed the expected navigation and context. |
+
+A new assessment pins `git:372e0818b0b1f1165b744d8b919d0466cb5e30a1` with new check IDs and seven fresh local observations; no evidence was transferred. Root observed zero blockers and two remaining gaps, uploaded an actual local StateBoard screenshot privately, and recorded a development hold through the UI. Its rationale explicitly identifies the bundled development account and automated simulation, rather than claiming a human production approval.
+
+Root then created a text-only curated review through the UI. It states Held release / Needs evidence, local validation and an unverified production target. The retained private screenshot was not selected for publication. An anonymous HTTP probe passed 26 checks for the JSON/HTML allowlist, exclusion of private context and unselected media, temporary-token revocation, and overview consistency. No review was sent to another person.
+
+The public probe revealed one more wording inconsistency: a capability still displayed an unqualified Ready badge. The public renderer now uses Ready · checks and explains that availability requires deployment verification; the recorded release conclusion and public data schema are unchanged. Root verified the updated actual page. This final wording refinement passed all six gates, with 180 unit tests and 94 component tests across 38 files. The independent-human comprehension check was also given an explicit human-review method; the simulated probe does not satisfy it.
+
+Production restore and actual human external comprehension remain unknown. Local passes do not establish rollback, other identity providers or overall Codex readiness. These limits require compatible verification, not fabricated observations.
+
+## Bounded repeat workflow
+
+1. Pin candidate, environments, audience, configuration and check revisions. A changed tuple requires a new assessment; never transfer a pass by relabeling it.
+2. Give the six simulated perspectives concrete actual-UI tasks. Record observed completion/confusion/unknowns and distinguish independent from mediated navigation. Open/cancel forms for read-only inspection.
+3. Separate UI defects from missing operational/customer evidence. Make scoped changes with meaningful interaction and pure-logic tests.
+4. Run all six gates and relevant Postgres checks; repeat original tasks on the changed UI. Retain infrastructure limitations instead of assigning a pass.
+5. Record validated outcomes, final commits and exact candidate context. Append evidence only when the observation supports that claim/revision; preserve production and human-comprehension unknowns.
+6. Stop after the scoped changes pass validation and retest outcomes are recorded. Further rounds need a reason or request. A continuous scheduler, recurring monitor or future wakeup requires explicit user authorization and cannot be inferred from this finite iteration.
