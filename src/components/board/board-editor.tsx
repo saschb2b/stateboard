@@ -4,6 +4,7 @@ import { useTranslations, useFormatter } from "next-intl";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
+import Badge from "@mui/material/Badge";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonBase from "@mui/material/ButtonBase";
@@ -16,6 +17,9 @@ import Snackbar from "@mui/material/Snackbar";
 import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import useMediaQuery from "@mui/material/useMediaQuery";
+import { useTheme } from "@mui/material/styles";
+import CheckIcon from "@mui/icons-material/Check";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SlideshowIcon from "@mui/icons-material/Slideshow";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -69,10 +73,12 @@ export function BoardEditor({
   now,
 }: BoardEditorProps) {
   const t = useTranslations("Visual");
-  const [boardName, setBoardName] = useState(board.name);
+  const common = useTranslations("Common");
+  const theme = useTheme();
+  const narrow = useMediaQuery(theme.breakpoints.down("sm"));
+  const compactSharing = useMediaQuery(theme.breakpoints.down("md"));
+  const compactToolbar = useMediaQuery(theme.breakpoints.down("lg"));
   const [enqueueMutation] = useState(createMutationQueue);
-  const savedBoardName = useRef(board.name);
-  const nameVersion = useRef(0);
   const orderVersion = useRef(0);
   const savedScreenOrder = useRef(initialScreens.map((screen) => screen.id));
   const shareCreation = useRef<Promise<ShareLink | null> | null>(null);
@@ -83,7 +89,10 @@ export function BoardEditor({
   );
   const [copied, setCopied] = useState(false);
   const [presenting, setPresenting] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarPreference, setSidebarPreference] = useState<boolean | null>(
+    null,
+  );
+  const sidebarCollapsed = sidebarPreference ?? narrow;
   const [filterState, setFilterState] = useState<RegionState | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -255,25 +264,6 @@ export function BoardEditor({
     void persistScreenOrder(next);
   };
 
-  const renameBoard = async (next: string) => {
-    const version = ++nameVersion.current;
-    setBoardName(next);
-    try {
-      const updated = await enqueueMutation("board-name", () =>
-        clientRequest<Board>(`/api/boards/${board.id}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ name: next }),
-        }),
-      );
-      savedBoardName.current = updated.name;
-      if (version === nameVersion.current) setBoardName(updated.name);
-    } catch (cause) {
-      if (version === nameVersion.current) setBoardName(savedBoardName.current);
-      reportFailure(cause, t("renameBoardError"));
-    }
-  };
-
   const ensureShareLink = async (): Promise<ShareLink | null> => {
     if (activeShareLink) return activeShareLink;
     if (shareCreation.current) return shareCreation.current;
@@ -410,7 +400,7 @@ export function BoardEditor({
       ? [
           {
             id: "settings",
-            label: t("boardSettings"),
+            label: common("editBoard"),
             hint: t("go"),
             run: () => router.push(`/boards/${board.id}/settings`),
           },
@@ -445,24 +435,16 @@ export function BoardEditor({
     >
       <AppHeader
         homeHref="/boards"
-        crumb={boardName}
-        onCrumbChange={editable ? renameBoard : undefined}
-        center={
-          screens.length > 0 ? (
-            <SearchPill mod={modKey} onClick={() => setPaletteOpen(true)} />
-          ) : undefined
-        }
+        breadcrumbs={[
+          { label: common("boards"), href: "/boards" },
+          { label: board.name, href: `/boards/${board.id}/releases` },
+          { label: t("screens") },
+        ]}
         actions={
           <>
-            {screens.length === 0 && (
-              <Button
-                component={Link}
-                href={`/boards/${board.id}/releases`}
-                size="small"
-              >
-                {t("readiness")}
-              </Button>
-            )}
+            {screens.length > 0 ? (
+              <SearchPill mod={modKey} onClick={() => setPaletteOpen(true)} />
+            ) : null}
             <HeaderStateFilter
               totals={totals}
               filterState={filterState}
@@ -472,11 +454,18 @@ export function BoardEditor({
               <Divider
                 orientation="vertical"
                 flexItem
-                sx={{ my: 1, borderColor: "divider" }}
+                sx={{
+                  my: 1,
+                  borderColor: "divider",
+                  display: { xs: "none", lg: "block" },
+                }}
               />
             ) : null}
             <Tooltip title={t("presentShortcut")}>
-              <span>
+              <Box
+                component="span"
+                sx={{ display: { xs: "none", sm: "inline-flex" } }}
+              >
                 <Button
                   size="small"
                   startIcon={<SlideshowIcon />}
@@ -487,7 +476,7 @@ export function BoardEditor({
                 >
                   {t("present")}
                 </Button>
-              </span>
+              </Box>
             </Tooltip>
             {editable ? (
               <>
@@ -496,6 +485,7 @@ export function BoardEditor({
                   size="small"
                   color="inherit"
                   sx={{
+                    display: { xs: "none", md: "inline-flex" },
                     "& .MuiButtonGroup-grouped": { borderColor: "divider" },
                   }}
                 >
@@ -509,6 +499,8 @@ export function BoardEditor({
                   <Button
                     onClick={(e) => setShareAnchorEl(e.currentTarget)}
                     aria-label={t("moreSharingOptions")}
+                    aria-haspopup="menu"
+                    aria-expanded={Boolean(shareAnchorEl)}
                     sx={{ px: 0.5, minWidth: "auto" }}
                   >
                     <ArrowDropDownIcon fontSize="small" />
@@ -547,8 +539,21 @@ export function BoardEditor({
                 size="small"
                 onClick={(e) => setMoreAnchorEl(e.currentTarget)}
                 aria-label={t("moreBoardOptions")}
+                aria-haspopup="menu"
+                aria-expanded={Boolean(moreAnchorEl)}
               >
-                <MoreVertIcon fontSize="small" />
+                <Badge
+                  color="primary"
+                  variant="dot"
+                  invisible={!filterState}
+                  sx={{
+                    "& .MuiBadge-badge": {
+                      display: { xs: "block", lg: "none" },
+                    },
+                  }}
+                >
+                  <MoreVertIcon fontSize="small" />
+                </Badge>
               </IconButton>
             </Tooltip>
             <Menu
@@ -558,6 +563,88 @@ export function BoardEditor({
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
+              {compactToolbar && screens.length > 0 ? (
+                <MenuItem
+                  onClick={() => {
+                    setMoreAnchorEl(null);
+                    setPaletteOpen(true);
+                  }}
+                >
+                  {t("search")}
+                </MenuItem>
+              ) : null}
+              {narrow ? (
+                <MenuItem
+                  disabled={screens.length === 0}
+                  onClick={() => {
+                    setMoreAnchorEl(null);
+                    setPresenting(true);
+                  }}
+                >
+                  {t("present")}
+                </MenuItem>
+              ) : null}
+              {editable && compactSharing
+                ? [
+                    <MenuItem
+                      key="copy"
+                      onClick={() => {
+                        setMoreAnchorEl(null);
+                        void copyShare();
+                      }}
+                    >
+                      {copied ? t("copied") : t("copyShareLink")}
+                    </MenuItem>,
+                    activeShareLink ? (
+                      <MenuItem
+                        key="open-share"
+                        component="a"
+                        href={`/share/${activeShareLink.token}`}
+                        target="_blank"
+                        rel="noopener"
+                        onClick={() => setMoreAnchorEl(null)}
+                      >
+                        {t("openShareViewExternal")}
+                      </MenuItem>
+                    ) : null,
+                    <MenuItem
+                      key="manage-sharing"
+                      component={Link}
+                      href={`/boards/${board.id}/settings?section=sharing`}
+                      onClick={() => setMoreAnchorEl(null)}
+                    >
+                      {t("manageLinks")}
+                    </MenuItem>,
+                  ]
+                : null}
+              {compactToolbar &&
+              totals.shipped + totals.mock + totals.missing > 0
+                ? [
+                    <Divider key="filter-divider" />,
+                    ...REGION_STATES.map((state) => (
+                      <MenuItem
+                        key={state}
+                        role="menuitemcheckbox"
+                        aria-checked={filterState === state}
+                        onClick={() => toggleFilter(state)}
+                      >
+                        <Box
+                          component="span"
+                          sx={{ width: 24, height: 20, mr: 1 }}
+                        >
+                          {filterState === state ? (
+                            <CheckIcon fontSize="small" />
+                          ) : null}
+                        </Box>
+                        {t("filterByState", {
+                          state: t(`states.${state}.label`),
+                          count: totals[state],
+                        })}
+                      </MenuItem>
+                    )),
+                  ]
+                : null}
+              {compactToolbar ? <Divider /> : null}
               <MenuItem
                 component={Link}
                 href={`/boards/${board.id}/releases`}
@@ -578,7 +665,7 @@ export function BoardEditor({
                   href={`/boards/${board.id}/settings`}
                   onClick={() => setMoreAnchorEl(null)}
                 >
-                  {t("boardSettings")}
+                  {common("editBoard")}
                 </MenuItem>
               ) : null}
             </Menu>
@@ -600,6 +687,27 @@ export function BoardEditor({
         >
           <Box sx={{ width: "100%", maxWidth: 540, mt: { xs: 2, sm: 6 } }}>
             <Stack spacing={1.5}>
+              {editable ? (
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                  spacing={2}
+                >
+                  <Typography component="h1" variant="h6">
+                    {t("noScreens")}
+                  </Typography>
+                  <Button
+                    component={Link}
+                    href={`/boards/${board.id}/settings`}
+                    size="small"
+                    color="inherit"
+                    sx={{ flexShrink: 0 }}
+                  >
+                    {common("editBoard")}
+                  </Button>
+                </Stack>
+              ) : null}
               {editable ? (
                 <Stack spacing={1}>
                   <ScreenUploader
@@ -678,7 +786,7 @@ export function BoardEditor({
             activeId={activeId}
             editable={editable}
             collapsed={sidebarCollapsed}
-            onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
+            onToggleCollapsed={() => setSidebarPreference(!sidebarCollapsed)}
             onSelect={setActiveId}
             onAdd={() => openAddScreen("upload")}
             onRename={(id, label) => void renameScreen(id, label)}
@@ -697,7 +805,7 @@ export function BoardEditor({
               filterState={filterState}
               authors={authorsWithViewer}
               now={now}
-              onWorkStart={() => setSidebarCollapsed(true)}
+              onWorkStart={() => setSidebarPreference(true)}
               focusRegionId={
                 focusReq && active.id === focusReq.screenId
                   ? focusReq.regionId
@@ -711,7 +819,7 @@ export function BoardEditor({
 
       {presenting ? (
         <PresentMode
-          boardName={boardName}
+          boardName={board.name}
           screens={screens}
           initialIndex={Math.max(
             0,
@@ -777,7 +885,7 @@ function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
       onClick={onClick}
       aria-label={t("searchShortcut")}
       sx={{
-        display: "flex",
+        display: { xs: "none", lg: "flex" },
         alignItems: "center",
         gap: 1,
         px: { xs: 0.75, sm: 1.25 },
@@ -786,7 +894,7 @@ function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
         borderColor: "divider",
         borderRadius: 1.5,
         color: "text.secondary",
-        width: { sm: 240 },
+        width: { xl: 180 },
         "&:hover": { borderColor: "text.primary", color: "text.primary" },
       }}
     >
@@ -796,7 +904,7 @@ function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
         sx={{
           flex: 1,
           textAlign: "left",
-          display: { xs: "none", sm: "block" },
+          display: { xs: "none", xl: "block" },
         }}
       >
         {t("search")}
@@ -804,7 +912,7 @@ function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
       <Box
         component="span"
         sx={{
-          display: { xs: "none", sm: "inline" },
+          display: { xs: "none", xl: "inline" },
           fontFamily: MONO_FONT,
           fontSize: 11,
           px: 0.5,
@@ -843,7 +951,7 @@ function HeaderStateFilter({
     <Stack
       direction="row"
       spacing={0.5}
-      sx={{ mr: { sm: 0.5 }, display: { xs: "none", sm: "flex" } }}
+      sx={{ mr: { sm: 0.5 }, display: { xs: "none", lg: "flex" } }}
     >
       {REGION_STATES.map((s) => {
         const isActive = filterState === s;
