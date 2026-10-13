@@ -13,6 +13,26 @@ import { AppHeader } from "@/components/app/app-header";
 import { ReadinessChip } from "./readiness-summary";
 import type { PublicReleaseProjection } from "@/lib/release-types";
 
+const reviewDateFormat = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: "UTC",
+  timeZoneName: "short",
+});
+
+function ReviewTime({ value }: { value: number }) {
+  const exactTime = new Date(value).toISOString();
+  return (
+    <Box component="time" dateTime={exactTime} title={exactTime}>
+      {reviewDateFormat.format(value)}
+    </Box>
+  );
+}
+
 /** The public renderer accepts only the curated projection, never private release data. */
 export function PublicReleaseShare({
   projection,
@@ -48,18 +68,18 @@ export function PublicReleaseShare({
               <ReadinessChip state={projection.readiness} />
             </Stack>
             <Typography variant="caption" color="text.secondary">
-              Reviewed {new Date(projection.reviewedAt).toISOString()}
+              Reviewed <ReviewTime value={projection.reviewedAt} />
             </Typography>
             {projection.validUntil != null && (
               <Typography variant="caption" color="text.secondary">
-                Recorded evidence freshness limit:{" "}
-                {new Date(projection.validUntil).toISOString()}
+                Evidence valid until{" "}
+                <ReviewTime value={projection.validUntil} />
               </Typography>
             )}
           </Stack>
           <Alert severity="info">
-            This link presents a recorded review. Its result reflects the
-            evidence at the time of that decision.
+            This is a saved review. It does not update as evidence changes or
+            expires.
           </Alert>
           <Paper sx={{ p: 3 }}>
             <Typography>{projection.summary}</Typography>

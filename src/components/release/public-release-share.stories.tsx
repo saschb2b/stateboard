@@ -48,3 +48,35 @@ export const CapabilityVerificationMeaning: Story = {
     ).toBeVisible();
   },
 };
+
+export const ReadableReviewTimes: Story = {
+  args: {
+    projection: {
+      ...meta.args.projection,
+      validUntil: Date.parse("2026-10-14T10:05:12.345Z"),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const reviewedTime = canvas.getByText("13 Oct 2026, 10:00 UTC");
+    const evidenceExpiry = canvas.getByText("14 Oct 2026, 10:05 UTC");
+    await expect(reviewedTime).toBeVisible();
+    await expect(reviewedTime).toHaveAttribute(
+      "datetime",
+      "2026-10-13T10:00:00.000Z",
+    );
+    await expect(evidenceExpiry).toBeVisible();
+    await expect(evidenceExpiry).toHaveAttribute(
+      "title",
+      "2026-10-14T10:05:12.345Z",
+    );
+    await expect(
+      canvas.getByText("Evidence valid until", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(
+        "This is a saved review. It does not update as evidence changes or expires.",
+      ),
+    ).toBeVisible();
+  },
+};
