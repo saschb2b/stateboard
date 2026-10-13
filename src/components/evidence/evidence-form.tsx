@@ -31,6 +31,10 @@ export function EvidenceForm({
         <Typography variant="subtitle2">
           {check.claim} · Revision {check.revision}
         </Typography>
+        <Typography variant="body2">Owner: {check.ownerLabel}</Typography>
+        <Typography variant="body2">
+          Verification method: {check.method}
+        </Typography>
         <Typography variant="body2">
           Candidate: {assessment.candidateRef}
           <br />

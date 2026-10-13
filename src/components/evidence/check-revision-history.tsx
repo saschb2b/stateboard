@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   Paper,
@@ -75,6 +76,9 @@ export function CheckRevisionHistory({
             ))}
           </Stack>
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Close</Button>
+        </DialogActions>
       </Dialog>
     </>
   );

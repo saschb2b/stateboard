@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { fn } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
+import type { ComponentProps } from "react";
 import { getReleaseDemo } from "@/lib/release-demo";
+import { evaluateRelease } from "@/lib/readiness";
+import { useCheckFocus } from "@/components/release/use-check-focus";
 import { CheckManager } from "./check-manager";
 const example = getReleaseDemo();
 const meta = {
@@ -19,3 +22,139 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const EvidenceCoverage: Story = {};
 export const OperationsRequirements: Story = { args: { operationsOnly: true } };
+
+export const AttentionAndOwnerSearch: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const attention = canvas.getByRole("button", { name: /Needs attention/ });
+    attention.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[1]!.claim),
+    ).not.toBeInTheDocument();
+    await userEvent.type(
+      canvas.getByLabelText("Search claims or owners"),
+      "Identity",
+    );
+    await expect(
+      canvas.getByText(example.detail.checks[2]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[0]!.claim),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Reset filters" }),
+    );
+    await expect(
+      canvas.getByText(example.detail.checks[1]!.claim),
+    ).toBeVisible();
+  },
+};
+
+const warningDetail = structuredClone(example.detail);
+warningDetail.evidence.find(
+  (item) => item.checkId === "check-security",
+)!.result = "fail";
+export const OptionalWarning: Story = {
+  args: {
+    detail: warningDetail,
+    readiness: evaluateRelease(warningDetail, example.now),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Needs attention/ }),
+    );
+    await expect(
+      canvas.getByText("Partner signatures are checked before ingest."),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(/1 optional warnings need attention/),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(/Optional warnings do not block readiness/),
+    ).toBeVisible();
+  },
+};
+
+export const FunctionalOperationsClaims: Story = {
+  args: { operationsOnly: true },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByText(example.detail.checks[0]!.claim),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByLabelText("Include functional checks"));
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(example.detail.checks[5]!.claim),
+    ).toBeVisible();
+  },
+};
+
+function FocusHarness(args: ComponentProps<typeof CheckManager>) {
+  const [checkId, setCheckId] = useCheckFocus(args.focusedCheckId ?? undefined);
+  return (
+    <CheckManager
+      {...args}
+      focusedCheckId={checkId}
+      onClearFocus={() => setCheckId(null)}
+    />
+  );
+}
+
+export const FocusedFinding: Story = {
+  args: { focusedCheckId: "check-export", operationsOnly: true },
+  render: (args) => <FocusHarness {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(example.detail.checks[0]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[5]!.claim),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByLabelText("Search claims or owners"),
+    ).toBeDisabled();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Clear check focus" }),
+    );
+    await expect(
+      canvas.getByText(example.detail.checks[5]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[0]!.claim),
+    ).not.toBeInTheDocument();
+  },
+};
+
+export const UnknownFinding: Story = {
+  args: { focusedCheckId: "no-longer-active", onClearFocus: fn() },
+};
+export const SubjectScope: Story = {
+  args: {
+    subjectScope: {
+      capabilityIds: ["cap-webhook"],
+      componentIds: [],
+      includeRelease: true,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(example.detail.checks[1]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(example.detail.checks[5]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[0]!.claim),
+    ).not.toBeInTheDocument();
+  },
+};

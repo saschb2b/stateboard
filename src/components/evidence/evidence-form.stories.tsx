@@ -20,6 +20,12 @@ type Story = StoryObj<typeof meta>;
 export const ExactContextReview: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText(`Owner: ${args.check.ownerLabel}`),
+    ).toBeVisible();
+    await expect(
+      canvas.getByText(`Verification method: ${args.check.method}`),
+    ).toBeVisible();
     await userEvent.type(
       canvas.getByLabelText(/Observation/),
       "Tax fields are present in the reviewed result.",
@@ -45,5 +51,23 @@ export const ExactContextReview: Story = {
         }),
       }),
     );
+  },
+};
+
+export const KeyboardCancellation: Story = {
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.tab();
+    await expect(
+      canvas.getByRole("combobox", { name: /Result/ }),
+    ).toHaveFocus();
+    await userEvent.tab();
+    await expect(canvas.getByLabelText(/Observation/)).toHaveFocus();
+    await expect(
+      canvas.getByText(`Verification method: ${args.check.method}`),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Cancel" }));
+    await expect(args.onCancel).toHaveBeenCalledOnce();
+    await expect(args.onSave).not.toHaveBeenCalled();
   },
 };

@@ -16,6 +16,12 @@ import { CheckEditor } from "./check-editor";
 import { EvidenceForm } from "./evidence-form";
 import { EvidenceHistory } from "./evidence-history";
 import { CheckRevisionHistory } from "./check-revision-history";
+import {
+  filterChecks,
+  type CheckFilters as CheckFilterValues,
+  type CheckSubjectScope,
+} from "./check-scope";
+import { CheckFilters } from "./check-filters";
 import type {
   ProductContext,
   ReleaseCheck,
@@ -33,6 +39,9 @@ export function CheckManager({
   now,
   operationsOnly = false,
   loadCheckRevisions,
+  subjectScope,
+  focusedCheckId,
+  onClearFocus,
 }: {
   detail: ReleaseDetail;
   product: ProductContext;
@@ -44,15 +53,47 @@ export function CheckManager({
   now: number;
   operationsOnly?: boolean;
   loadCheckRevisions?: (checkId: string) => Promise<ReleaseCheck[]>;
+  subjectScope?: CheckSubjectScope;
+  focusedCheckId?: string | null;
+  onClearFocus?: () => void;
 }) {
   const [editing, setEditing] = useState<ReleaseCheck | "new" | null>(null);
   const [reviewing, setReviewing] = useState<ReleaseCheck | null>(null);
-  const checks = detail.checks.filter(
-    (check) =>
-      check.archivedAt === null &&
-      (!operationsOnly ||
-        ["operational", "security", "data"].includes(check.category)),
+  const [filters, setFilters] = useState<CheckFilterValues>({
+    needsAttention: false,
+    result: "all",
+    category: "all",
+    query: "",
+    includeFunctional: false,
+  });
+  const scopeFilters = {
+    subjectScope,
+    operationsOnly,
+    includeFunctional: filters.includeFunctional,
+  };
+  const scopedChecks = filterChecks(
+    detail.checks,
+    readiness.checks,
+    scopeFilters,
   );
+  const attentionChecks = filterChecks(detail.checks, readiness.checks, {
+    ...scopeFilters,
+    needsAttention: true,
+  });
+  const checks = filterChecks(detail.checks, readiness.checks, {
+    ...filters,
+    ...scopeFilters,
+    focusedCheckId,
+  });
+  function resetFilters() {
+    setFilters({
+      includeFunctional: filters.includeFunctional,
+      needsAttention: false,
+      result: "all",
+      category: "all",
+      query: "",
+    });
+  }
   function subject(check: ReleaseCheck) {
     return check.subjectType === "release"
       ? "Entire release"
@@ -74,6 +115,46 @@ export function CheckManager({
           <Button onClick={() => setEditing("new")}>Add check</Button>
         )}
       </Stack>
+      {focusedCheckId && (
+        <Alert
+          severity={checks.length ? "info" : "warning"}
+          action={
+            onClearFocus && (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  resetFilters();
+                  onClearFocus();
+                }}
+              >
+                Clear check focus
+              </Button>
+            )
+          }
+        >
+          {checks.length
+            ? "Focused check. Other check filters are paused."
+            : "This check is no longer active in this assessment."}
+        </Alert>
+      )}
+      <CheckFilters
+        filters={filters}
+        onChange={(patch) =>
+          setFilters((current) => ({ ...current, ...patch }))
+        }
+        onReset={resetFilters}
+        operationsOnly={operationsOnly}
+        disabled={Boolean(focusedCheckId)}
+        total={scopedChecks.length}
+        shown={checks.length}
+        requiredAttention={
+          attentionChecks.filter((check) => check.required).length
+        }
+        optionalWarnings={
+          attentionChecks.filter((check) => !check.required).length
+        }
+      />
       {checks.map((check) => {
         const evaluation = readiness.checks.find(
           (item) => item.checkId === check.id,
@@ -169,12 +250,12 @@ export function CheckManager({
           </Paper>
         );
       })}
-      {checks.length === 0 && (
+      {checks.length === 0 && !focusedCheckId && (
         <Paper sx={{ p: 3 }}>
           <Typography color="text.secondary">
-            No{" "}
-            {operationsOnly ? "operational, security, or data" : "acceptance"}{" "}
-            checks have been defined. Required claims need their own evidence.
+            {scopedChecks.length
+              ? "No checks match these filters. Reset filters to inspect this scope."
+              : "No checks are defined in this view or selected scope. Required claims need their own evidence."}
           </Typography>
         </Paper>
       )}
