@@ -106,6 +106,27 @@ export const Viewer: Story = {
       canvas.queryByRole("button", { name: "New board" }),
     ).not.toBeInTheDocument();
     await expect(
+      canvas.queryByRole("link", { name: /^Edit / }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByRole("link", { name: "Open board" }),
+    ).toHaveAttribute("href", `/boards/${example.product.board.id}/releases`);
+  },
+};
+
+export const EditorCanFindBoardSettings: Story = {
+  args: { viewer: { ...meta.args.viewer, role: "editor" } },
+  play: async ({ canvas }) => {
+    const edit = canvas.getByRole("link", {
+      name: `Edit ${example.product.board.name}`,
+    });
+    await expect(edit).toHaveAttribute(
+      "href",
+      `/boards/${example.product.board.id}/settings`,
+    );
+    edit.focus();
+    await expect(edit).toHaveFocus();
+    await expect(
       canvas.getByRole("link", { name: "Open board" }),
     ).toHaveAttribute("href", `/boards/${example.product.board.id}/releases`);
   },

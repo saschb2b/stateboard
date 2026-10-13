@@ -57,7 +57,10 @@ export function SettingsFrame({
     <>
       <AppHeader
         homeHref="/boards"
-        crumb={t("workspaceSettings")}
+        breadcrumbs={[
+          { label: t("boards"), href: "/boards" },
+          { label: title },
+        ]}
         actions={
           viewer ? (
             <UserMenu user={viewer.user} role={viewer.role} />

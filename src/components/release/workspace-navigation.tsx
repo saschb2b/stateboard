@@ -1,5 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+import TabScrollButton, {
+  type TabScrollButtonProps,
+} from "@mui/material/TabScrollButton";
 import type { ReactElement } from "react";
 import {
   Box,
@@ -46,6 +50,7 @@ export function WorkspaceNavigation<T extends string>({
         orientation={vertical ? "vertical" : "horizontal"}
         variant="scrollable"
         scrollButtons={vertical ? false : "auto"}
+        slots={{ scrollButtons: NavigationScrollButton }}
         allowScrollButtonsMobile
         aria-label={label}
         sx={{
@@ -84,5 +89,22 @@ export function WorkspaceNavigation<T extends string>({
         ))}
       </Tabs>
     </Box>
+  );
+}
+
+function NavigationScrollButton(props: TabScrollButtonProps) {
+  const t = useTranslations("Common");
+  return (
+    <TabScrollButton
+      {...props}
+      component="button"
+      type="button"
+      tabIndex={props.disabled ? -1 : 0}
+      aria-disabled={props.disabled}
+      onClick={props.disabled ? undefined : props.onClick}
+      aria-label={t(
+        props.direction === "left" ? "previousSections" : "nextSections",
+      )}
+    />
   );
 }

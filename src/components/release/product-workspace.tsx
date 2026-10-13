@@ -21,6 +21,9 @@ import { WorkspaceFrame } from "./workspace-frame";
 import { WorkspaceNavigation } from "./workspace-navigation";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
 import WidgetsOutlinedIcon from "@mui/icons-material/WidgetsOutlined";
@@ -49,6 +52,7 @@ export function ProductWorkspace({
   viewer: CurrentMember;
 }) {
   const t = useTranslations("Product");
+  const common = useTranslations("Common");
   const [product, setProduct] = useState(initialProduct);
   const [tab, setTab] = useProductSection();
   const [reloading, setReloading] = useState(false);
@@ -93,7 +97,28 @@ export function ProductWorkspace({
     <>
       <AppHeader
         homeHref="/boards"
-        crumb={product.board.name}
+        breadcrumbs={[
+          { label: common("boards"), href: "/boards" },
+          {
+            label: product.board.name,
+            ...(tab === "overview"
+              ? {}
+              : { href: `/boards/${product.board.id}/releases` }),
+          },
+          ...(tab === "overview"
+            ? []
+            : [
+                {
+                  label: t(
+                    tab === "releases"
+                      ? "assessments"
+                      : tab === "dependencies"
+                        ? "components"
+                        : tab,
+                  ),
+                },
+              ]),
+        ]}
         actions={
           <>
             <Button
@@ -109,8 +134,13 @@ export function ProductWorkspace({
         }
       />
       <WorkspaceFrame
+        breadcrumbs
         header={
-          <Stack direction="row" justifyContent="space-between" gap={2}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            gap={2}
+          >
             <Stack spacing={0.5} sx={{ minWidth: 0 }}>
               <Typography variant="caption" color="text.secondary">
                 {t("workspace")}
@@ -136,53 +166,108 @@ export function ProductWorkspace({
                 </Typography>
               )}
             </Stack>
-            <Tooltip title={t("refresh")}>
-              <IconButton
-                size="small"
-                aria-label={t("refresh")}
-                disabled={reloading}
-                onClick={reload}
-                sx={{ alignSelf: "flex-start" }}
-              >
-                <RefreshIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              alignItems="flex-start"
+              sx={{ flexShrink: 0 }}
+            >
+              {editable && (
+                <Button
+                  component={Link}
+                  href={`/boards/${product.board.id}/settings`}
+                  color="inherit"
+                  size="small"
+                  startIcon={<EditOutlinedIcon fontSize="small" />}
+                >
+                  {common("editBoard")}
+                </Button>
+              )}
+              <Tooltip title={t("refresh")}>
+                <IconButton
+                  size="small"
+                  aria-label={t("refresh")}
+                  disabled={reloading}
+                  onClick={reload}
+                  sx={{ alignSelf: "flex-start" }}
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
           </Stack>
         }
         navigation={
-          <WorkspaceNavigation
-            label={t("sections")}
-            idPrefix="product"
-            value={tab}
-            onChange={setTab}
-            sections={[
-              {
-                value: "overview",
-                label: t("overview"),
-                icon: <DashboardOutlinedIcon fontSize="small" />,
-              },
-              {
-                value: "releases",
-                label: t("assessments"),
-                icon: <LayersOutlinedIcon fontSize="small" />,
-              },
-              {
-                value: "capabilities",
-                label: t("capabilities"),
-                icon: <ViewQuiltOutlinedIcon fontSize="small" />,
-              },
-              {
-                value: "dependencies",
-                label: t("components"),
-                icon: <WidgetsOutlinedIcon fontSize="small" />,
-              },
-              {
-                value: "connections",
-                label: t("connections"),
-                icon: <AccountTreeOutlinedIcon fontSize="small" />,
-              },
-            ]}
-          />
+          <Stack spacing={2}>
+            <WorkspaceNavigation
+              label={t("sections")}
+              idPrefix="product"
+              value={tab}
+              onChange={setTab}
+              sections={[
+                {
+                  value: "overview",
+                  label: t("overview"),
+                  icon: <DashboardOutlinedIcon fontSize="small" />,
+                },
+                {
+                  value: "releases",
+                  label: t("assessments"),
+                  icon: <LayersOutlinedIcon fontSize="small" />,
+                },
+                {
+                  value: "capabilities",
+                  label: t("capabilities"),
+                  icon: <ViewQuiltOutlinedIcon fontSize="small" />,
+                },
+                {
+                  value: "dependencies",
+                  label: t("components"),
+                  icon: <WidgetsOutlinedIcon fontSize="small" />,
+                },
+                {
+                  value: "connections",
+                  label: t("connections"),
+                  icon: <AccountTreeOutlinedIcon fontSize="small" />,
+                },
+              ]}
+            />
+            <Stack
+              component="nav"
+              aria-label={common("boardTools")}
+              direction={{ xs: "row", lg: "column" }}
+              spacing={0.5}
+              sx={{
+                pt: 1.5,
+                borderTop: 1,
+                borderColor: "divider",
+                flexWrap: "wrap",
+              }}
+            >
+              <Button
+                component={Link}
+                href={`/boards/${product.board.id}/history`}
+                color="inherit"
+                size="small"
+                startIcon={<HistoryOutlinedIcon fontSize="small" />}
+                sx={{ justifyContent: "flex-start", px: 1.5 }}
+              >
+                {common("history")}
+              </Button>
+              {editable && (
+                <Button
+                  component={Link}
+                  href={`/boards/${product.board.id}/settings`}
+                  color="inherit"
+                  size="small"
+                  startIcon={<SettingsOutlinedIcon fontSize="small" />}
+                  sx={{ justifyContent: "flex-start", px: 1.5 }}
+                >
+                  {common("boardSettings")}
+                </Button>
+              )}
+            </Stack>
+          </Stack>
         }
       >
         <Stack

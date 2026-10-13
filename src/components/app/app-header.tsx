@@ -9,6 +9,7 @@ import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
 import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
+import { PageBreadcrumbs, type PageBreadcrumb } from "./page-breadcrumbs";
 import { LanguageSwitcher } from "@/i18n/language-switcher";
 
 // Raw <img src> doesn't get basePath applied; prepend it manually so the
@@ -26,6 +27,8 @@ interface AppHeaderProps {
   homeHref?: string;
   /** Optional crumb shown after the wordmark, e.g. board name in editor. */
   crumb?: string;
+  /** Linked location hierarchy; the final item identifies the current page. */
+  breadcrumbs?: readonly PageBreadcrumb[];
   /**
    * When provided, the crumb becomes inline-editable: click to edit,
    * blur or Enter to save, Escape to cancel. Empty values are rejected.
@@ -48,6 +51,7 @@ export function AppHeader({
   actions,
   homeHref = "/",
   crumb,
+  breadcrumbs,
   onCrumbChange,
   center,
 }: AppHeaderProps) {
@@ -89,7 +93,7 @@ export function AppHeader({
             </Typography>
           </Stack>
         </Link>
-        {crumb ? (
+        {crumb && !breadcrumbs ? (
           <>
             <Typography
               component="span"
@@ -146,6 +150,7 @@ export function AppHeader({
           </Box>
         ) : null}
       </Toolbar>
+      {breadcrumbs && <PageBreadcrumbs items={breadcrumbs} />}
     </AppBar>
   );
 }

@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import LibraryAddOutlinedIcon from "@mui/icons-material/LibraryAddOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
@@ -293,6 +294,7 @@ function BoardRow({
   "onDuplicate" | "onOpen"
 >) {
   const t = useTranslations("Visual");
+  const common = useTranslations("Common");
   const format = useFormatter();
   const { board, screens, shareToken } = item;
   const updatedLabel =
@@ -387,6 +389,18 @@ function BoardRow({
           >
             {t("openBoard")}
           </Button>
+          {editable && (
+            <Button
+              component={Link}
+              href={`/boards/${board.id}/settings`}
+              size="small"
+              color="inherit"
+              startIcon={<EditOutlinedIcon fontSize="small" />}
+              aria-label={common("editNamedBoard", { name: board.name })}
+            >
+              {common("editBoard")}
+            </Button>
+          )}
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Button
               component={Link}

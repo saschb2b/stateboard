@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import Button from "@mui/material/Button";
-import { expect, fn } from "storybook/test";
+import { expect, fn, within } from "storybook/test";
 import { AppHeader } from "./app-header";
 
 /** The universal top bar: wordmark, optional crumb, right-side actions. */
@@ -72,5 +72,105 @@ export const KeyboardRename: Story = {
     await userEvent.clear(input);
     await userEvent.type(input, "Review candidate{Enter}");
     await expect(args.onCrumbChange).toHaveBeenCalledWith("Review candidate");
+  },
+};
+
+const assessmentPath = [
+  { label: "Boards", href: "/boards" },
+  { label: "StateBoard", href: "/boards/stateboard/releases" },
+  {
+    label: "Assessments",
+    href: "/boards/stateboard/releases?section=releases",
+  },
+  { label: "Release candidate 2026.10" },
+];
+
+export const AssessmentHierarchy: Story = {
+  args: { homeHref: "/boards", breadcrumbs: assessmentPath },
+  play: async ({ canvas }) => {
+    const navigation = within(
+      canvas.getByRole("navigation", { name: "Page location" }),
+    );
+    await expect(
+      navigation.getByRole("link", { name: "Boards" }),
+    ).toHaveAttribute("href", "/boards");
+    await expect(
+      navigation.getByRole("link", { name: "StateBoard" }),
+    ).toHaveAttribute("href", "/boards/stateboard/releases");
+    await expect(
+      navigation.getByRole("link", { name: "Assessments" }),
+    ).toHaveAttribute("href", "/boards/stateboard/releases?section=releases");
+    await expect(
+      navigation.getByText("Release candidate 2026.10"),
+    ).toHaveAttribute("aria-current", "page");
+    await expect(
+      navigation.queryByRole("link", { name: "Release candidate 2026.10" }),
+    ).not.toBeInTheDocument();
+  },
+};
+
+const phoneViewport = {
+  options: {
+    phone: {
+      name: "Phone",
+      styles: { width: "390px", height: "844px" },
+      type: "mobile" as const,
+    },
+  },
+};
+
+export const MobileParentNavigation: Story = {
+  args: AssessmentHierarchy.args,
+  parameters: { viewport: phoneViewport },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas }) => {
+    const navigation = within(
+      canvas.getByRole("navigation", { name: "Page location" }),
+    );
+    const parent = navigation.getByRole("link", {
+      name: "Back to Assessments",
+    });
+    await expect(parent).toHaveAttribute(
+      "href",
+      "/boards/stateboard/releases?section=releases",
+    );
+    await expect(
+      navigation.queryByRole("link", { name: "Boards" }),
+    ).not.toBeInTheDocument();
+    parent.focus();
+    await expect(parent).toHaveFocus();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      window.innerWidth,
+    );
+  },
+};
+
+export const GermanMobileParentNavigation: Story = {
+  args: {
+    homeHref: "/boards",
+    breadcrumbs: [
+      { label: "Boards", href: "/boards" },
+      {
+        label:
+          "StateBoard – Produktzustand und Release-Bewertungen für das gesamte Entwicklungsteam",
+        href: "/boards/stateboard/releases",
+      },
+      { label: "Board-Einstellungen" },
+    ],
+  },
+  parameters: { locale: "de", viewport: phoneViewport },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas }) => {
+    const navigation = within(
+      canvas.getByRole("navigation", { name: "Seitenpfad" }),
+    );
+    const parent = navigation.getByRole("link", {
+      name: /^Zurück zu StateBoard/,
+    });
+    await expect(parent).toHaveAttribute("href", "/boards/stateboard/releases");
+    await expect(parent).toBeVisible();
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(
+      window.innerWidth,
+    );
   },
 };

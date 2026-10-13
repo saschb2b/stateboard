@@ -236,5 +236,13 @@
   "boardsDescription": "Your products and their latest release assessments.",
   "loadingSignIn": "Loading sign-in",
   "loadingBoardSettings": "Loading board settings",
-  "loadingHistory": "Loading product history"
+  "loadingHistory": "Loading product history",
+  "breadcrumbs": "Page location",
+  "backTo": "Back to {name}",
+  "editBoard": "Edit board",
+  "editNamedBoard": "Edit {name}",
+  "boardSettings": "Board settings",
+  "boardTools": "Board tools",
+  "previousSections": "Previous sections",
+  "nextSections": "More sections"
 }

@@ -9,10 +9,12 @@ export function WorkspaceFrame({
   header,
   navigation,
   children,
+  breadcrumbs = false,
 }: {
   header: ReactNode;
   navigation: ReactNode;
   children: ReactNode;
+  breadcrumbs?: boolean;
 }) {
   return (
     <Container
@@ -45,7 +47,7 @@ export function WorkspaceFrame({
             gridArea: "navigation",
             minWidth: 0,
             position: { lg: "sticky" },
-            top: { lg: 92 },
+            top: { lg: breadcrumbs ? 132 : 92 },
           }}
         >
           {navigation}

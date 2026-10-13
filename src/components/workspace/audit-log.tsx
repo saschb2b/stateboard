@@ -84,7 +84,6 @@ export function AuditLog({
 }: AuditLogProps) {
   const t = useTranslations("Common");
   const format = useFormatter();
-  const crumb = t(boardName === undefined ? "auditLog" : "history");
   const heading =
     boardName === undefined
       ? t("auditLog")
@@ -417,8 +416,12 @@ export function AuditLog({
   return (
     <>
       <AppHeader
-        homeHref={backHref}
-        crumb={crumb}
+        homeHref="/boards"
+        breadcrumbs={[
+          { label: t("boards"), href: "/boards" },
+          { label: boardName ?? t("boards"), href: backHref },
+          { label: t("history") },
+        ]}
         actions={<UserMenu user={viewer.user} role={viewer.role} />}
       />
       <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>

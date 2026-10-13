@@ -236,5 +236,13 @@
   "boardsDescription": "Ihre Produkte und ihre aktuellen Release-Bewertungen.",
   "loadingSignIn": "Anmeldung wird geladen",
   "loadingBoardSettings": "Board-Einstellungen werden geladen",
-  "loadingHistory": "Produktverlauf wird geladen"
+  "loadingHistory": "Produktverlauf wird geladen",
+  "breadcrumbs": "Seitenpfad",
+  "backTo": "Zurück zu {name}",
+  "editBoard": "Board bearbeiten",
+  "editNamedBoard": "{name} bearbeiten",
+  "boardSettings": "Board-Einstellungen",
+  "boardTools": "Board-Verwaltung",
+  "previousSections": "Vorherige Bereiche",
+  "nextSections": "Weitere Bereiche"
 }
