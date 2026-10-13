@@ -1,0 +1,217 @@
+---
+title: Release readiness MVP implementation plan
+description: Implementation contract, readiness rules, role views, and acceptance criteria for StateBoard's release-readiness MVP.
+---
+
+StateBoard's next stage evaluates whether intended users can complete the critical capabilities in a named release candidate. Screenshots show the visual implementation; dependencies explain the wiring; evidence supports specific acceptance claims. Everyone reads the same assessment through the view relevant to their work.
+
+**Status: RR1–RR6 implementation is present in this working tree and unreleased.** The latest published release remains `2026.8.0`. Migrations `0008`–`0010`, product and assessment editors, all six views, evidence ingestion, decisions, retained media, public sharing, and the in-memory demo implement this contract. See the [usage guide](./release-readiness). A real team pilot and external GitHub milestone reconciliation remain follow-up work.
+
+## MVP outcome and boundaries
+
+Pilot one product board, one real release candidate, and roughly 5–10 critical capabilities, including one capability with no UI. A product manager, backend developer, QA specialist, and release owner should independently identify readiness, blockers, accountable owners, and the exact evidence needed to unblock the candidate.
+
+The MVP includes capability and dependency editing, release scope, versioned acceptance checks, manual and REST-submitted evidence, deterministic readiness, six role views, human decisions, retained snapshots, and curated release sharing. Existing screenshots, normalized regions, visual states, board sharing, and MCP tools continue to work.
+
+Defer automatic discovery, catalog/specification imports, telemetry collection, provider SDKs, polling, test execution, deployment orchestration, portfolio rollups, configurable approval workflows, and gate waivers. External issue and evidence links are references; StateBoard never fetches them. Use the existing local filesystem, Postgres, OIDC, MUI, REST, and API keys without a new runtime service.
+
+## Shared product model
+
+A **board** groups one product or product area. A **capability** describes an outcome such as exporting an invoice or completing overnight reconciliation. Capabilities are reusable within that board and may link to zero, one, or several regions. Do not convert existing rectangles into capabilities automatically or require old boards to adopt the new model.
+
+A **component** is a lightweight workspace-owned reference to a service, API operation, event, worker/job, data store, or external dependency. Store only its identity, kind, owner, explanation, and optional internal documentation/interface link. API operations and events can be named references rather than a full schema registry.
+
+Link capabilities to their implementing components and components to their declared dependencies. Describe the actual relation, for example `calls POST /exports`, `consumes invoice.requested`, or `requires invoice data`. Mark requirements as required or supporting context. The graph explains potential impact; only explicitly required acceptance checks determine release readiness. A component without checks displays "No verification configured."
+
+An **assessment** evaluates one immutable candidate/context tuple:
+
+- Candidate reference identifying an immutable artifact or pinned component-version manifest; a mutable branch name or `latest` tag is insufficient. Keep a friendly candidate label separately.
+- Validation environment, such as staging, and target deployment environment, such as production.
+- Intended audience and configuration reference, including relevant feature-flag/permission assumptions.
+
+The assessment also records its included capability IDs and applicable release checks as editable scope.
+
+Changing candidate, either environment, audience, or configuration creates a new assessment. Capability scope and checks can be edited in a live assessment with revision checks and audit. Scope exclusions and requirement changes appear explicitly in the decision review.
+
+Pin each included capability's outcome and definition revision in the assessment. Editing the reusable capability never silently changes that assessed outcome. Show when its current definition differs; explicitly adopting the new definition updates the pinned copy, creates revisions of the affected acceptance checks, and makes their previous evidence inapplicable. Moving a check to a different subject creates a new check ID.
+
+## Persistence and invariants
+
+The implementation adds `0008_release_readiness.sql`, `0009_evidence_credential.sql`, and `0010_release_invariants.sql` after the existing `0007` migration. Keep all queries, transaction management, workspace constraints, and snake_case-to-camelCase mapping in `src/lib/db.ts`. Extend strict types and audit actions rather than changing existing region records.
+
+| Record                    | Minimum fields and relationships                                                                                                                                           | Required invariant                                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `capabilities`            | ID, board ID, name, outcome, definition revision, owner label, optional member ID, archive time                                                                            | Board-owned; acceptance-relevant edits advance the definition revision; preserve assessment references.   |
+| `components`              | ID, workspace ID, name, kind, owner label, optional member ID, description/interface link, archive time                                                                    | Reusable in the workspace; no universal health badge.                                                     |
+| `capability_components`   | Capability ID, component ID, relation, requirement/context classification, explanation                                                                                     | Capability's board and component share a workspace.                                                       |
+| `component_dependencies`  | Consumer/provider component IDs, relation, classification, explanation                                                                                                     | Both components share a workspace; cycles are valid and traversal must terminate.                         |
+| `region_capabilities`     | Region ID and capability ID                                                                                                                                                | Region's screen and capability belong to the same board; links are optional and many-to-many.             |
+| `release_assessments`     | ID, board ID, candidate reference/manifest, validation/target environments, audience/configuration, owner, mutable revision, creation time                                 | Candidate/context tuple is immutable; every relevant mutation increments revision.                        |
+| `release_capabilities`    | Assessment ID, capability ID, pinned outcome/definition revision, inclusion status and scope explanation                                                                   | Capability belongs to assessment's board; definition adoption and scope changes are explicit and audited. |
+| `release_checks`          | ID, assessment ID, immutable subject, active definition revision, archive time                                                                                             | Assessment/subject cannot change; subject is an included capability, linked component, or the release.    |
+| `release_check_revisions` | Check ID/revision, acceptance claim, category, required flag, owner, validation method, expected environment, freshness duration                                           | Immutable; acceptance-relevant edits create a revision.                                                   |
+| `release_evidence`        | Assessment/check revision, result, summary, source/run/attempt identity, observed/received times, monotonic sequence, actor/credential attribution, optional reference URL | Append-only; context is inherited from the exact assessment and explicitly confirmed by producers.        |
+| `release_decisions`       | Assessment/reviewed revision, human actor, approved/held, rationale, evaluated time, evaluator version, complete snapshot                                                  | Immutable and self-contained; approved requires calculated `ready`.                                       |
+| `release_assets`          | Private asset ID, owning assessment/decision, retained filename, MIME, byte count, digest                                                                                  | New confidential assets and retained copies are outside the public uploads directory.                     |
+| `release_share_links`     | Revocable token, decision ID, immutable allowlisted projection and selected asset IDs                                                                                      | Separate from existing full-board share links; projection references only retained assets.                |
+
+Each capability and check has an accountable owner label; a workspace member reference is optional. Removing a member preserves recorded team labels and historical attribution and surfaces any reassignment need. View presets do not create team membership or additional access roles.
+
+Excluding a capability explicitly deactivates its checks in the same audited scope change, with a reason and revision increment. Re-inclusion requires a reviewed pinned definition and active required acceptance checks. Removing a component relationship cannot silently deactivate configured component or release checks; changes to those gates require their own explicit audited revision.
+
+Archive referenced capabilities, components, and checks instead of destroying their history. Reject board deletion with a descriptive `409` when release history exists; ordinary deletion must not cascade away evidence, decisions, or retained assets. Administrative purge and retention policies are deferred. Keep existing deletion behavior for boards without release history.
+
+Limit text lengths, JSON body size, graph size, and manifest/evidence payloads at the API boundary. Validate nested IDs against the workspace and board in the DB boundary, including region links, check subjects, dependencies, and shared assets. The singleton workspace is not a substitute for these constraints.
+
+## Checks and evidence
+
+Every included capability needs at least one **required functional acceptance check** expressed as an observable outcome. For example: "An authorized finance user receives a valid PDF for an existing invoice." Each check also identifies how it will be verified, its accountable owner, and the environment in which evidence is required. Additional integration, UX, data, security, and operational checks can be required or optional.
+
+Release-level checks capture requirements that have no screen, such as migration rehearsal, permission enforcement, alert exercises, or rollback. Include the checks relevant to the team's actual release; graph membership does not generate requirements automatically.
+
+Default check environment to the assessment's validation environment. Allow the target environment as an explicit choice when a gate actually needs deployment/configuration evidence there. A staging result may support a production release assessment only through a check that explicitly expects staging; it must not be labelled "verified in production."
+
+Evidence results are `pass`, `fail`, or `inconclusive`. A record includes a concise claim/result summary, exact candidate/context confirmation, check definition revision, tested environment, observation time, source and run/attempt reference, actor, and optional HTTP(S) evidence URL. Record server receipt time separately. Reject malformed results, incompatible context, implausible future times, and unsafe URL schemes. API submissions use an explicit event identity for idempotency: identical retries return the original record; conflicting reuse returns `409`.
+
+Manual entry is a human attestation, not a claim that StateBoard executed a test. Machine-submitted evidence has source and credential attribution, not a blanket guarantee of accuracy. Store result summaries and metadata locally. A URL's remote contents may change; only retained data and media form the historical evidence baseline.
+
+Freshness is per check, measured from `observedAt`; use a positive duration with a visible default of 24 hours that the editor can change. Updating a board, correcting a label, or receiving an old result does not renew verification. New evidence supersedes the current selection without modifying or deleting earlier evidence.
+
+## Readiness evaluation
+
+Implement a pure evaluator in `src/lib/readiness.ts`, with an explicit clock and evaluator version. Return assessment and capability readiness, selected evidence IDs, and structured reasons suitable for every view. Calculate on read and again inside decision creation; do not store an independently editable readiness badge.
+
+For each active check:
+
+1. Filter evidence to the exact assessment, candidate/context, expected environment, and active check revision.
+2. Select by observation time descending, then server-assigned sequence descending. Arrival order must not let an old run overwrite a newer failure. Never select a result because it passed.
+3. Evaluate the selected record's result and expiry. A fresh pass satisfies the check. Missing evidence, stale passing evidence, or an inconclusive result leaves it unverified. A selected failure remains a blocker with an expiry warning if stale. A newer applicable result replaces that selection, but a stale pass cannot satisfy the current claim.
+4. Preserve previous failures in history and show prior failures alongside an inconclusive latest result. Readiness follows the selected result; prior failures are context, not a separate sticky state. Never fall back to an older passing result.
+
+| Condition                                                                                                   | Calculated readiness                          |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Any required check's applicable selected result is `fail`                                                   | `blocked`; also show all other evidence gaps. |
+| No required failures, but any required check is missing, inconclusive, stale, or has no applicable evidence | `needs_evidence`.                             |
+| Empty capability scope, or an included capability lacks a required functional acceptance check              | `needs_evidence`.                             |
+| Every required claim has a fresh matching pass                                                              | `ready` for the assessed candidate and scope. |
+
+Optional failures and gaps remain visible as warnings. Required component/release checks contribute only when configured explicitly. Readiness is not a weighted percentage, rectangle count, ticket count, or inference from component uptime. Visual `shipped` / `mock` / `missing` states stay independent.
+
+No waiver or "ready with exceptions" path ships in the MVP. An owner can approve only calculated `ready`, or record a hold with a rationale at any readiness. Readiness describes the assessed evidence; approval records the human judgment and does not deploy anything.
+
+## Views and navigation
+
+Add an assessment workspace under `/boards/[id]/releases/[releaseId]`. Keep candidate, validation/target environments, audience, overall readiness, and evidence-gap counts visible while switching views. Preserve the selected view in the URL so a colleague can open the same context.
+
+| View preset                  | Primary question                                    | Content and useful actions                                                                                                                                       |
+| ---------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Release and product          | Can these users achieve the required outcomes?      | Included capabilities, simple flow summaries, blockers, evidence gaps, accountable owners; drill into an outcome.                                                |
+| Visual and frontend          | Which visible interactions support a capability?    | Existing screens/regions, capability links, expected contracts and matching verification; jump between a region and its capability.                              |
+| Backend and architecture     | What implements this outcome, and what is affected? | Relevant operations/events/jobs/data, owners and declared dependency paths; select a component to find affected capabilities in this board.                      |
+| QA                           | Which acceptance claims have been verified?         | Required/optional checks, exact context, latest selected result, stale/missing evidence, prior runs; append a manual result or inspect a reference.              |
+| Operations security and data | Are the nonvisual release requirements satisfied?   | Relevant category checks, migration/recovery/privacy/data correctness claims, owners and evidence; show irrelevant categories as unconfigured rather than green. |
+| Decision                     | What exactly am I approving or holding?             | Full scope, scope exclusions and definition changes, mandatory failures/gaps, optional warnings, retained artifacts, reviewer and rationale.                     |
+
+Each preset is a presentation of the same server-loaded assessment. A customer/product preset is not automatically public. Start backend navigation with the selected capability and immediate relationships; expand explicitly, deduplicate shared components, and use a visited set and bounded traversal. Provide a simple grouped component list and accessible relationship table before considering a graph-layout dependency. No free-form diagram editor is needed.
+
+## Authorization and public sharing
+
+Retain workspace `viewer`, `editor`, and `owner` permissions. Viewers read internal assessments. Editors and appropriately capped API keys maintain definitions and append evidence. A current owner with a browser session records decisions and creates/revokes public release links. Finalization and publication endpoints reject bearer-authenticated requests even if the key is owner-scoped.
+
+Add a session-only API guard: the existing `requireApiMember("owner")` accepts API keys and therefore cannot enforce human decisions. Revalidate and lock current membership inside decision and publication transactions so concurrent demotion cannot authorize a write. Enforce origin checks on new cookie-authenticated mutations. Add credential/source metadata for evidence attribution without exposing tokens or hashes. Every mutation writes audit in the same transaction as its data changes.
+
+Public release links refer to a recorded decision, not the mutable live assessment. Construct an immutable allowlisted projection on the server: candidate label, reviewed date, target environment/audience summary, outcome summaries, readiness and evidence-gap summary, approved public explanations, and explicitly selected safe screenshot copies. The internal snapshot remains authenticated.
+
+Exclude raw architecture, internal evidence URLs, source/run identifiers, member identities/emails, internal notes, configuration secrets, and private asset paths. Select public-safe outcome summaries and media explicitly before publishing. Verify the exclusion in server JSON, HTML, metadata, and asset responses, not just in visible components. Existing labelled board links still show the same full board and retain their current semantics.
+
+New confidential images and retained decision copies use a private directory resolved through `src/lib/paths.ts`. Serve them through authenticated assessment/decision asset routes, or a release token that authorizes that exact projected asset. Use `no-store` and the existing filename/MIME validation patterns. Token revocation blocks subsequent page, API, and asset reads; it cannot retract previously downloaded bytes.
+
+Current board images are already available through public `/api/uploads/[filename]` with long-lived caching. Copying them into private snapshot storage does not undo that exposure. Treat legacy visual anchors as potentially public, show this when selecting them, and do not place confidential architecture or new evidence uploads in that directory. A broader migration of existing board image access is a separate follow-up.
+
+## Recorded decisions and media retention
+
+The owner submits the assessment revision shown in the review. In one DB transaction, lock the assessment, compare that revision, re-evaluate at server time, enforce the decision condition, and write the decision, snapshot, and audit. All scope, definition, evidence, and relevant mapping mutations must participate in the same revision/locking contract. A concurrent edit or evidence arrival causes `409` and requires a refreshed review. Evidence expiry is checked even when the revision has not changed.
+
+Make revision propagation explicit: edits to shared component metadata/dependencies, mappings, owners, or linked visual data used by a live review bump every affected assessment revision. The MVP serializes writes with a shared workspace → board/source → assessment lock order, then locks membership and credentials before authorization-sensitive writes. Shared component mutations lock affected boards and assessments in deterministic ID order inside that workspace boundary. Evidence, decisions, media replacement/deletion, and member changes follow compatible ordering. This deliberately coarse workspace lock favors consistent reviews over maximum write concurrency in the singleton deployment. Pinned outcome changes follow the explicit definition-adoption rule above. Reads use a consistent transaction snapshot so they cannot combine rows from different revisions.
+
+Snapshot the candidate/context, included capabilities and owners, scope explanations, check definitions and revisions, declared dependency slice, selected evidence and provenance, readiness reasons, evaluation time/version, and normalized visual annotations. Retain any media the owner includes as independent immutable bytes with digests, rather than live screen filenames.
+
+Stage media copies before recording. Coordinate screen replacement/deletion with the same source-row/asset locks; these handlers currently remove old files. Revalidate source identity/digest and the assessment revision before committing. Remove staged files on failure and provide a local cleanup command for abandoned staging files. A successful decision must never reference a partial or absent copy.
+
+Replacing/deleting a live screen, editing a capability, receiving new evidence, or removing a member must not rewrite the snapshot. Keep the live assessment editable; later decisions append another snapshot. Historical views say "As assessed at [time]" and show the recorded freshness limit. If live evidence has expired or changed, show that distinction rather than presenting an old approval as current verification.
+
+## API and source integration
+
+Use the existing HTTP helpers, inline validation, body caps, role checks, and REST noun conventions. Add a conflict helper for stale revisions/idempotency and expose revision tokens on editable resources. All collection/detail operations scope queries to the authenticated workspace.
+
+| Surface                                   | Implemented REST resources                                                                                                 |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Capability editing                        | `/api/boards/:boardId/capabilities`, `/api/capabilities/:id`, `/api/regions/:id/capabilities`                              |
+| Component and relationship editing        | `/api/workspace/components`, `/api/components/:id`, `/api/components/:id/dependencies`, `/api/capabilities/:id/components` |
+| Assessments and included scope            | `/api/boards/:boardId/releases`, `/api/releases/:id`, `/api/releases/:id/capabilities`                                     |
+| Checks and immutable definition revisions | `/api/releases/:id/checks`, `/api/checks/:id/revisions`                                                                    |
+| Append-only evidence                      | `/api/releases/:id/evidence`; list/filter by check and append with `POST`                                                  |
+| Calculated readiness                      | Returned with assessment reads; optional `/api/releases/:id/readiness` for refresh                                         |
+| Human decisions and authenticated assets  | `/api/releases/:id/decisions`, `/api/releases/:id/assets`, `/api/release-assets/:assetId`                                  |
+| Curated publication                       | `/api/releases/:id/share-links`, `/api/release-share-links/:token`, `/api/release-share-links/:token/assets/:assetId`      |
+
+Public presentation lives at `/share/releases/[token]`; the in-memory example remains at `/share/demo` with a readiness entry point. Private routes use server guards even if the proxy does not match them; extend `src/proxy.ts` consistently without making public projection routes require login.
+
+Primary implementation files are `src/lib/db.ts`, `release-types.ts`, `audit.ts`, `auth-helpers.ts`, `http.ts`, `paths.ts`, the board/screen/region mutation routes, and new `readiness.ts` and `release-projection.ts` pure modules. Add domain component folders `release/`, `capability/`, `dependency/`, and `evidence/`, with colocated Storybook stories. Keep components composed and prop-driven.
+
+Read the installed version-matched Next.js guides before implementing routes. Give every request/DB-backed page a loading/Suspense shell under the existing Cache Components conventions. The Pages build already removes `/boards/[id]`; add the new runtime public release route to `scripts/pages-prebuild.mjs` while retaining docs and the in-memory demo. Run the destructive Pages preparation only in a disposable checkout/CI. MCP can retain its current tools; REST is the first evidence-ingestion surface.
+
+## Delivery slices
+
+The implementation follows these slices. Their product features are present; each has audit/authorization coverage, component stories, and relevant tests. The external team pilot in RR6 remains a post-implementation activity. Later slices build on earlier records rather than introducing parallel reporting models.
+
+| Slice                                | Concrete work                                                                                                                                                      | Exit criterion                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| RR1 Capabilities and dependencies    | Add capabilities/components/links, owners, scoped CRUD, region linking, archive behavior, capability list/detail and accessible dependency navigation.             | A UI-free capability and a visual capability can be created, owned, linked, and navigated; existing boards remain usable.                    |
+| RR2 Candidate assessments and checks | Add immutable candidate/context, explicit included scope, release-level gates, immutable check revisions, revision/audit controls, assessment and check editors.   | A real candidate has required functional checks for every included capability; wrong-board subjects and context edits are rejected.          |
+| RR3 Evidence and readiness           | Add manual evidence form, REST append/idempotency/provenance, history, pure evaluator, freshness and reason displays.                                              | All evaluation edge cases below pass; an old passing run cannot erase a newer failure or make the wrong candidate ready.                     |
+| RR4 Shared role views                | Compose the six presets from one assessment payload, region/capability navigation, category views and reverse component impact; URL-preserved view selection.      | Product, backend, QA, frontend and operational views agree on scope, blockers and evidence gaps, including capabilities without screenshots. |
+| RR5 Decisions and preserved history  | Add owner-session guard, reviewed-revision transaction, approved/held decisions, retained assets, deletion protections and historical/live distinction.            | Only a current human owner can approve calculated ready; concurrent edits conflict; live replacements/deletions cannot damage history.       |
+| RR6 Public sharing and pilot         | Add publication preview/allowlist, token-scoped media and revocation, in-memory readiness demo, docs/Pages updates, full regression checks and real-release pilot. | Public responses expose only the chosen projection; every role can use the example and real assessment without duplicate reporting.          |
+
+The complete workflow uses RR1–RR6 together. The permanent example is in-memory at `/share/demo/releases`; it does not populate user databases. The latest published `2026.8.0` release does not contain these additions yet.
+
+## Verification and acceptance cases
+
+Pure tests should cover the evaluator and projection boundaries, not reproduce component markup. Add DB/API integration coverage where ownership, transactions, idempotency, and asset lifecycles cannot be verified by pure functions. Verify that reusable outcome changes leave an assessment's pinned outcome intact, explicit definition adoption invalidates affected evidence, and moving a check cannot transfer its old pass to another subject. Include concurrent owner demotion and idempotent/conflicting evidence retries.
+
+| Case                                                                      | Expected result                                                                                    |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Empty assessment or included capability with no required functional check | `needs_evidence`; approval rejected.                                                               |
+| Passing UI rendering/contract check but failing required user outcome     | `blocked`; supporting passes remain inspectable.                                                   |
+| Required failure plus another missing check                               | `blocked`, with the missing claim also visible.                                                    |
+| Wrong candidate, environment, audience/configuration, or check revision   | Cannot satisfy the current check; mismatch is explained.                                           |
+| Expired passing result; check edited; late result from an older run       | Cannot restore ready; prior results remain in history.                                             |
+| Stale failure, inconclusive latest run, or optional failure               | Stale failure remains blocked; inconclusive cannot establish ready; optional failure is a warning. |
+| Shared components and dependency cycles                                   | Bounded traversal and deduplication; graph edges alone do not create gates.                        |
+| Viewer writes; foreign workspace/board IDs; removed/demoted/expired keys  | Denied consistently, including nested links and assets.                                            |
+| Owner-scoped API key records a decision or publishes a release link       | Denied; live owner browser session required.                                                       |
+| Evidence/scope changes during review, or expiry before submission         | Revision conflict or refreshed non-ready calculation prevents approval.                            |
+| Live screen replaced/deleted or board deleted after decision              | Retained media/text survive; board deletion with history returns a descriptive conflict.           |
+| Public JSON/HTML/metadata/media inspected; token revoked                  | No private fields or unselected assets; revoked token denies fresh reads.                          |
+| Existing board editor/share/REST/MCP and static demo                      | Existing visual semantics and working routes remain intact.                                        |
+
+Before completing each implementation slice, run the six existing gates: `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm test:stories`, and `pnpm build`. For UI slices, exercise the full application with Postgres/OIDC and use Storybook interaction tests. For final acceptance, inspect both the authenticated release workflow and a public projection in a browser and verify the Pages export in a disposable environment.
+
+## Pilot and follow-up decisions
+
+Extend `getDemoBoard()` through a separate in-memory release fixture, including passing, failed, missing, stale, and wrong-context evidence, a nonvisual capability, shared dependencies, and a recorded decision. No fixture is seeded into the user database. Link empty capability, assessment, evidence, and role views to that example.
+
+For the real-release pilot, have product, backend, QA, frontend, operations, and a release owner independently answer whether the candidate is ready, which claims block it, who owns the resolution, and what evidence is needed. Use two minutes to find the answers as an initial usability target, not an established benchmark. Track preparation time, maintenance per review, disagreements, and false-ready conclusions as well as comprehension.
+
+After the pilot, prioritize actual recurring evidence sources and import needs. Reconcile GitHub milestones/issues with the adopted roadmap, update screenshots-first marketing and agent guidance as features ship, and consider catalog imports, configurable exception policy, private legacy image migration, or broader impact views only against demonstrated needs. This documentation change does not create or relabel GitHub milestones.
+
+## Research foundations
+
+These mechanisms inform the design; they do not establish market demand for the combined StateBoard product:
+
+- [Backstage software catalog](https://backstage.io/docs/features/software-catalog/) and [Cortex relationship graph](https://docs.cortex.io/ingesting-data-into-cortex/entities-overview/entities/relationship-graph): ownership, relationships, and focused navigation.
+- [C4 diagrams](https://c4model.com/diagrams) and [Cucumber BDD](https://cucumber.io/docs/bdd/): audience-specific architecture views and shared acceptance language.
+- [Pact testing boundaries](https://docs.pact.io/getting_started/what_is_pact_good_for): a contract result supports compatibility claims, not every business outcome or side effect.
+- [Allure TestOps overview](https://docs.qameta.io/getting-started/overview/) and [OpsLevel checks](https://docs.opslevel.com/docs/checks-and-filters): scoped manual/automated verification and expiring checks.
+- [Unleash feature flags](https://docs.getunleash.io/concepts/feature-flags) and [Google SRE user-centric objectives](https://sre.google/workbook/implementing-slos/): environment/audience context and critical user journeys.

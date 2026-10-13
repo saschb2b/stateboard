@@ -1,11 +1,13 @@
 ---
 title: Roadmap
-description: How StateBoard's release stages are scoped, and where each feature lives on the timeline.
+description: From visual status reporting to evidence-backed release readiness for every role.
 ---
 
-The roadmap is staged. Each stage protects the thesis (**screens, regions, states, and the integrations that keep them honest**) and adds the smallest thing that earns the next.
+StateBoard is evolving from visual status reporting into a shared assessment of **what works, what it depends on, and why a team believes it is ready to release**. Screenshots remain the visual view; reusable capabilities connect that view to backend dependencies, acceptance criteria, and verification evidence.
 
-The list below is the narrative version. The machine-readable version is in [GitHub milestones](https://github.com/saschb2b/stateboard/milestones); each issue is assigned to one. The [project board](https://github.com/users/saschb2b/projects/1) has a Roadmap view if you'd rather see it on a timeline.
+This page records the adopted product direction. **The latest published release remains `2026.8.0`. The release-readiness MVP is implemented in this working tree and unreleased.** The [usage guide](./release-readiness) explains the workflow; the [MVP implementation plan](./release-readiness-mvp) records its contract and acceptance criteria.
+
+[GitHub milestones](https://github.com/saschb2b/stateboard/milestones) and the [project board](https://github.com/users/saschb2b/projects/1) still contain the previous roadmap scope. Reconciliation of their stages and issues is pending; they have not been synchronized with this direction.
 
 ## v0: the wedge · shipped
 
@@ -23,55 +25,89 @@ The cut you can deploy in a company.
 
 - Multi-user via OIDC (Keycloak is documented; any IdP works)
 - Workspace with `owner` / `editor` / `viewer` roles
-- Revocable share-link tokens: multiple per board, mint per audience
+- Revocable share-link tokens: multiple per board with audience labels; each currently shows the same board
 - Append-only audit log (rows in Postgres; a read-only UI and per-board history arrived in `2026.7.0`)
 - Postgres-backed; multi-replica safe with a `ReadWriteMany` PVC
 - One container + one Postgres. Zero outbound calls except to your IdP.
 
 See the [changelog](./changelog) for the full release notes.
 
-## v1.x: still scope-OK · in progress
+## v1.x: shipped additions
 
-Small, additive features that don't change the primitive. Track them on [milestone v1.x](https://github.com/saschb2b/stateboard/milestone/1).
+These additions are already available on top of the v1 foundation:
 
-- **Headless screenshot capture from URL**: paste a URL, get a screenshot. Foundation for v2's scheduled capture.
-- **Jira issue linking on regions**, one-way: tag a region with `ACME-123`, render the deep link on the share view.
-- **Custom states**: workspace owners can add states _in addition to_ the three defaults. The defaults stay; their colors stay.
-- **Agent access** — _shipped in `2026.8.0`._ Per-member API keys (hashed, role-capped, expiring) unlock the REST API and a built-in [MCP server](https://modelcontextprotocol.io) at `/api/mcp`, so a coding agent can read a board, flip regions after verifying what actually shipped, and hand back the share link. Every edit is audited. It stays inside the primitive — screens, regions, states — and adds no outbound calls. See [Agents & API](./agents).
+- **Audit-log UI** — shipped in `2026.7.0`. `/settings/audit` for owners, with actor / action / resource / date filters and CSV export, plus per-board history at `/boards/[id]/history` visible to any board member.
+- **Agent access** — shipped in `2026.8.0`. Per-member API keys (hashed, role-capped, expiring) unlock the REST API and a built-in [MCP server](https://modelcontextprotocol.io) at `/api/mcp`. Agents can read and update boards and regions, with every edit audited and no outbound calls. See [Agents & API](./agents).
 
-## v2: make it living · planned
+The unshipped capture, custom-state, and integration work from the former v1.x scope remains in the [reprioritized backlog](#reprioritized-backlog).
 
-The features that turn StateBoard from a snapshot into a status tool. Track them on [milestone v2](https://github.com/saschb2b/stateboard/milestone/2).
+## v2: release-readiness MVP · implemented, unreleased
 
-- **Scheduled re-capture**: per-screen cron triggers; last good capture stays visible on failure.
-- **Time-travel & diff view**: browse prior captures of a screen and overlay them to see what changed.
-- **Two-way Jira sync**: ticket transitions update region state and vice versa, via a per-workspace status mapping.
-- **Slack notifications**: state flips, share-link opens, failed captures.
-- **Notion / Confluence embed**: oEmbed + a chrome-less render mode that fits typical embed heights.
-- **S3-compatible storage adapter**: drop the RWX-PVC requirement for multi-replica deploys.
+The MVP is designed to let a product manager, backend developer, QA specialist, and release owner independently explain whether the same candidate is ready, what blocks it, who owns the resolution, and which evidence would unblock it.
 
-## v3: defensible · planned
+- **A defined release assessment.** Keep a board as the product boundary. Assess an immutable candidate reference or artifact manifest against a validation environment, target deployment environment, audience, and configuration. A new candidate or assessment context requires its own assessment.
+- **Reusable capabilities.** Describe outcomes such as "Export an invoice" or "Process a partner webhook," with owners and required acceptance checks. Link capabilities to screens and regions where useful; a capability can exist without a UI.
+- **Lightweight dependencies.** Record components, owners, and meaningful relationships such as calls, consumes, or requires. Show the dependencies relevant to a capability and the capabilities affected by a component.
+- **Applicable evidence.** Attach manual reviews and test results to versioned checks. Evidence is append-only and identifies its candidate, environment, audience/configuration, result, author/source, time, and freshness window. Start with manual entry and push submissions through the existing REST API-key model.
+- **Explainable readiness.** Calculate `ready`, `blocked`, or `needs_evidence` from required checks and applicable evidence. Show individual failures and unknowns; a percentage must never hide a critical blocker. Keep `shipped` / `mock` / `missing` as separate visual delivery states.
+- **Recorded human decisions.** Preserve the assessed scope, applicable evidence, readiness result, actor, time, and rationale in a decision snapshot. Passing checks do not automatically approve a release. Exception waivers are outside the MVP.
+- **Six view presets over the same records.** Release / product, Visual / frontend, Backend, QA, Operations / security / data, and Decision. People choose the view that answers their question; these presets are not access roles.
+- **A curated public projection.** Explicitly select public-safe outcome summaries and visual media, retain the media needed by a published decision, and enforce an allowlist on the server. Raw internal dependencies, evidence references, and identities stay authenticated.
 
-The features that make StateBoard hard to displace once a team has standardised on it. Track them on [milestone v3](https://github.com/saschb2b/stateboard/milestone/3).
+All six implementation slices are present, including private media, retained decisions, curated publication, and a permanent example at `/share/demo/releases`. Upgrade with migrations `0008`–`0010`. The [implementation plan](./release-readiness-mvp) covers the schema, API, readiness rules, and acceptance criteria. Pilot one real release with roughly 5–10 critical capabilities before broadening the model; team usability validation remains pending.
 
-- **Auto region-detection from DOM**: propose regions during headless capture from semantic blocks and ARIA landmarks.
-- **Journey-level views**: sequence screens left-to-right ("sign-up → onboarding → first action").
-- **Portfolio rollup**: workspace-level dashboard aggregating state counts across boards.
-- **SAML SSO**: for orgs that still mandate it. Better Auth has the helper; we ship a tested example.
-- **Audit-log UI** — _shipped in `2026.7.0`._ `/settings/audit` for owners with actor / action / resource / date filters and CSV export, plus a per-board history at `/boards/[id]/history` visible to any board member.
-- **Template gallery**: starter boards a workspace owner can clone in one click. Templates live in code, never seeded into the user's database.
+## v2.x: keep evidence current · planned after the pilot
+
+- **Evidence integration recipes** for existing CI, test, and internal systems, using push submissions through API keys first. StateBoard makes no new runtime outbound calls.
+- **Catalog and architecture imports** that reuse existing component identities and owners rather than require a second catalog to be maintained by hand.
+- **Freshness and context comparison** that make stale evidence and differences between assessed candidates, environments, audiences, or configuration visible.
+- **Capability flow views** that connect visual steps and non-visual work into a complete user or business outcome.
+
+Integration scope will follow the evidence sources used in the pilot. A connector's results support the claims it actually verifies; importing a test result or a runtime connection must not imply that the whole capability has passed.
+
+## v3: broader impact and overview · planned later
+
+- **Richer impact navigation** across components, capabilities, and release assessments, with focused architecture slices and domain-level overview.
+- **Portfolio rollup** across product boards, preserving candidate context, blockers, and evidence gaps instead of adding incomparable status counts.
+- **Declared and observed architecture** shown distinctly if runtime evidence is imported; observed traffic is not proof of complete dependency coverage.
+- **Reusable assessment templates** after the pilot establishes stable patterns. Built-in examples remain in code rather than being seeded into the user's database.
+
+## Reprioritized backlog
+
+These previously planned features are retained, but are not prerequisites for the release-readiness MVP. Their original milestone placement is historical; sequence them after the pilot according to demonstrated value.
+
+| Feature                                          | Previous stage | Current treatment                                                                                                          |
+| ------------------------------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Headless screenshot capture from URL             | v1.x           | Deferred; useful as a future visual evidence source.                                                                       |
+| Custom states alongside the three defaults       | v1.x           | Deferred; must keep `shipped` / `mock` / `missing` and remain separate from readiness.                                     |
+| One-way Jira issue links on regions              | v1.x           | Deferred; external links can support context without making tickets the unit of assessment.                                |
+| Scheduled re-capture and time-travel / diff view | v2             | Deferred until capture and evidence use cases justify them.                                                                |
+| Two-way Jira sync                                | v2             | Deferred; ticket transitions alone cannot establish release readiness. Any integration must preserve the network boundary. |
+| Slack notifications                              | v2             | Deferred; no new runtime outbound calls are authorized by this roadmap.                                                    |
+| Notion / Confluence embed                        | v2             | Deferred; build on the curated public projection.                                                                          |
+| S3-compatible storage adapter                    | v2             | Deferred deployment option; the local-storage path remains supported.                                                      |
+| DOM-assisted region detection                    | v3             | Deferred visual authoring aid.                                                                                             |
+| Journey-level screen sequencing                  | v3             | Reframed as capability flow views in v2.x, including outcomes with no screens.                                             |
+| SAML SSO                                         | v3             | Deferred identity option.                                                                                                  |
+| Template gallery                                 | v3             | Deferred until reusable assessment patterns emerge.                                                                        |
 
 ## What we won't build
 
-Some things look like obvious wins but pull StateBoard toward becoming a roadmap tool, a Figma clone, or a SaaS. The full list lives in `CLAUDE.md`'s [What not to build](https://github.com/saschb2b/stateboard/blob/main/CLAUDE.md#what-not-to-build) section. The short version:
+The full operating guardrails live in `CLAUDE.md`'s [What not to build](https://github.com/saschb2b/stateboard/blob/main/CLAUDE.md#what-not-to-build) section. This direction does not turn StateBoard into:
 
+- A ticket, sprint, or roadmap management tool
+- A full developer portal, service catalog, or observability platform
+- A replacement test runner or release deployment system
+- An automatic release approver
 - Real-time collaboration (yjs, presence), because async review is the use case
 - Comment threads on regions, because we are not Figma
 - Email-based invites, because OIDC handles identity
 - Per-provider OAuth helpers, because Better Auth's generic OIDC accepts any discovery URL
 
+Self-hosted, airgap-ready, MIT remains the distribution model. Except for the configured internal OIDC provider, the server makes no external network calls.
+
 ## Want to influence it?
 
 - File an issue on [the repo](https://github.com/saschb2b/stateboard/issues). Reference a stage if you have a strong opinion.
-- Watch the [project board](https://github.com/users/saschb2b/projects/1) for live status.
-- The CalVer release cadence is one minor per stage; patches happen as needed.
+- The [project board](https://github.com/users/saschb2b/projects/1) tracks implementation issues; roadmap reconciliation is pending.
+- Releases use CalVer. Stage names describe product scope and do not promise dates.
