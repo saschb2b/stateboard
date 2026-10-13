@@ -22,19 +22,20 @@ export const NoScreensYet: Story = {
     screensHref: "/boards/example",
   },
   play: async ({ canvas, args }) => {
+    await expect(canvas.getByText("No screens yet")).toBeVisible();
+    await expect(canvas.getByText("Export an invoice")).not.toBeVisible();
+    await userEvent.click(
+      canvas.getByText(/capabilities without a linked screen/),
+    );
+    await expect(canvas.getByText("Export an invoice")).toBeVisible();
     await expect(
-      canvas.getByText("No screenshots have been added to this product."),
-    ).toBeVisible();
-    await expect(
-      canvas.getByRole("link", { name: "Open screens editor" }),
+      canvas.getByRole("link", { name: "Manage screens" }),
     ).toHaveAttribute("href", "/boards/example");
     await userEvent.click(
-      canvas.getByRole("button", { name: "Inspect dependencies" }),
+      canvas.getByRole("button", { name: "View architecture" }),
     );
     await expect(args.onReviewView).toHaveBeenCalledWith("backend");
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Inspect checks" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "View checks" }));
     await expect(args.onReviewView).toHaveBeenCalledWith("qa");
   },
 };

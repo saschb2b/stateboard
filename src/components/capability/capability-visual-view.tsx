@@ -3,10 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Alert,
   Box,
   Button,
-  Chip,
   MenuItem,
   Paper,
   Stack,
@@ -52,17 +50,15 @@ export function CapabilityVisualView({
         );
   const noUI = included.filter(
     (item) =>
+      (capabilityId === "all" || item.capabilityId === capabilityId) &&
       !product.regionCapabilities.some(
         (link) => link.capabilityId === item.capabilityId,
       ),
   );
   return (
     <Stack spacing={2}>
-      <Typography variant="h6">
-        Visual delivery and capability readiness
-      </Typography>
       <TextField
-        label="Focus on capability"
+        label="Capability"
         value={capabilityId}
         select
         size="small"
@@ -75,13 +71,15 @@ export function CapabilityVisualView({
           </MenuItem>
         ))}
       </TextField>
-      <Alert severity="info">
-        Shipped, mock, and missing describe the visual delivery. Readiness comes
-        from required checks for this candidate.
-      </Alert>
+      {screens.length > 0 && (
+        <Typography variant="caption" color="text.secondary">
+          Annotations show shipped, mock, or missing UI. Checks verify the
+          candidate.
+        </Typography>
+      )}
       {screens.map((screen) => (
-        <Paper key={screen.id} sx={{ p: 2 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
+        <Paper key={screen.id} sx={{ overflow: "hidden" }}>
+          <Typography variant="subtitle2" sx={{ px: 2, py: 1.5 }}>
             {screen.label ?? "Product screen"}
           </Typography>
           <Box
@@ -105,7 +103,7 @@ export function CapabilityVisualView({
               }
             />
           </Box>
-          <Stack spacing={1} sx={{ mt: 2 }}>
+          <Stack sx={{ px: 2, py: 0.5 }}>
             {screen.regions
               .filter(
                 (region) => capabilityId === "all" || regionIds.has(region.id),
@@ -117,6 +115,12 @@ export function CapabilityVisualView({
                   alignItems="center"
                   gap={1}
                   flexWrap="wrap"
+                  sx={{
+                    py: 1,
+                    borderBottom: 1,
+                    borderColor: "divider",
+                    "&:last-child": { borderBottom: 0 },
+                  }}
                 >
                   <StateChip state={region.state} size="sm" />
                   <Typography variant="body2">
@@ -131,18 +135,15 @@ export function CapabilityVisualView({
                         gap={1}
                         alignItems="center"
                       >
-                        <Chip
-                          size="small"
-                          label={
-                            detail.scope.find(
-                              (item) => item.capabilityId === link.capabilityId,
-                            )?.name ??
+                        <Typography variant="caption" color="text.secondary">
+                          {detail.scope.find(
+                            (item) => item.capabilityId === link.capabilityId,
+                          )?.name ??
                             product.capabilities.find(
                               (item) => item.id === link.capabilityId,
                             )?.name ??
-                            "Capability"
-                          }
-                        />
+                            "Capability"}
+                        </Typography>
                         <ReadinessChip
                           verification
                           state={
@@ -159,42 +160,76 @@ export function CapabilityVisualView({
         </Paper>
       ))}
       {screens.length === 0 && (
-        <Paper sx={{ p: 2 }}>
-          <Typography color="text.secondary">
-            {capabilityId === "all"
-              ? "No screenshots have been added to this product."
-              : "This capability has no linked screenshot regions."}
+        <Box sx={{ py: 5, textAlign: "center" }}>
+          <Typography variant="subtitle1">
+            {capabilityId === "all" ? "No screens yet" : "No linked screen"}
           </Typography>
-          <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
+          <Stack
+            direction="row"
+            justifyContent="center"
+            gap={1}
+            flexWrap="wrap"
+            sx={{ mt: 1.5 }}
+          >
             {onReviewView && (
               <>
                 <Button onClick={() => onReviewView("backend")}>
-                  Inspect dependencies
+                  View architecture
                 </Button>
-                <Button onClick={() => onReviewView("qa")}>
-                  Inspect checks
-                </Button>
+                <Button onClick={() => onReviewView("qa")}>View checks</Button>
               </>
             )}
             {screensHref && (
               <Button component={Link} href={screensHref}>
-                Open screens editor
+                Manage screens
               </Button>
             )}
           </Stack>
-        </Paper>
+        </Box>
       )}
       {noUI.length > 0 && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="subtitle1">
-            Capabilities without visual anchors
+        <Box
+          component="details"
+          sx={{ borderTop: 1, borderColor: "divider", py: 1.5 }}
+        >
+          <Typography
+            component="summary"
+            variant="body2"
+            color="text.secondary"
+            sx={{ cursor: "pointer" }}
+          >
+            {noUI.length} {noUI.length === 1 ? "capability" : "capabilities"}{" "}
+            without a linked screen
           </Typography>
-          {noUI.map((item) => (
-            <Typography key={item.capabilityId} variant="body2" sx={{ mt: 1 }}>
-              {item.name} · {item.ownerLabel}
-            </Typography>
-          ))}
-        </Paper>
+          <Stack sx={{ mt: 1.5 }}>
+            {noUI.map((item) => (
+              <Stack
+                key={item.capabilityId}
+                direction="row"
+                alignItems="center"
+                justifyContent="space-between"
+                gap={2}
+                sx={{ py: 1 }}
+              >
+                <Box>
+                  <Typography variant="body2">{item.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.ownerLabel}
+                  </Typography>
+                </Box>
+                <ReadinessChip
+                  verification
+                  state={
+                    readiness.capabilities.find(
+                      (capability) =>
+                        capability.capabilityId === item.capabilityId,
+                    )?.state ?? "needs_evidence"
+                  }
+                />
+              </Stack>
+            ))}
+          </Stack>
+        </Box>
       )}
     </Stack>
   );

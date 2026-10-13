@@ -20,8 +20,15 @@ export const ArchitectureSlice: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getAllByText("No component-specific verification configured"),
-    ).toHaveLength(5);
+      canvas.queryByText("No component checks defined."),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Billing API.*1 dependency/ }),
+    );
+    await expect(
+      canvas.getByText("No component checks defined."),
+    ).toBeVisible();
+    await expect(canvas.getByText("Uses the ledger projection.")).toBeVisible();
   },
 };
 
@@ -54,13 +61,21 @@ export const ScopedComponentVerification: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText(
-        "Ledger read set is consistent. · pass · staging-eu · Required check",
-      ),
+      canvas.queryByText("Ledger read set is consistent."),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: /Ledger store/ }));
+    await expect(
+      canvas.getByText("Ledger read set is consistent."),
     ).toBeVisible();
     await expect(
-      canvas.getAllByText("No component-specific verification configured"),
-    ).toHaveLength(4);
+      canvas.getByText("pass · Required · staging-eu"),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: /Ledger store/ }));
+    await waitFor(() =>
+      expect(
+        canvas.queryByText("Ledger read set is consistent."),
+      ).not.toBeInTheDocument(),
+    );
   },
 };
 
@@ -111,7 +126,7 @@ export const FocusedSubjectsWithWorkspaceCatalog: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
     await userEvent.click(
-      canvas.getByRole("combobox", { name: "Inspect component impact" }),
+      canvas.getByRole("combobox", { name: "Component impact" }),
     );
     await expect(
       page.queryByRole("option", { name: "Other product API" }),
@@ -129,9 +144,7 @@ export const FocusedSubjectsWithWorkspaceCatalog: Story = {
       includeRelease: true,
     });
     await expect(canvas.getByText(/Supporting cycle context\./)).toBeVisible();
-    await userEvent.click(
-      canvas.getByRole("combobox", { name: "Focus on capability" }),
-    );
+    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
     await waitFor(() =>
       expect(
         page.getByRole("option", { name: "Export an invoice" }),
@@ -149,18 +162,15 @@ export const FocusedSubjectsWithWorkspaceCatalog: Story = {
       includeRelease: true,
     });
     await expect(
-      canvas.queryByText(
-        "Restore agent has a configured check. · Not evaluated · staging-eu · Required check",
-      ),
+      canvas.queryByText("Restore agent has a configured check."),
     ).not.toBeInTheDocument();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Clear architecture focus" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Clear focus" }));
     await expect(args.onCheckScopeChange).toHaveBeenLastCalledWith(null);
+    await userEvent.click(
+      canvas.getByRole("button", { name: /Restore agent/ }),
+    );
     await expect(
-      canvas.getByText(
-        "Restore agent has a configured check. · Not evaluated · staging-eu · Required check",
-      ),
+      canvas.getByText("Restore agent has a configured check."),
     ).toBeVisible();
   },
 };
