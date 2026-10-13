@@ -5,18 +5,15 @@ import Link from "next/link";
 import { Alert, Button, Container, Stack, Typography } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
 import { UserMenu } from "@/components/app/user-menu";
-import { ReleaseScope } from "@/components/capability/release-scope";
-import { CapabilityVisualView } from "@/components/capability/capability-visual-view";
-import { DependencyView } from "@/components/dependency/dependency-view";
-import { CheckManager } from "@/components/evidence/check-manager";
+import type { CheckSubjectScope } from "@/components/evidence/check-scope";
 import { evaluateRelease } from "@/lib/readiness";
 import { ReadinessSummary } from "./readiness-summary";
 import { ReleaseViewTabs } from "./release-view-tabs";
-import { DecisionPanel } from "./decision-panel";
-import { ReleaseAssetUploader } from "./release-asset-uploader";
 import { releaseRequest } from "./release-request";
 import { ReleaseContext } from "./release-context";
+import { ReleasePerspectives } from "./release-perspectives";
 import { useReleaseView } from "./use-release-view";
+import { useCheckFocus } from "./use-check-focus";
 import { useServerClock } from "./use-server-clock";
 import type { PublicationValues } from "./publication-form";
 import type {
@@ -52,6 +49,35 @@ export function ReleaseWorkspace({
   const [detail, setDetail] = useState(initialDetail);
   const [product, setProduct] = useState(initialProduct);
   const [view, changeView] = useReleaseView(initialView);
+  const [checkId, setCheckId] = useCheckFocus();
+  const [subjectScope, setSubjectScope] = useState<CheckSubjectScope | null>(
+    null,
+  );
+  const focusedCheckId = detail.checks.some(
+    (check) => check.id === checkId && check.archivedAt === null,
+  )
+    ? checkId
+    : null;
+  function selectView(next: ReleaseView) {
+    if (next !== "backend") setSubjectScope(null);
+    changeView(next);
+  }
+  function inspectCheck(id: string) {
+    if (
+      !detail.checks.some(
+        (check) => check.id === id && check.archivedAt === null,
+      )
+    )
+      return;
+    setSubjectScope(null);
+    changeView("qa");
+    setCheckId(id);
+  }
+  function clearCheckFocus() {
+    setCheckId(null);
+    setSubjectScope(null);
+    changeView("qa");
+  }
   const { now, advance, anchor } = useServerClock(serverNow, demo);
   const [error, setError] = useState<string | null>(null);
   const [reloading, setReloading] = useState(false);
@@ -196,92 +222,56 @@ export function ReleaseWorkspace({
               changed it.
             </Alert>
           )}
-          <ReadinessSummary readiness={readiness} />
-          <ReleaseViewTabs view={view} onChange={changeView} />
-          {view === "release" && (
-            <ReleaseScope
-              detail={detail}
-              product={product}
-              readiness={readiness}
-              editable={editable}
-              mutate={mutate}
-            />
+          <ReadinessSummary
+            readiness={readiness}
+            detail={detail}
+            editable={editable}
+            onInspectCheck={inspectCheck}
+            onReviewChecks={clearCheckFocus}
+          />
+          <ReleaseViewTabs view={view} onChange={selectView} />
+          {checkId && !focusedCheckId && (
+            <Alert
+              severity="warning"
+              action={
+                <Button onClick={clearCheckFocus}>Clear check focus</Button>
+              }
+            >
+              The linked check is not part of the current assessment. Choose a
+              current check below.
+            </Alert>
           )}
-          {view === "visual" && (
-            <CapabilityVisualView
-              detail={detail}
-              product={product}
-              readiness={readiness}
-            />
-          )}
-          {view === "backend" && (
-            <Stack spacing={3}>
-              <DependencyView
-                detail={detail}
-                product={product}
-                readiness={readiness}
-              />
-              <CheckManager
-                detail={detail}
-                product={product}
-                readiness={readiness}
-                editable={editable}
-                mutate={mutate}
-                now={now}
-                loadCheckRevisions={loadCheckRevisions}
-              />
-            </Stack>
-          )}
-          {(view === "qa" || view === "operations") && (
-            <CheckManager
-              detail={detail}
-              product={product}
-              readiness={readiness}
-              editable={editable}
-              mutate={mutate}
-              now={now}
-              operationsOnly={view === "operations"}
-              loadCheckRevisions={loadCheckRevisions}
-            />
-          )}
-          {view === "decision" && (
-            <Stack spacing={3}>
-              <DecisionPanel
-                detail={detail}
-                product={product}
-                readiness={readiness}
-                now={now}
-                canRecord={canRecord}
-                record={record}
-                publish={publish}
-                revoke={(token) =>
-                  action(`/api/release-share-links/${token}`, {
-                    method: "DELETE",
-                  })
-                }
-              />
-              {editable && (
-                <ReleaseAssetUploader
-                  assets={detail.assets.filter(
-                    (asset) => asset.decisionId === null,
-                  )}
-                  upload={async (file, label) => {
-                    const body = new FormData();
-                    body.set("file", file);
-                    body.set("label", label);
-                    body.set(
-                      "expectedRevision",
-                      String(detail.assessment.revision),
-                    );
-                    await action(
-                      `/api/releases/${detail.assessment.id}/assets`,
-                      { method: "POST", body },
-                    );
-                  }}
-                />
-              )}
-            </Stack>
-          )}
+          <ReleasePerspectives
+            view={view}
+            detail={detail}
+            product={product}
+            readiness={readiness}
+            editable={editable}
+            mutate={mutate}
+            now={now}
+            loadCheckRevisions={loadCheckRevisions}
+            onCheckScopeChange={setSubjectScope}
+            subjectScope={subjectScope}
+            focusedCheckId={focusedCheckId}
+            onClearFocus={clearCheckFocus}
+            onInspectCheck={inspectCheck}
+            canRecord={canRecord}
+            record={record}
+            publish={publish}
+            revoke={(token) =>
+              action(`/api/release-share-links/${token}`, { method: "DELETE" })
+            }
+            upload={async (file, label) => {
+              const body = new FormData();
+              body.set("file", file);
+              body.set("label", label);
+              body.set("expectedRevision", String(detail.assessment.revision));
+              await action(`/api/releases/${detail.assessment.id}/assets`, {
+                method: "POST",
+                body,
+              });
+            }}
+          />
         </Stack>
       </Container>
     </>

@@ -12,7 +12,11 @@ import {
   Typography,
 } from "@mui/material";
 import { MutationForm } from "@/components/release/mutation-form";
-import { ReadinessChip } from "@/components/release/readiness-summary";
+import {
+  ReadinessChip,
+  VerificationContext,
+} from "@/components/release/readiness-summary";
+import { ReleaseFindings } from "@/components/release/release-findings";
 import type {
   ProductContext,
   ReleaseCapability,
@@ -27,11 +31,13 @@ export function ReleaseScope({
   readiness,
   editable,
   mutate,
+  onInspectCheck,
 }: {
   detail: ReleaseDetail;
   product: ProductContext;
   readiness: ReleaseEvaluation;
   editable: boolean;
+  onInspectCheck?: (checkId: string) => void;
   mutate: (
     mutation: Omit<ReleaseMutation, "expectedRevision">,
   ) => Promise<void>;
@@ -52,6 +58,16 @@ export function ReleaseScope({
           <Button onClick={() => setEditing("add")}>Add to scope</Button>
         )}
       </Stack>
+      <VerificationContext detail={detail} now={readiness.evaluatedAt} />
+      <ReleaseFindings
+        detail={detail}
+        readiness={readiness}
+        subjectTypes={["release", "component"]}
+        includePassing
+        title="Release-wide and component gates"
+        onInspectCheck={onInspectCheck}
+        editable={editable}
+      />
       {detail.scope.map((item) => {
         const evaluation = readiness.capabilities.find(
           (result) => result.capabilityId === item.capabilityId,
@@ -81,7 +97,12 @@ export function ReleaseScope({
               </Stack>
               <Stack direction="row" spacing={1} alignItems="flex-start">
                 {item.included && evaluation ? (
-                  <ReadinessChip state={evaluation.state} />
+                  <Stack spacing={0.5} alignItems="flex-start">
+                    <ReadinessChip state={evaluation.state} verification />
+                    <Typography variant="caption" color="text.secondary">
+                      Validation: {detail.assessment.validationEnvironment}
+                    </Typography>
+                  </Stack>
                 ) : (
                   <Chip size="small" label="Excluded from release" />
                 )}

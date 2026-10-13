@@ -35,10 +35,91 @@ export const ProductPerspective: Story = {
     await expect(
       canvas.getByRole("heading", { name: "Acceptance checks and evidence" }),
     ).toBeVisible();
-    await expect(canvas.getByText("stale", { exact: true })).toBeVisible();
+    await expect(
+      within(canvas.getByRole("region", { name: "Check evidence" })).getByText(
+        "stale",
+        { exact: true },
+      ),
+    ).toBeVisible();
   },
 };
 export const BackendPerspective: Story = { args: { initialView: "backend" } };
+export const ArchitectureScopeEndsWhenChangingPerspective: Story = {
+  args: { initialView: "backend" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("combobox", { name: "Focus on capability" }),
+    );
+    await userEvent.click(
+      within(document.body).getByRole("option", { name: "Export an invoice" }),
+    );
+    let evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText("Invoice CSV includes all tax fields."),
+    ).toBeVisible();
+    await expect(
+      evidence.getByText(
+        "Rollback restores the previous worker version without losing events.",
+      ),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeNull();
+    await userEvent.click(canvas.getByRole("tab", { name: "QA" }));
+    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
+    await expect(
+      evidence.getByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Blocked" }),
+    ).toBeVisible();
+  },
+};
+export const FindingFocusAndClear: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", {
+        name: "Inspect check: Invoice CSV includes all tax fields.",
+      }),
+    );
+    await expect(canvas.getByRole("tab", { name: "QA" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    let evidence = within(
+      canvas.getByRole("region", { name: "Check evidence" }),
+    );
+    await expect(
+      evidence.getByText("Invoice CSV includes all tax fields."),
+    ).toBeVisible();
+    await expect(
+      evidence.queryByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeNull();
+    await expect(
+      canvas.getByRole("heading", { name: "Blocked" }),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "Backend" }));
+    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
+    await expect(
+      evidence.getByText("Focused check. Other check filters are paused."),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "QA" }));
+    evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
+    await userEvent.click(
+      evidence.getByRole("button", { name: "Clear check focus" }),
+    );
+    await expect(
+      evidence.getByText("Duplicate delivery creates only one ledger entry."),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Blocked" }),
+    ).toBeVisible();
+  },
+};
 export const OperationsPerspective: Story = {
   args: { initialView: "operations" },
 };
@@ -176,7 +257,9 @@ export const BrowserClockCannotHideFailure: Story = {
       canvas.getByRole("heading", { name: "Blocked" }),
     ).toBeVisible();
     await expect(
-      canvas.findByText(/Short-lived release verification.*expired/),
+      within(canvas.getByRole("region", { name: "Check evidence" })).findByText(
+        "The latest passing verification has expired.",
+      ),
     ).resolves.toBeVisible();
     await expect(
       canvas.getByRole("heading", { name: "Blocked" }),
