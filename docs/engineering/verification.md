@@ -5,7 +5,7 @@ description: Run the required gates and boundary-specific checks before commits 
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:15:41Z
+  at: 2026-10-13T21:37:05Z
 sources:
   - id: package
     resource: "package.json"
@@ -19,6 +19,10 @@ sources:
     resource: "scripts/release-db.test.mjs"
   - id: storybook
     resource: ".storybook/preview.tsx"
+  - id: packaging
+    resource: "scripts/standalone-artifact.mjs"
+  - id: packaging-tests
+    resource: "scripts/standalone-artifact.test.mjs"
 ---
 
 Run focused checks while implementing. Before committing or reporting completion, run all six application gates and the knowledge check:[^package]
@@ -34,6 +38,8 @@ pnpm docs:check
 ```
 
 Fix failures at their cause. Do not suppress a check to make the result pass. Format changed files without rewriting unrelated work. Report skipped or unrun checks explicitly. A passing tool call alone does not establish product behavior.
+
+`pnpm build` removes only the generated standalone copies of `.env` and `.env.production`, then rejects private storage, environment files, Git metadata, and agent inputs in production traces or the artifact. `pnpm build:check` repeats verification without changing files. The check also covers a custom storage directory recorded by Next at build time. Keep the source environment files and runtime media outside the deployment artifact.[^packaging]
 
 | Changed boundary                                                  | Additional verification                                                                                                                 |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -64,3 +70,7 @@ The [readiness rules](../product/readiness.md) apply to any evidence recorded fr
 [^db-tests]: Isolated release persistence integration suite.
 
 [^storybook]: Shared Storybook theme and router setup.
+
+[^packaging]: Cleanup and independent read-only build verification.
+
+[^packaging-tests]: Private-path rejection, custom storage, and source-preserving cleanup fixtures.

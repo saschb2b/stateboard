@@ -1,4 +1,5 @@
 import { createMDX } from "fumadocs-mdx/next";
+import { standaloneTraceExcludes } from "./scripts/standalone-policy.mjs";
 
 const withMDX = createMDX();
 
@@ -32,6 +33,14 @@ const nextConfig = isPagesExport
     }
   : {
       output: "standalone",
+      // Uploaded media comes from the runtime volume; local state and agent
+      // inputs must never be copied into a deployment artifact.
+      outputFileTracingExcludes: {
+        "/*": standaloneTraceExcludes(
+          process.cwd(),
+          process.env.STATEBOARD_DATA_DIR,
+        ),
+      },
       // Instant Navigations (Next 16.3): explicit caching via "use cache",
       // per-route loading shells prefetched to the client, SPA-feel
       // navigations. Deliberately absent from the Pages-export branch above —

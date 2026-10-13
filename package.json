@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "next build",
+    "build": "next build && node scripts/standalone-artifact.mjs --remove-env && node scripts/standalone-artifact.mjs",
+    "build:check": "node scripts/standalone-artifact.mjs",
     "start": "next start --port 3000",
     "lint": "eslint .",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
@@ -19,7 +20,9 @@
     "cleanup:release-assets": "node --conditions=react-server --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/cleanup-release-assets.mjs",
     "test:integration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test scripts/release-db.test.mjs scripts/mcp-release.test.mjs",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "design:generate": "node scripts/design-tokens.mjs",
+    "docs:check": "node scripts/check-docs.mjs"
   },
   "dependencies": {
     "@emotion/cache": "^11.14.0",

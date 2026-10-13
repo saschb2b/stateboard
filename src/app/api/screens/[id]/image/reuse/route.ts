@@ -73,7 +73,8 @@ async function postHandler(req: NextRequest, { params }: Ctx) {
   try {
     await fs.copyFile(
       path.join(UPLOADS_DIR, source.filename),
-      path.join(UPLOADS_DIR, newFilename),
+      // This generated destination exists only on the runtime storage volume.
+      path.join(/* turbopackIgnore: true */ UPLOADS_DIR, newFilename),
     );
   } catch (err) {
     console.error("replace-reuse copy failed", err);

@@ -70,6 +70,8 @@ pnpm docs:check
 
 Run `pnpm design:generate` after design-token changes and review the generated diff. Follow [verification](./docs/engineering/verification.md) for database integration, browser, skill, Helm, and static-export checks. `PAGES_BUILD=1 pnpm build:pages` deletes/replaces runtime files: use a disposable checkout or CI.
 
+`pnpm build` also excludes local media and agent inputs, removes generated standalone environment-file copies, and verifies the artifact. `pnpm build:check` repeats the artifact check without changing files. Supply secrets and media through runtime configuration and storage; never bundle them to satisfy file tracing.
+
 Use [local development](./docs/engineering/local-development.md) to start or reuse Postgres, OIDC, the app, and Storybook. `.mcp.json` configures optional development tools, not a credentialed product connection. Keep secrets and machine-specific settings out of commits and logs.
 
 <!-- BEGIN:nextjs-agent-rules -->

@@ -57,7 +57,8 @@ async function postHandler(_req: NextRequest, { params }: Ctx) {
       const newFilename = `${newScreenId}.${ext}`;
       await fs.copyFile(
         path.join(UPLOADS_DIR, screen.filename),
-        path.join(UPLOADS_DIR, newFilename),
+        // This generated destination exists only on the runtime storage volume.
+        path.join(/* turbopackIgnore: true */ UPLOADS_DIR, newFilename),
       );
       const newScreen = await createScreen(
         {

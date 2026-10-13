@@ -70,7 +70,11 @@ async function putHandler(req: NextRequest, { params }: Ctx) {
 
   ensureDataDirs();
   try {
-    await fs.writeFile(path.join(UPLOADS_DIR, newFilename), buffer);
+    // This generated destination exists only on the runtime storage volume.
+    await fs.writeFile(
+      path.join(/* turbopackIgnore: true */ UPLOADS_DIR, newFilename),
+      buffer,
+    );
   } catch (err) {
     console.error("replace write failed", err);
     return serverError("failed to persist upload");

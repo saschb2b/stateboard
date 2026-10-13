@@ -5,7 +5,7 @@ description: Preserve scoped transactions, revision rules, evidence history, and
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:15:41Z
+  at: 2026-10-13T21:37:05Z
 sources:
   - id: db
     resource: "src/lib/db.ts"
@@ -21,6 +21,10 @@ sources:
     resource: "scripts/migrate.mjs"
   - id: cleanup
     resource: "scripts/cleanup-release-assets.mjs"
+  - id: packaging
+    resource: "scripts/standalone-artifact.mjs"
+  - id: tracing
+    resource: "scripts/standalone-policy.mjs"
 ---
 
 All application database access goes through `src/lib/db.ts`. It owns the shared Postgres pool, SQL, row mapping, and transactions. Better Auth uses that pool. Map database `snake_case` to TypeScript `camelCase` at this boundary.[^db]
@@ -48,6 +52,8 @@ Preserve filename, MIME, size, and digest validation. Never remove bytes referen
 
 Back up Postgres and both image directories together. Multi-replica deployments require shared media storage. A successful local test does not prove production restore readiness.[^cleanup]
 
+Deployment artifacts exclude local media, environment files, Git metadata, agent inputs, and the source knowledge bundle. `pnpm build` removes the environment files that Next copies into standalone output, then verifies every production file trace and the packaged files. Configure secrets and mount `STATEBOARD_DATA_DIR` at runtime; uploaded and retained media remain on that volume.[^packaging]
+
 [Access](access.md) defines disclosure and live credential rules. [Verification](../engineering/verification.md) requires isolated database integration tests when these boundaries change.
 
 [^db]: SQL, shared locking, snapshots, evidence identity, audit, and deletion behavior.
@@ -63,3 +69,7 @@ Back up Postgres and both image directories together. Multi-replica deployments 
 [^migration-runner]: Explicit migration command.
 
 [^cleanup]: Orphan cleanup procedure and age guard.
+
+[^packaging]: Generated environment cleanup and read-only artifact verification.
+
+[^tracing]: Exclusions for local inputs and configured storage inside or outside the repository.

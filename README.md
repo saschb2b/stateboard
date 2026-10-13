@@ -147,7 +147,8 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 | Command                       | What it does                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------------ |
 | `pnpm dev`                    | Run on `localhost:3000`                                                                    |
-| `pnpm build`                  | Production build                                                                           |
+| `pnpm build`                  | Production build; remove generated env copies and reject private inputs in the artifact    |
+| `pnpm build:check`            | Verify production traces and standalone output without modifying files                     |
 | `pnpm start`                  | Run the production build                                                                   |
 | `pnpm migrate`                | Apply pending SQL migrations against `DATABASE_URL`                                        |
 | `pnpm lint`                   | ESLint                                                                                     |
