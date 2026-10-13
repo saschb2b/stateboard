@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getBoardWithScreens, getShareLink } from "@/lib/db";
-import { timeAgo } from "@/lib/time";
 import { BoardShare } from "@/components/board/board-share";
 
 interface PageProps {
@@ -49,12 +48,13 @@ export default async function BoardSharePage({ params }: PageProps) {
   // wall clock here is correct and stable — not the impure-render hazard the
   // purity rule guards against (which targets unpredictable client re-renders).
   // eslint-disable-next-line react-hooks/purity
-  const updatedLabel = timeAgo(result.board.updatedAt, Date.now());
+  const now = Date.now();
   return (
     <BoardShare
       board={result.board}
       screens={result.screens}
-      updatedLabel={updatedLabel}
+      updatedAt={result.board.updatedAt}
+      now={now}
     />
   );
 }

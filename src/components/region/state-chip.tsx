@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import Box from "@mui/material/Box";
 import { STATE_META } from "@/lib/state-meta";
 import type { RegionState } from "@/lib/types";
@@ -17,6 +19,7 @@ interface StateChipProps {
  * and in the public share view, and need to look identical everywhere.
  */
 export function StateChip({ state, size = "md" }: StateChipProps) {
+  const t = useTranslations("Visual");
   const meta = STATE_META[state];
   const padY = size === "sm" ? 0.25 : 0.5;
   const padX = size === "sm" ? 0.75 : 1;
@@ -41,7 +44,7 @@ export function StateChip({ state, size = "md" }: StateChipProps) {
         lineHeight: 1.2,
       }}
     >
-      {meta.label}
+      {t(`states.${state}.label`)}
     </Box>
   );
 }

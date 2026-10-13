@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -53,6 +55,7 @@ export function AddScreenDialog({
   replaceScreenId,
   onResult,
 }: AddScreenDialogProps) {
+  const t = useTranslations("Visual");
   const isReplace = mode === "replace";
   const [tab, setTab] = useState<Tab>(initialTab);
   const [available, setAvailable] = useState<WorkspaceScreen[] | null>(null);
@@ -113,7 +116,7 @@ export function AddScreenDialog({
           });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't apply your selection.");
+        setError(body.error ?? t("selectionError"));
         setAdding(false);
         return;
       }
@@ -124,7 +127,7 @@ export function AddScreenDialog({
       );
       onClose();
     } catch {
-      setError("Couldn't apply your selection.");
+      setError(t("selectionError"));
       setAdding(false);
     }
   };
@@ -158,7 +161,7 @@ export function AddScreenDialog({
       fullWidth
     >
       <DialogTitle sx={{ pb: 1 }}>
-        {isReplace ? "Replace screenshot" : "Add a screen"}
+        {isReplace ? t("replaceScreenshot") : t("addAScreen")}
       </DialogTitle>
       <DialogContent sx={{ minHeight: 380 }}>
         <ToggleButtonGroup
@@ -169,10 +172,10 @@ export function AddScreenDialog({
           sx={{ mb: 2.5 }}
         >
           <ToggleButton value="upload" sx={{ textTransform: "none", px: 2 }}>
-            Upload new
+            {t("uploadNew")}
           </ToggleButton>
           <ToggleButton value="reuse" sx={{ textTransform: "none", px: 2 }}>
-            Reuse existing
+            {t("reuseExisting")}
           </ToggleButton>
         </ToggleButtonGroup>
 
@@ -192,35 +195,34 @@ export function AddScreenDialog({
               sx={{ display: "block", mt: 1.5 }}
             >
               {isReplace
-                ? "The rectangles you've drawn stay put. Only the picture changes."
-                : "Already uploaded this shot to another board? Switch to Reuse existing instead of uploading it again."}
+                ? t("replaceScreenshotHelp")
+                : t("reuseScreenshotHelp")}
             </Typography>
           </Box>
         ) : loading ? (
           <Stack alignItems="center" sx={{ py: 8 }} spacing={1.5}>
             <CircularProgress size={28} />
             <Typography variant="caption" color="text.secondary">
-              Loading your screenshots…
+              {t("loadingScreenshots")}
             </Typography>
           </Stack>
         ) : loadError ? (
           <Stack alignItems="center" sx={{ py: 8 }} spacing={1}>
             <Typography variant="body2" color="error">
-              Couldn&apos;t load your screenshots. Close and try again.
+              {t("loadScreenshotsError")}
             </Typography>
           </Stack>
         ) : others.length === 0 ? (
           <Stack alignItems="center" sx={{ py: 8 }} spacing={1}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Nothing to reuse yet
+              {t("nothingToReuse")}
             </Typography>
             <Typography
               variant="body2"
               color="text.secondary"
               sx={{ textAlign: "center", maxWidth: 360 }}
             >
-              Screenshots you upload to your other boards show up here, ready to
-              drop into this one without re-uploading.
+              {t("nothingToReuseDescription")}
             </Typography>
           </Stack>
         ) : (
@@ -228,7 +230,7 @@ export function AddScreenDialog({
             <TextField
               size="small"
               fullWidth
-              placeholder="Search by board or label"
+              placeholder={t("searchByBoard")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               slotProps={{
@@ -247,7 +249,7 @@ export function AddScreenDialog({
                 color="text.secondary"
                 sx={{ py: 4, textAlign: "center" }}
               >
-                No screenshots match your search.
+                {t("noScreenshotMatches")}
               </Typography>
             ) : (
               [...groups.values()].map((group) => (
@@ -305,13 +307,13 @@ export function AddScreenDialog({
           <Typography variant="caption" color="text.secondary">
             {isReplace
               ? selected.size > 0
-                ? "1 selected"
-                : "Pick one"
-              : `${selected.size} selected`}
+                ? t("oneSelected")
+                : t("pickOne")
+              : t("selectedCount", { count: selected.size })}
           </Typography>
           <Stack direction="row" spacing={1}>
             <Button onClick={onClose} disabled={adding}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               variant="contained"
@@ -321,13 +323,13 @@ export function AddScreenDialog({
             >
               {isReplace
                 ? adding
-                  ? "Replacing…"
-                  : "Replace screenshot"
+                  ? t("replacing")
+                  : t("replaceScreenshot")
                 : adding
-                  ? "Adding…"
+                  ? t("adding")
                   : selected.size > 0
-                    ? `Add ${selected.size} screen${selected.size === 1 ? "" : "s"}`
-                    : "Add screens"}
+                    ? t("addScreenCount", { count: selected.size })
+                    : t("addScreens")}
             </Button>
           </Stack>
         </DialogActions>
@@ -345,15 +347,17 @@ function Thumb({
   selected: boolean;
   onToggle: () => void;
 }) {
+  const t = useTranslations("Visual");
   return (
     <Box
       component="button"
       type="button"
       onClick={onToggle}
       aria-pressed={selected}
-      aria-label={`${selected ? "Deselect" : "Select"} ${
-        screen.label ?? "screen"
-      } from ${screen.boardName}`}
+      aria-label={t(selected ? "deselectScreen" : "selectScreen", {
+        name: screen.label ?? t("screen"),
+        board: screen.boardName,
+      })}
       sx={{
         position: "relative",
         p: 0,

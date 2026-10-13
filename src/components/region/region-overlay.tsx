@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import Box from "@mui/material/Box";
 import { alpha } from "@mui/material/styles";
 import Tooltip from "@mui/material/Tooltip";
@@ -68,6 +70,7 @@ export function RegionOverlay({
   onRegionMouseDown,
   onResizeStart,
 }: RegionOverlayProps) {
+  const t = useTranslations("Visual");
   const editable = Boolean(onRegionMouseDown);
   // Read-only surfaces (share view, presenter, viewer-role editor) have no
   // pointer affordance for keyboard users, so each region becomes a tab stop
@@ -110,7 +113,7 @@ export function RegionOverlay({
                   ) : null}
                 </Box>
               ) : (
-                meta.description
+                t(`states.${r.state}.description`)
               )
             }
             arrow
@@ -126,7 +129,11 @@ export function RegionOverlay({
               tabIndex={focusable ? 0 : undefined}
               aria-label={
                 focusable
-                  ? [meta.label, r.label || meta.description, r.notes]
+                  ? [
+                      t(`states.${r.state}.label`),
+                      r.label || t(`states.${r.state}.description`),
+                      r.notes,
+                    ]
                       .filter(Boolean)
                       .join(". ")
                   : undefined

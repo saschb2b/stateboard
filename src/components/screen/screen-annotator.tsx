@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useFormatter } from "next-intl";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -21,7 +23,6 @@ import {
   type ScreenWithRegions,
   type UserRef,
 } from "@/lib/types";
-import { timeAgo } from "@/lib/time";
 import { RegionOverlay } from "@/components/region/region-overlay";
 import {
   MIN_REGION_SIZE,
@@ -142,6 +143,7 @@ export function ScreenAnnotatorView({
   updateRegion: (id: string, patch: RegionPatch) => Promise<Region>;
   deleteRegion: (id: string) => Promise<void>;
 }) {
+  const t = useTranslations("Visual");
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -373,13 +375,11 @@ export function ScreenAnnotatorView({
           ),
         );
         onError?.(
-          cause instanceof Error
-            ? cause.message
-            : "Could not save the region position.",
+          cause instanceof Error ? cause.message : t("saveRegionPositionError"),
         );
       }
     },
-    [enqueueMutation, updateRegion, publishRegions, onError],
+    [enqueueMutation, updateRegion, publishRegions, onError, t],
   );
 
   // Persist a pending keyboard nudge. Fired on a short idle, and also when the
@@ -432,9 +432,7 @@ export function ScreenAnnotatorView({
       setDraftDefaults({ state: "shipped", label: "", notes: "" });
       setSelectedId(created.id);
     } catch (cause) {
-      onError?.(
-        cause instanceof Error ? cause.message : "Could not save the region.",
-      );
+      onError?.(cause instanceof Error ? cause.message : t("saveRegionError"));
     } finally {
       createInFlight.current = false;
       setCreating(false);
@@ -457,13 +455,11 @@ export function ScreenAnnotatorView({
         );
       } catch (cause) {
         onError?.(
-          cause instanceof Error
-            ? cause.message
-            : "Could not save the region text.",
+          cause instanceof Error ? cause.message : t("saveRegionTextError"),
         );
       }
     },
-    [enqueueMutation, updateRegion, publishRegions, onError],
+    [enqueueMutation, updateRegion, publishRegions, onError, t],
   );
 
   // Flush a pending text edit now, sending only the fields that actually
@@ -544,13 +540,11 @@ export function ScreenAnnotatorView({
         );
       } catch (cause) {
         onError?.(
-          cause instanceof Error
-            ? cause.message
-            : "Could not save the region state.",
+          cause instanceof Error ? cause.message : t("saveRegionStateError"),
         );
       }
     },
-    [selectedId, enqueueMutation, updateRegion, publishRegions, onError],
+    [selectedId, enqueueMutation, updateRegion, publishRegions, onError, t],
   );
 
   const deleteSelected = useCallback(async () => {
@@ -571,12 +565,12 @@ export function ScreenAnnotatorView({
       setSelectedId((current) => (current === id ? null : current));
     } catch (cause) {
       onError?.(
-        cause instanceof Error ? cause.message : "Could not delete the region.",
+        cause instanceof Error ? cause.message : t("deleteRegionError"),
       );
     } finally {
       deleting.current.delete(id);
     }
-  }, [selected, enqueueMutation, deleteRegion, publishRegions, onError]);
+  }, [selected, enqueueMutation, deleteRegion, publishRegions, onError, t]);
 
   // --- keyboard ----------------------------------------------------------
 
@@ -782,8 +776,7 @@ export function ScreenAnnotatorView({
             minHeight: "1.4em",
           }}
         >
-          1 shipped · 2 mock · 3 missing · arrows move · ⇧ resize · ⌫ delete ·
-          esc deselect
+          {t("annotationKeys")}
         </Typography>
       </Box>
 
@@ -793,7 +786,7 @@ export function ScreenAnnotatorView({
           spans full width. Board-wide status/filter lives in the header. */}
       <Box
         component="aside"
-        aria-label="Inspector"
+        aria-label={t("inspector")}
         aria-hidden={!inspectorOpen}
         sx={{
           width: inspectorOpen ? { xs: "100%", md: 312 } : 0,
@@ -822,12 +815,12 @@ export function ScreenAnnotatorView({
                 justifyContent="space-between"
               >
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Region
+                  {t("region")}
                 </Typography>
                 <IconButton
                   size="small"
                   onClick={() => setSelectedId(null)}
-                  aria-label="Close"
+                  aria-label={t("close")}
                 >
                   <CloseIcon fontSize="small" />
                 </IconButton>
@@ -835,7 +828,7 @@ export function ScreenAnnotatorView({
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <StateChip state={selected.state} size="sm" />
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {selected.label || "Untitled"}
+                  {selected.label || t("untitled")}
                 </Typography>
               </Stack>
               {selected.notes ? (
@@ -852,11 +845,10 @@ export function ScreenAnnotatorView({
           ) : readOnly ? (
             <Stack spacing={2}>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Read-only
+                {t("readOnly")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                You have viewer access to this workspace. There are no regions
-                on this screen yet. Ask an editor to add some.
+                {t("readOnlyHelp")}
               </Typography>
             </Stack>
           ) : draftActive ? (
@@ -867,12 +859,12 @@ export function ScreenAnnotatorView({
                 justifyContent="space-between"
               >
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  New region
+                  {t("newRegion")}
                 </Typography>
                 <IconButton
                   size="small"
                   onClick={() => setDraft(null)}
-                  aria-label="Discard draft"
+                  aria-label={t("discardDraft")}
                 >
                   <CloseIcon fontSize="small" />
                 </IconButton>
@@ -883,8 +875,8 @@ export function ScreenAnnotatorView({
               />
               <TextField
                 size="small"
-                label="Label"
-                placeholder="e.g. Revenue card"
+                label={t("label")}
+                placeholder={t("regionLabelExample")}
                 value={draftDefaults.label}
                 onChange={(e) =>
                   setDraftDefaults((d) => ({ ...d, label: e.target.value }))
@@ -892,7 +884,7 @@ export function ScreenAnnotatorView({
               />
               <TextField
                 size="small"
-                label="Notes (optional)"
+                label={t("notesOptional")}
                 multiline
                 minRows={2}
                 value={draftDefaults.notes}
@@ -907,10 +899,10 @@ export function ScreenAnnotatorView({
                   onClick={persistDraft}
                   disabled={creating}
                 >
-                  {creating ? "Saving…" : "Add region"}
+                  {creating ? t("saving") : t("addRegion")}
                 </Button>
                 <Button disabled={creating} onClick={() => setDraft(null)}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
               </Stack>
             </Stack>
@@ -922,18 +914,18 @@ export function ScreenAnnotatorView({
                 justifyContent="space-between"
               >
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                  Region
+                  {t("region")}
                 </Typography>
                 <IconButton
                   size="small"
                   onClick={() => setSelectedId(null)}
-                  aria-label="Close"
+                  aria-label={t("close")}
                 >
                   <CloseIcon fontSize="small" />
                 </IconButton>
               </Stack>
               <Typography variant="caption" color="text.secondary">
-                Drag the box to move it, or pull a corner to resize.
+                {t("dragRegionHelp")}
               </Typography>
               <StateSelector
                 value={selected.state}
@@ -941,8 +933,8 @@ export function ScreenAnnotatorView({
               />
               <TextField
                 size="small"
-                label="Label"
-                helperText="Appears on the share link · saved when you pause or click away"
+                label={t("label")}
+                helperText={t("regionLabelHelp")}
                 value={draftLabel}
                 onChange={(e) => {
                   setDraftLabel(e.target.value);
@@ -952,7 +944,7 @@ export function ScreenAnnotatorView({
               />
               <TextField
                 size="small"
-                label="Notes"
+                label={t("notes")}
                 multiline
                 minRows={2}
                 value={draftNotes}
@@ -968,7 +960,7 @@ export function ScreenAnnotatorView({
                 startIcon={<DeleteOutlineIcon />}
                 onClick={deleteSelected}
               >
-                Delete region
+                {t("deleteRegion")}
               </Button>
               <RegionAttribution
                 region={selected}
@@ -979,11 +971,10 @@ export function ScreenAnnotatorView({
           ) : (
             <Stack spacing={2}>
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                Drag to mark a region
+                {t("markRegion")}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Click and drag anywhere on the screenshot. You&apos;ll pick one
-                of three states for what you draw:
+                {t("markRegionHelp")}
               </Typography>
               <Stack spacing={1}>
                 {REGION_STATES.map((s) => (
@@ -995,7 +986,7 @@ export function ScreenAnnotatorView({
                   >
                     <StateChip state={s} size="sm" />
                     <Typography variant="body2" color="text.secondary">
-                      {STATE_META[s].description}
+                      {t(`states.${s}.description`)}
                     </Typography>
                   </Stack>
                 ))}
@@ -1024,6 +1015,8 @@ function RegionAttribution({
   authors: Record<string, UserRef>;
   now: number;
 }) {
+  const t = useTranslations("Visual");
+  const format = useFormatter();
   const editor = region.updatedBy ? authors[region.updatedBy] : null;
   return (
     <Typography
@@ -1031,8 +1024,10 @@ function RegionAttribution({
       color="text.secondary"
       sx={{ pt: 1.5, borderTop: 1, borderColor: "divider" }}
     >
-      Last edited by {attributionName(editor)} ·{" "}
-      {timeAgo(region.updatedAt, now)}
+      {t("editedBy", {
+        name: editor ? attributionName(editor) : t("formerMember"),
+        time: format.relativeTime(region.updatedAt, now),
+      })}
     </Typography>
   );
 }
@@ -1044,13 +1039,14 @@ function StateSelector({
   value: RegionState;
   onChange: (next: RegionState) => void;
 }) {
+  const t = useTranslations("Visual");
   return (
     <Stack spacing={0.5}>
       <Typography
         variant="caption"
         sx={{ fontWeight: 600, color: "text.secondary" }}
       >
-        STATE
+        {t("state")}
       </Typography>
       <ToggleButtonGroup
         value={value}
@@ -1074,7 +1070,7 @@ function StateSelector({
               },
             }}
           >
-            {STATE_META[s].label}
+            {t(`states.${s}.label`)}
           </ToggleButton>
         ))}
       </ToggleButtonGroup>

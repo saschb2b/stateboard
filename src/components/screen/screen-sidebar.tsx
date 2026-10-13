@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -66,6 +68,7 @@ export function ScreenSidebar({
   onReorder,
   footer,
 }: ScreenSidebarProps) {
+  const t = useTranslations("Visual");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -83,7 +86,7 @@ export function ScreenSidebar({
   return (
     <Box
       component="aside"
-      aria-label="Screens"
+      aria-label={t("screens")}
       sx={{
         width: collapsed ? RAIL_WIDTH : EXPANDED_WIDTH,
         flexShrink: 0,
@@ -107,18 +110,20 @@ export function ScreenSidebar({
           {collapsed ? null : (
             <Stack direction="row" alignItems="baseline" spacing={0.75}>
               <Typography variant="overline" sx={{ fontWeight: 700 }}>
-                Screens
+                {t("screens")}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {screens.length}
               </Typography>
             </Stack>
           )}
-          <Tooltip title={collapsed ? "Expand screens" : "Collapse screens"}>
+          <Tooltip
+            title={collapsed ? t("expandScreens") : t("collapseScreens")}
+          >
             <IconButton
               size="small"
               onClick={onToggleCollapsed}
-              aria-label={collapsed ? "Expand screens" : "Collapse screens"}
+              aria-label={collapsed ? t("expandScreens") : t("collapseScreens")}
             >
               {collapsed ? (
                 <ChevronRightIcon fontSize="small" />
@@ -131,11 +136,11 @@ export function ScreenSidebar({
 
         {editable ? (
           collapsed ? (
-            <Tooltip title="Add screen" placement="right">
+            <Tooltip title={t("addScreen")} placement="right">
               <IconButton
                 size="small"
                 onClick={onAdd}
-                aria-label="Add screen"
+                aria-label={t("addScreen")}
                 sx={{
                   width: "100%",
                   border: 1,
@@ -156,7 +161,7 @@ export function ScreenSidebar({
               onClick={onAdd}
               sx={{ borderColor: "divider", justifyContent: "flex-start" }}
             >
-              Add screen
+              {t("addScreen")}
             </Button>
           )
         ) : null}
@@ -176,7 +181,7 @@ export function ScreenSidebar({
           {screens.map((s, i) => {
             const isActive = s.id === activeId;
             const isRenaming = renamingId === s.id;
-            const name = s.label || `Screen ${i + 1}`;
+            const name = s.label || t("screenNumber", { number: i + 1 });
             return (
               <Box
                 key={s.id}
@@ -258,7 +263,7 @@ export function ScreenSidebar({
                     {isRenaming ? (
                       <RenameField
                         initial={s.label ?? ""}
-                        placeholder={`Screen ${i + 1}`}
+                        placeholder={t("screenNumber", { number: i + 1 })}
                         onCommit={(next) => {
                           setRenamingId(null);
                           onRename(s.id, next);
@@ -285,7 +290,7 @@ export function ScreenSidebar({
                       <IconButton
                         className="screen-kebab"
                         size="small"
-                        aria-label={`Actions for ${name}`}
+                        aria-label={t("screenActions", { name })}
                         onClick={(e) => {
                           e.stopPropagation();
                           setMenu({ el: e.currentTarget, id: s.id });
@@ -332,7 +337,7 @@ export function ScreenSidebar({
           <ListItemIcon>
             <DriveFileRenameOutlineOutlinedIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Rename</ListItemText>
+          <ListItemText>{t("rename")}</ListItemText>
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -344,7 +349,7 @@ export function ScreenSidebar({
           <ListItemIcon>
             <SwapHorizOutlinedIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>Replace image</ListItemText>
+          <ListItemText>{t("replaceImage")}</ListItemText>
         </MenuItem>
         <MenuItem
           onClick={() => {
@@ -357,7 +362,7 @@ export function ScreenSidebar({
           <ListItemIcon>
             <DeleteOutlineIcon fontSize="small" sx={{ color: "error.main" }} />
           </ListItemIcon>
-          <ListItemText>Delete</ListItemText>
+          <ListItemText>{t("delete")}</ListItemText>
         </MenuItem>
       </Menu>
     </Box>

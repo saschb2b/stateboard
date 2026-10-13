@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -23,7 +25,9 @@ interface PresentModeProps {
   onClose: () => void;
 }
 
-async function toggleBrowserFullscreen(): Promise<string | null> {
+async function toggleBrowserFullscreen(
+  errorMessage: string,
+): Promise<string | null> {
   try {
     if (!document.fullscreenElement) {
       await document.documentElement.requestFullscreen();
@@ -32,7 +36,7 @@ async function toggleBrowserFullscreen(): Promise<string | null> {
     }
     return null;
   } catch {
-    return "Fullscreen is unavailable. Continue presenting in this window.";
+    return errorMessage;
   }
 }
 
@@ -42,6 +46,7 @@ export function PresentMode({
   initialIndex = 0,
   onClose,
 }: PresentModeProps) {
+  const t = useTranslations("Visual");
   const safeInitial = Math.min(
     Math.max(0, initialIndex),
     Math.max(0, screens.length - 1),
@@ -79,7 +84,9 @@ export function PresentMode({
         case "f":
         case "F":
           event.preventDefault();
-          void toggleBrowserFullscreen().then(setFullscreenError);
+          void toggleBrowserFullscreen(t("fullscreenUnavailable")).then(
+            setFullscreenError,
+          );
           break;
         case "Home":
           event.preventDefault();
@@ -93,7 +100,7 @@ export function PresentMode({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [screens.length]);
+  }, [screens.length, t]);
 
   useEffect(() => {
     const onChange = () => setFullscreen(Boolean(document.fullscreenElement));
@@ -109,7 +116,9 @@ export function PresentMode({
       fullScreen
       onClose={(_, reason) => {
         if (reason === "escapeKeyDown" && document.fullscreenElement) {
-          void toggleBrowserFullscreen().then(setFullscreenError);
+          void toggleBrowserFullscreen(t("fullscreenUnavailable")).then(
+            setFullscreenError,
+          );
         } else {
           onClose();
         }
@@ -117,7 +126,7 @@ export function PresentMode({
       sx={{ zIndex: (theme) => theme.zIndex.modal + 10 }}
       slotProps={{
         paper: {
-          "aria-label": "Presentation mode",
+          "aria-label": t("presentationMode"),
           sx: {
             bgcolor: "background.default",
             color: "text.primary",
@@ -150,16 +159,18 @@ export function PresentMode({
             noWrap
             component="p"
           >
-            {active.label ?? `Screen ${index + 1}`}
+            {active.label ?? t("screenNumber", { number: index + 1 })}
           </Typography>
         </Box>
         <Stack direction="row" gap={0.5} sx={{ flexShrink: 0 }}>
           <IconButton
             onClick={() =>
-              void toggleBrowserFullscreen().then(setFullscreenError)
+              void toggleBrowserFullscreen(t("fullscreenUnavailable")).then(
+                setFullscreenError,
+              )
             }
             size="small"
-            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            aria-label={fullscreen ? t("exitFullscreen") : t("enterFullscreen")}
           >
             {fullscreen ? (
               <FullscreenExitIcon fontSize="small" />
@@ -170,7 +181,7 @@ export function PresentMode({
           <IconButton
             onClick={onClose}
             size="small"
-            aria-label="Exit presentation"
+            aria-label={t("exitPresentation")}
             autoFocus
           >
             <CloseIcon fontSize="small" />
@@ -216,7 +227,7 @@ export function PresentMode({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={active.mediaUrl}
-            alt={active.label ?? `Screen ${index + 1}`}
+            alt={active.label ?? t("screenNumber", { number: index + 1 })}
             style={{
               position: "absolute",
               inset: 0,
@@ -274,7 +285,7 @@ export function PresentMode({
             <IconButton
               onClick={() => setIndex((current) => Math.max(current - 1, 0))}
               disabled={index === 0}
-              aria-label="Previous screen"
+              aria-label={t("previousScreen")}
               size="small"
             >
               <ChevronLeftIcon fontSize="small" />
@@ -291,7 +302,7 @@ export function PresentMode({
                 setIndex((current) => Math.min(current + 1, screens.length - 1))
               }
               disabled={index === screens.length - 1}
-              aria-label="Next screen"
+              aria-label={t("nextScreen")}
               size="small"
             >
               <ChevronRightIcon fontSize="small" />
@@ -303,7 +314,7 @@ export function PresentMode({
           color="text.secondary"
           sx={{ display: { xs: "none", sm: "block" } }}
         >
-          Arrow keys to move · F for fullscreen · Esc to exit
+          {t("presentationKeys")}
         </Typography>
       </Stack>
     </Dialog>

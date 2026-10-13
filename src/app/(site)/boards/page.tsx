@@ -6,7 +6,6 @@ import {
   readLatestReleaseOverviews,
 } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
-import { timeAgo } from "@/lib/time";
 import { BoardList, type BoardListItem } from "@/components/board/board-list";
 
 export const metadata: Metadata = { title: "Boards" };
@@ -46,7 +45,8 @@ export default async function BoardsPage() {
         shareToken: active?.token ?? null,
         screens,
         totals,
-        updatedLabel: timeAgo(b.updatedAt, now),
+        updatedAt: b.updatedAt,
+        now,
         releaseOverview: overviews[b.id],
       };
     }),

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Dialog from "@mui/material/Dialog";
@@ -15,7 +17,6 @@ import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
 import { StateChip } from "@/components/region/state-chip";
 import {
   fuzzyScore,
-  screenName,
   searchBoard,
   type RegionHit,
   type SnippetPart,
@@ -75,6 +76,7 @@ export function CommandPalette({
   onJumpRegion,
   actions,
 }: CommandPaletteProps) {
+  const t = useTranslations("Visual");
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [wasOpen, setWasOpen] = useState(open);
@@ -96,12 +98,15 @@ export function CommandPalette({
 
     if (needle) {
       const { screens: screenHits, regions: regionHits } = searchBoard(
-        screens,
+        screens.map((screen, index) => ({
+          ...screen,
+          label: screen.label || t("screenNumber", { number: index + 1 }),
+        })),
         needle,
       );
       if (screenHits.length) {
         out.push({
-          label: "Screens",
+          label: t("screens"),
           items: screenHits.map((h) => ({
             kind: "screen",
             key: `screen:${h.screenId}`,
@@ -111,7 +116,7 @@ export function CommandPalette({
         });
       }
       if (regionHits.length) {
-        out.push({ label: "Regions", items: regionHits.map(regionItem) });
+        out.push({ label: t("regions"), items: regionHits.map(regionItem) });
       }
       const actionHits = actions
         .map((a) => ({ a, score: fuzzyScore(a.label, needle) }))
@@ -119,27 +124,27 @@ export function CommandPalette({
         .sort((x, y) => y.score - x.score)
         .map(({ a }) => a);
       if (actionHits.length) {
-        out.push({ label: "Actions", items: actionHits.map(actionItem) });
+        out.push({ label: t("actions"), items: actionHits.map(actionItem) });
       }
     } else {
       // Zero-query: the palette doubles as a screen switcher + command list.
       if (screens.length) {
         out.push({
-          label: "Screens",
+          label: t("screens"),
           items: screens.map((s, i) => ({
             kind: "screen",
             key: `screen:${s.id}`,
             screenId: s.id,
-            name: screenName(s, i),
+            name: s.label || t("screenNumber", { number: i + 1 }),
           })),
         });
       }
       if (actions.length) {
-        out.push({ label: "Actions", items: actions.map(actionItem) });
+        out.push({ label: t("actions"), items: actions.map(actionItem) });
       }
     }
     return out;
-  }, [query, screens, actions]);
+  }, [query, screens, actions, t]);
 
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
 
@@ -212,7 +217,7 @@ export function CommandPalette({
             setActiveIndex(0);
           }}
           onKeyDown={onKeyDown}
-          placeholder="Jump to a screen, or search a region's label or notes…"
+          placeholder={t("paletteSearch")}
           sx={{ fontSize: "1rem" }}
         />
       </Stack>
@@ -225,7 +230,7 @@ export function CommandPalette({
         {flat.length === 0 ? (
           <Box sx={{ px: 2, py: 3 }}>
             <Typography variant="body2" color="text.secondary">
-              No matches.
+              {t("noMatches")}
             </Typography>
           </Box>
         ) : (
@@ -280,9 +285,9 @@ export function CommandPalette({
           color: "text.secondary",
         }}
       >
-        <Hint keys="↑↓" label="navigate" />
-        <Hint keys="↵" label="jump" />
-        <Hint keys="esc" label="close" />
+        <Hint keys="↑↓" label={t("navigateHint")} />
+        <Hint keys="↵" label={t("jumpHint")} />
+        <Hint keys="esc" label={t("closeHint")} />
       </Stack>
     </Dialog>
   );
@@ -308,6 +313,7 @@ function actionItem(a: PaletteAction): FlatItem {
 /** One result row. Screens carry an image icon, regions a state chip + owning
  *  screen (and a notes snippet when matched there), actions a bolt + hint. */
 function PaletteRow({ item }: { item: FlatItem }) {
+  const t = useTranslations("Visual");
   if (item.kind === "screen") {
     return (
       <>
@@ -333,7 +339,7 @@ function PaletteRow({ item }: { item: FlatItem }) {
                 color: item.label ? "text.primary" : "text.secondary",
               }}
             >
-              {item.label || "Untitled region"}
+              {item.label || t("untitledRegion")}
             </Typography>
             <Typography variant="caption" color="text.secondary" noWrap>
               {item.owner}

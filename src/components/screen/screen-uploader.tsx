@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -54,6 +56,7 @@ export function ScreenUploadControl({
   compact?: boolean;
   onUpload: (file: File) => Promise<void>;
 }) {
+  const t = useTranslations("Visual");
   const inputRef = useRef<HTMLInputElement>(null);
   const uploadInFlight = useRef(false);
   const [uploading, setUploading] = useState(false);
@@ -68,9 +71,7 @@ export function ScreenUploadControl({
     try {
       await onUpload(file);
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Unable to upload. Try again.",
-      );
+      setError(cause instanceof Error ? cause.message : t("uploadError"));
     } finally {
       uploadInFlight.current = false;
       setUploading(false);
@@ -106,14 +107,14 @@ export function ScreenUploadControl({
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
         >
-          {uploading ? "Uploading…" : "Add screen"}
+          {uploading ? t("uploading") : t("addScreen")}
         </Button>
         <input
           ref={inputRef}
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           onChange={onPick}
-          aria-label="Screenshot file"
+          aria-label={t("screenshotFile")}
           disabled={uploading}
           hidden
         />
@@ -153,22 +154,22 @@ export function ScreenUploadControl({
       <Stack spacing={1.5} alignItems="center">
         <UploadFileIcon sx={{ fontSize: 36, color: "primary.main" }} />
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          Drop a screenshot here
+          {t("dropScreenshot")}
         </Typography>
         <Button
           variant="outlined"
           disabled={uploading}
           onClick={() => inputRef.current?.click()}
         >
-          Choose screenshot
+          {t("chooseScreenshot")}
         </Button>
         <Typography variant="caption" color="text.secondary">
-          PNG, JPEG, WebP, or GIF, up to 25 MB
+          {t("screenshotFormats")}
         </Typography>
         {uploading ? (
           <Stack direction="row" spacing={1} alignItems="center">
             <CircularProgress size={16} />
-            <Typography variant="caption">Uploading…</Typography>
+            <Typography variant="caption">{t("uploading")}</Typography>
           </Stack>
         ) : null}
         {error ? (
@@ -182,7 +183,7 @@ export function ScreenUploadControl({
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
         onChange={onPick}
-        aria-label="Screenshot file"
+        aria-label={t("screenshotFile")}
         disabled={uploading}
         hidden
       />

@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { useEffect, useId, useState, type ReactNode } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -15,7 +17,6 @@ import { AppHeader } from "@/components/app/app-header";
 import { PresentMode } from "./present-mode";
 import { RegionOverlay } from "@/components/region/region-overlay";
 import { StateChip } from "@/components/region/state-chip";
-import { STATE_META } from "@/lib/state-meta";
 import type { Board, ScreenWithRegions } from "@/lib/types";
 import { REGION_STATES } from "@/lib/types";
 
@@ -28,6 +29,8 @@ interface BoardShareProps {
    * are fictional.
    */
   updatedLabel?: string | null;
+  updatedAt?: number;
+  now?: number;
   notice?: ReactNode;
 }
 
@@ -41,9 +44,17 @@ interface BoardShareProps {
 export function BoardShare({
   board,
   screens,
-  updatedLabel,
+  updatedLabel: initialUpdatedLabel,
+  updatedAt,
+  now,
   notice,
 }: BoardShareProps) {
+  const t = useTranslations("Visual");
+  const format = useFormatter();
+  const updatedLabel =
+    updatedAt !== undefined && now !== undefined
+      ? format.relativeTime(updatedAt, now)
+      : initialUpdatedLabel;
   const tabId = useId();
   const [activeId, setActiveId] = useState<string | null>(
     screens[0]?.id ?? null,
@@ -80,7 +91,7 @@ export function BoardShare({
         crumb={board.name}
         actions={
           screens.length > 0 ? (
-            <Tooltip title="Present (P)" describeChild>
+            <Tooltip title={t("presentShortcut")} describeChild>
               <Button
                 size="small"
                 variant="contained"
@@ -88,7 +99,7 @@ export function BoardShare({
                 startIcon={<SlideshowIcon />}
                 onClick={() => setPresenting(true)}
               >
-                Present
+                {t("present")}
               </Button>
             </Tooltip>
           ) : null
@@ -97,7 +108,7 @@ export function BoardShare({
       <Container component="main" maxWidth="xl" sx={{ py: { xs: 3, md: 4 } }}>
         <Stack component="header" spacing={1} sx={{ mb: 3, maxWidth: 800 }}>
           <Typography variant="overline" color="text.secondary">
-            Visual review
+            {t("visualReview")}
           </Typography>
           <Typography
             component="h1"
@@ -121,12 +132,16 @@ export function BoardShare({
           sx={{ mb: 2, flexWrap: "wrap" }}
         >
           {REGION_STATES.map((state) => (
-            <Tooltip key={state} title={STATE_META[state].description}>
+            <Tooltip key={state} title={t(`states.${state}.description`)}>
               <Stack
                 direction="row"
                 spacing={0.75}
                 alignItems="center"
-                aria-label={`${totals[state]} ${state}: ${STATE_META[state].summary}`}
+                aria-label={t("stateSummary", {
+                  count: totals[state],
+                  state: t(`states.${state}.label`),
+                  summary: t(`states.${state}.summary`),
+                })}
               >
                 <StateChip state={state} size="sm" />
                 <Typography
@@ -144,7 +159,7 @@ export function BoardShare({
               color="text.secondary"
               sx={{ ml: { sm: "auto" } }}
             >
-              Updated {updatedLabel}
+              {t("updatedAt", { time: updatedLabel })}
             </Typography>
           ) : null}
         </Stack>
@@ -152,10 +167,10 @@ export function BoardShare({
         {screens.length === 0 ? (
           <Paper sx={{ p: { xs: 3, sm: 5 } }}>
             <Typography component="h2" variant="subtitle1" sx={{ mb: 0.5 }}>
-              No screens yet
+              {t("noScreens")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              The owner of this board hasn&apos;t uploaded any screenshots.
+              {t("noScreensOwner")}
             </Typography>
           </Paper>
         ) : (
@@ -163,7 +178,7 @@ export function BoardShare({
             <Tabs
               value={active?.id ?? false}
               onChange={(_, value: string) => setActiveId(value)}
-              aria-label="Screens"
+              aria-label={t("screens")}
               variant="scrollable"
               scrollButtons="auto"
               sx={{ borderBottom: 1, borderColor: "divider", px: 1 }}
@@ -174,7 +189,7 @@ export function BoardShare({
                   value={s.id}
                   id={`${tabId}-${s.id}`}
                   aria-controls={`${tabId}-panel`}
-                  label={s.label || `Screen ${i + 1}`}
+                  label={s.label || t("screenNumber", { number: i + 1 })}
                   sx={{ textTransform: "none", fontWeight: 600 }}
                 />
               ))}
@@ -202,7 +217,8 @@ export function BoardShare({
                   <img
                     src={active.mediaUrl}
                     alt={
-                      active.label ?? `Screen ${screens.indexOf(active) + 1}`
+                      active.label ??
+                      t("screenNumber", { number: screens.indexOf(active) + 1 })
                     }
                     style={{
                       position: "absolute",
@@ -220,7 +236,7 @@ export function BoardShare({
                 color="text.secondary"
                 sx={{ display: { xs: "block", sm: "none" }, mt: 1.5 }}
               >
-                Tap a region for details.
+                {t("tapRegion")}
               </Typography>
             </Box>
           </Paper>

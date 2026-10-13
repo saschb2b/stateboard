@@ -42,3 +42,20 @@ export const ExplorePerspectives: Story = {
     ).toHaveAttribute("href", "/share/demo/releases?view=qa");
   },
 };
+
+export const GermanPreview: Story = {
+  parameters: { locale: "de" },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole("heading", { name: "Nachweise fehlen" }),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("tab", { name: "Architektur" }));
+    await expect(canvas.getByRole("tabpanel")).toHaveAccessibleName(
+      "Architektur",
+    );
+    await expect(
+      canvas.getByRole("link", { name: "Architektur im Beispiel öffnen" }),
+    ).toHaveAttribute("href", "/share/demo/releases?view=backend");
+    await expect(canvas.getByText("PostgreSQL", { exact: true })).toBeVisible();
+  },
+};

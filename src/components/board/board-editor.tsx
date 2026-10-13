@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useFormatter } from "next-intl";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
@@ -39,7 +41,6 @@ import type {
 import { MONO_FONT } from "@/lib/theme";
 import { REGION_STATES, attributionName } from "@/lib/types";
 import { STATE_META } from "@/lib/state-meta";
-import { timeAgo } from "@/lib/time";
 import type { CurrentMember } from "@/lib/auth";
 import { clientRequest } from "@/lib/client-request";
 import { createMutationQueue } from "@/lib/mutation-queue";
@@ -67,6 +68,7 @@ export function BoardEditor({
   authors,
   now,
 }: BoardEditorProps) {
+  const t = useTranslations("Visual");
   const [boardName, setBoardName] = useState(board.name);
   const [enqueueMutation] = useState(createMutationQueue);
   const savedBoardName = useRef(board.name);
@@ -179,7 +181,7 @@ export function BoardEditor({
     const screen = screens.find((s) => s.id === id);
     if (!screen) return;
     if (
-      !confirm(`Delete this screen and its ${screen.regions.length} region(s)?`)
+      !confirm(t("deleteScreenConfirmation", { count: screen.regions.length }))
     ) {
       return;
     }
@@ -189,7 +191,7 @@ export function BoardEditor({
       );
       handleScreenDeleted(id);
     } catch (cause) {
-      reportFailure(cause, "Could not delete the screen.");
+      reportFailure(cause, t("deleteScreenError"));
     }
   };
 
@@ -211,7 +213,7 @@ export function BoardEditor({
         ),
       );
     } catch (cause) {
-      reportFailure(cause, "Could not rename the screen.");
+      reportFailure(cause, t("renameScreenError"));
     }
   };
 
@@ -232,7 +234,7 @@ export function BoardEditor({
         setScreens((current) =>
           applySavedOrder(current, savedScreenOrder.current),
         );
-      reportFailure(cause, "Could not reorder the screens.");
+      reportFailure(cause, t("reorderScreensError"));
     }
   };
 
@@ -268,7 +270,7 @@ export function BoardEditor({
       if (version === nameVersion.current) setBoardName(updated.name);
     } catch (cause) {
       if (version === nameVersion.current) setBoardName(savedBoardName.current);
-      reportFailure(cause, "Could not rename the board.");
+      reportFailure(cause, t("renameBoardError"));
     }
   };
 
@@ -288,7 +290,7 @@ export function BoardEditor({
         setShareLinks((prev) => [link, ...prev]);
         return link;
       } catch (cause) {
-        reportFailure(cause, "Could not create a share link.");
+        reportFailure(cause, t("createShareLinkError"));
         return null;
       }
     };
@@ -309,9 +311,7 @@ export function BoardEditor({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      setActionError(
-        "Could not copy the link. Open sharing settings to copy it manually.",
-      );
+      setActionError(t("copyLinkManualError"));
     }
   };
 
@@ -372,7 +372,7 @@ export function BoardEditor({
       ? [
           {
             id: "present",
-            label: "Present",
+            label: t("present"),
             hint: "P",
             run: () => setPresenting(true),
           },
@@ -382,36 +382,36 @@ export function BoardEditor({
       ? [
           {
             id: "add-screen",
-            label: "Add screen",
-            hint: "Action",
+            label: t("addScreen"),
+            hint: t("action"),
             run: () => openAddScreen("upload"),
           },
           {
             id: "share",
-            label: "Copy share link",
-            hint: "Action",
+            label: t("copyShareLink"),
+            hint: t("action"),
             run: () => void copyShare(),
           },
         ]
       : []),
     {
       id: "release-readiness",
-      label: "Release readiness",
-      hint: "Go",
+      label: t("releaseReadiness"),
+      hint: t("go"),
       run: () => router.push(`/boards/${board.id}/releases`),
     },
     {
       id: "history",
-      label: "Board history",
-      hint: "Go",
+      label: t("boardHistory"),
+      hint: t("go"),
       run: () => router.push(`/boards/${board.id}/history`),
     },
     ...(editable
       ? [
           {
             id: "settings",
-            label: "Board settings",
-            hint: "Go",
+            label: t("boardSettings"),
+            hint: t("go"),
             run: () => router.push(`/boards/${board.id}/settings`),
           },
         ]
@@ -460,7 +460,7 @@ export function BoardEditor({
                 href={`/boards/${board.id}/releases`}
                 size="small"
               >
-                Readiness
+                {t("readiness")}
               </Button>
             )}
             <HeaderStateFilter
@@ -475,7 +475,7 @@ export function BoardEditor({
                 sx={{ my: 1, borderColor: "divider" }}
               />
             ) : null}
-            <Tooltip title="Present (P)">
+            <Tooltip title={t("presentShortcut")}>
               <span>
                 <Button
                   size="small"
@@ -485,7 +485,7 @@ export function BoardEditor({
                   color="primary"
                   disabled={screens.length === 0}
                 >
-                  Present
+                  {t("present")}
                 </Button>
               </span>
             </Tooltip>
@@ -502,13 +502,13 @@ export function BoardEditor({
                   <Button
                     startIcon={<ContentCopyIcon />}
                     onClick={copyShare}
-                    title="Copy share link"
+                    title={t("copyShareLink")}
                   >
-                    {copied ? "Copied" : "Share"}
+                    {copied ? t("copied") : t("share")}
                   </Button>
                   <Button
                     onClick={(e) => setShareAnchorEl(e.currentTarget)}
-                    aria-label="More sharing options"
+                    aria-label={t("moreSharingOptions")}
                     sx={{ px: 0.5, minWidth: "auto" }}
                   >
                     <ArrowDropDownIcon fontSize="small" />
@@ -529,7 +529,7 @@ export function BoardEditor({
                       rel="noopener"
                       onClick={() => setShareAnchorEl(null)}
                     >
-                      Open share view ↗
+                      {t("openShareViewExternal")}
                     </MenuItem>
                   ) : null}
                   <MenuItem
@@ -537,16 +537,16 @@ export function BoardEditor({
                     href={`/boards/${board.id}/settings?section=sharing`}
                     onClick={() => setShareAnchorEl(null)}
                   >
-                    Manage links…
+                    {t("manageLinks")}
                   </MenuItem>
                 </Menu>
               </>
             ) : null}
-            <Tooltip title="More board options">
+            <Tooltip title={t("moreBoardOptions")}>
               <IconButton
                 size="small"
                 onClick={(e) => setMoreAnchorEl(e.currentTarget)}
-                aria-label="More board options"
+                aria-label={t("moreBoardOptions")}
               >
                 <MoreVertIcon fontSize="small" />
               </IconButton>
@@ -563,14 +563,14 @@ export function BoardEditor({
                 href={`/boards/${board.id}/releases`}
                 onClick={() => setMoreAnchorEl(null)}
               >
-                Release readiness
+                {t("releaseReadiness")}
               </MenuItem>
               <MenuItem
                 component={Link}
                 href={`/boards/${board.id}/history`}
                 onClick={() => setMoreAnchorEl(null)}
               >
-                Board history
+                {t("boardHistory")}
               </MenuItem>
               {editable ? (
                 <MenuItem
@@ -578,7 +578,7 @@ export function BoardEditor({
                   href={`/boards/${board.id}/settings`}
                   onClick={() => setMoreAnchorEl(null)}
                 >
-                  Board settings
+                  {t("boardSettings")}
                 </MenuItem>
               ) : null}
             </Menu>
@@ -611,7 +611,7 @@ export function BoardEditor({
                     color="text.secondary"
                     sx={{ textAlign: "center" }}
                   >
-                    or{" "}
+                    {t("or")}
                     <Box
                       component="button"
                       type="button"
@@ -626,7 +626,7 @@ export function BoardEditor({
                         "&:hover": { textDecoration: "underline" },
                       }}
                     >
-                      reuse a screenshot from another board
+                      {t("reuseScreenshot")}
                     </Box>
                   </Typography>
                 </Stack>
@@ -641,11 +641,10 @@ export function BoardEditor({
                   }}
                 >
                   <Typography variant="h6" sx={{ mb: 0.5 }}>
-                    No screens yet
+                    {t("noScreens")}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    An editor hasn&apos;t uploaded any screenshots to this
-                    board.
+                    {t("noScreensEditor")}
                   </Typography>
                 </Box>
               )}
@@ -654,7 +653,7 @@ export function BoardEditor({
                 color="text.secondary"
                 sx={{ textAlign: "center" }}
               >
-                Not sure what to upload?{" "}
+                {t("uploadHelp")}{" "}
                 <Box
                   component="a"
                   href="/share/demo"
@@ -666,7 +665,7 @@ export function BoardEditor({
                     "&:hover": { textDecoration: "underline" },
                   }}
                 >
-                  See the example board ↗
+                  {t("seeExampleBoard")}
                 </Box>
               </Typography>
             </Stack>
@@ -772,10 +771,11 @@ export function BoardEditor({
  * to just the icon.
  */
 function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
+  const t = useTranslations("Visual");
   return (
     <ButtonBase
       onClick={onClick}
-      aria-label="Search this board (Ctrl or Cmd + K)"
+      aria-label={t("searchShortcut")}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -799,7 +799,7 @@ function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
           display: { xs: "none", sm: "block" },
         }}
       >
-        Search…
+        {t("search")}
       </Typography>
       <Box
         component="span"
@@ -836,6 +836,7 @@ function HeaderStateFilter({
   filterState: RegionState | null;
   onToggle: (s: RegionState) => void;
 }) {
+  const t = useTranslations("Visual");
   const total = totals.shipped + totals.mock + totals.missing;
   if (total === 0) return null;
   return (
@@ -852,14 +853,20 @@ function HeaderStateFilter({
             key={s}
             title={
               isActive
-                ? `Showing only ${s} — click to clear`
-                : `Show only ${s} (${totals[s]})`
+                ? t("clearStateFilter", { state: t(`states.${s}.label`) })
+                : t("filterByState", {
+                    state: t(`states.${s}.label`),
+                    count: totals[s],
+                  })
             }
           >
             <ButtonBase
               onClick={() => onToggle(s)}
               aria-pressed={isActive}
-              aria-label={`${s}: ${totals[s]}`}
+              aria-label={t("stateCount", {
+                state: t(`states.${s}.label`),
+                count: totals[s],
+              })}
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -913,6 +920,8 @@ function BoardAttribution({
   authors: Record<string, UserRef>;
   now: number;
 }) {
+  const t = useTranslations("Visual");
+  const format = useFormatter();
   const creator = board.createdBy ? authors[board.createdBy] : null;
   return (
     <Typography
@@ -920,7 +929,10 @@ function BoardAttribution({
       color="text.secondary"
       sx={{ display: "block" }}
     >
-      Created by {attributionName(creator)} · {timeAgo(board.createdAt, now)}
+      {t("createdBy", {
+        name: creator ? attributionName(creator) : t("formerMember"),
+        time: format.relativeTime(board.createdAt, now),
+      })}
     </Typography>
   );
 }

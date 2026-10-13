@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useId, useState } from "react";
 import { Box, Stack, Tab, Tabs, Typography } from "@mui/material";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
@@ -7,56 +9,57 @@ import CallMadeIcon from "@mui/icons-material/CallMade";
 import { ReadinessChip } from "@/components/release/readiness-summary";
 import { SiteLink } from "./site-link";
 
-const views = [
-  { label: "Overview", destination: "release" },
-  { label: "Architecture", destination: "backend" },
-  { label: "Checks", destination: "qa" },
-] as const;
-
-const outcomes = [
-  {
-    name: "Trace a release dependency",
-    detail: "Review UI → Release API → PostgreSQL",
-    state: "ready",
-  },
-  {
-    name: "Preserve the review baseline",
-    detail: "Scope, evidence, and rationale saved together",
-    state: "ready",
-  },
-  {
-    name: "Restore product data",
-    detail: "A recovery drill still needs evidence",
-    state: "needs_evidence",
-  },
-] as const;
-
-const checks = [
-  {
-    name: "Dependencies stay within the workspace",
-    detail: "Boundary tests · matching candidate",
-    state: "ready",
-  },
-  {
-    name: "Later edits preserve the saved review",
-    detail: "Snapshot checks · matching candidate",
-    state: "ready",
-  },
-  {
-    name: "A backup restores without data loss",
-    detail: "No observation submitted · Operations",
-    state: "needs_evidence",
-  },
-] as const;
-
 export function ReleasePreview() {
+  const t = useTranslations("Visual");
+  const views = [
+    { label: t("overview"), destination: "release" },
+    { label: t("architecture"), destination: "backend" },
+    { label: t("checks"), destination: "qa" },
+  ] as const;
+
+  const outcomes = [
+    {
+      name: t("traceReleaseDependency"),
+      detail: t("reviewDependencyPath"),
+      state: "ready",
+    },
+    {
+      name: t("preserveBaseline"),
+      detail: t("scopeEvidenceRationale"),
+      state: "ready",
+    },
+    {
+      name: t("restoreData"),
+      detail: t("recoveryEvidence"),
+      state: "needs_evidence",
+    },
+  ] as const;
+
+  const checks = [
+    {
+      name: t("workspaceDependencies"),
+      detail: t("boundaryCandidate"),
+      state: "ready",
+    },
+    {
+      name: t("preserveReview"),
+      detail: t("snapshotCandidate"),
+      state: "ready",
+    },
+    {
+      name: t("restoreBackup"),
+      detail: t("noOperationsObservation"),
+      state: "needs_evidence",
+    },
+  ] as const;
+
   const id = useId();
   const [view, setView] = useState(0);
   const selected = views[view] ?? views[0];
   return (
     <Box
       component="section"
-      aria-label="Illustrative StateBoard assessment"
+      aria-label={t("illustrativeAssessment")}
       sx={{
         border: 1,
         borderColor: "divider",
@@ -81,10 +84,10 @@ export function ReleasePreview() {
           <Box component="span" sx={{ mx: 1, color: "text.secondary" }}>
             /
           </Box>{" "}
-          Next release
+          {t("nextRelease")}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Illustrative assessment · no live data
+          {t("illustrativeNoLiveData")}
         </Typography>
       </Stack>
       <Box
@@ -104,7 +107,7 @@ export function ReleasePreview() {
           }}
         >
           <Typography variant="overline" color="text.secondary">
-            Release assessment
+            {t("releaseAssessment")}
           </Typography>
           <Box>
             <Typography
@@ -117,10 +120,10 @@ export function ReleasePreview() {
                 mb: 1,
               }}
             >
-              Needs evidence
+              {t("needsEvidence")}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              One open check before approval.
+              {t("oneOpenCheck")}
             </Typography>
           </Box>
           <Box
@@ -136,17 +139,17 @@ export function ReleasePreview() {
               "& dd": { m: 0, textAlign: "right" },
             }}
           >
-            <Box component="dt">Candidate</Box>
-            <Box component="dd">Example RC 1</Box>
-            <Box component="dt">Validation</Box>
-            <Box component="dd">Staging</Box>
-            <Box component="dt">Target</Box>
-            <Box component="dd">Production</Box>
+            <Box component="dt">{t("candidate")}</Box>
+            <Box component="dd">{t("exampleCandidate")}</Box>
+            <Box component="dt">{t("validation")}</Box>
+            <Box component="dd">{t("staging")}</Box>
+            <Box component="dt">{t("target")}</Box>
+            <Box component="dd">{t("production")}</Box>
           </Box>
         </Stack>
         <Box sx={{ minWidth: 0, px: { xs: 2.5, md: 4 }, pb: 2.5 }}>
           <Tabs
-            aria-label="Assessment preview views"
+            aria-label={t("previewViews")}
             value={view}
             onChange={(_, next: number) => setView(next)}
             variant="scrollable"
@@ -178,14 +181,14 @@ export function ReleasePreview() {
             {view === 1 ? (
               <Stack spacing={2.5} sx={{ py: 2.5 }}>
                 <Typography variant="body2" color="text.secondary">
-                  What supports the release review?
+                  {t("supportsReview")}
                 </Typography>
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
                   gap={1.5}
                   alignItems={{ xs: "stretch", sm: "center" }}
                 >
-                  {["Review UI", "Release API", "PostgreSQL"].map(
+                  {[t("reviewUi"), t("releaseApi"), "PostgreSQL"].map(
                     (name, index) => (
                       <Stack
                         key={name}
@@ -216,7 +219,7 @@ export function ReleasePreview() {
                             {name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {["Frontend", "Backend", "Data"][index]}
+                            {[t("frontend"), t("backend"), t("data")][index]}
                           </Typography>
                         </Box>
                       </Stack>
@@ -224,8 +227,7 @@ export function ReleasePreview() {
                   )}
                 </Stack>
                 <Typography variant="body2" color="text.secondary">
-                  Declared dependencies explain the path. Matching checks
-                  establish whether it works.
+                  {t("dependencyExplanation")}
                 </Typography>
               </Stack>
             ) : (
@@ -269,7 +271,7 @@ export function ReleasePreview() {
             endIcon={<CallMadeIcon fontSize="small" />}
             sx={{ px: 0 }}
           >
-            Explore {selected.label.toLowerCase()} in the demo
+            {t(`exploreDemo.${selected.destination}`)}
           </SiteLink>
         </Box>
       </Box>

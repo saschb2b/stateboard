@@ -1,3 +1,4 @@
+import { Message } from "@/i18n/message";
 import type { Metadata } from "next";
 import { BoardShare } from "@/components/board/board-share";
 import { getDemoBoard } from "@/lib/demo-data";
@@ -41,7 +42,7 @@ export default function DemoBoardPage() {
           sx={{ flexWrap: "wrap", pt: 1 }}
         >
           <Typography key="label" variant="caption" color="text.secondary">
-            Read-only example
+            <Message id="readOnlyExample" />
           </Typography>
           <SiteLink
             key="release-demo"
@@ -49,7 +50,7 @@ export default function DemoBoardPage() {
             size="small"
             endIcon={<ArrowForwardIcon />}
           >
-            Explore release readiness
+            <Message id="exploreReadiness" />
           </SiteLink>
         </Stack>
       }

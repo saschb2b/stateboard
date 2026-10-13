@@ -152,3 +152,22 @@ export const RepeatedFailedMovesRestoreSavedPosition: Story = {
     );
   },
 };
+
+export const GermanStateLabelsPreserveValues: Story = {
+  parameters: { locale: "de" },
+  play: async ({ canvas, args }) => {
+    await expect(
+      await canvas.findByRole("textbox", { name: "Beschriftung" }),
+    ).toHaveValue(region.label ?? "");
+    await userEvent.click(canvas.getByRole("button", { name: "FEHLT" }));
+    await waitFor(() =>
+      expect(args.updateRegion).toHaveBeenCalledWith(region.id, {
+        state: "missing",
+      }),
+    );
+    await expect(canvas.getByRole("button", { name: "FEHLT" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  },
+};

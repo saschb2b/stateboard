@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,10 +30,10 @@ import type { Board, ShareLink } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 
 type Section = "general" | "sharing";
-const SECTIONS: { id: Section; label: string }[] = [
-  { id: "general", label: "General" },
-  { id: "sharing", label: "Visual sharing" },
-];
+const SECTIONS = [
+  { id: "general", label: "general" },
+  { id: "sharing", label: "visualSharing" },
+] as const;
 
 export interface BoardStats {
   screens: number;
@@ -39,20 +41,15 @@ export interface BoardStats {
   shareLinks: number;
 }
 
-/** "2 screens, 6 regions, and 1 share link" — omits any zero, "" if all zero. */
-function describeContents(stats: BoardStats): string {
+function useContentsDescription(stats: BoardStats): string {
+  const t = useTranslations("Visual");
+  const format = useFormatter();
   const parts: string[] = [];
-  if (stats.screens)
-    parts.push(`${stats.screens} screen${stats.screens === 1 ? "" : "s"}`);
-  if (stats.regions)
-    parts.push(`${stats.regions} region${stats.regions === 1 ? "" : "s"}`);
+  if (stats.screens) parts.push(t("screenCount", { count: stats.screens }));
+  if (stats.regions) parts.push(t("regionCount", { count: stats.regions }));
   if (stats.shareLinks)
-    parts.push(
-      `${stats.shareLinks} share link${stats.shareLinks === 1 ? "" : "s"}`,
-    );
-  if (parts.length <= 1) return parts.join("");
-  const last = parts[parts.length - 1] ?? "";
-  return `${parts.slice(0, -1).join(", ")}, and ${last}`;
+    parts.push(t("shareLinkCount", { count: stats.shareLinks }));
+  return format.list(parts, { type: "conjunction" });
 }
 
 interface BoardSettingsProps {
@@ -75,6 +72,7 @@ export function BoardSettings({
   stats,
   initialSection = "general",
 }: BoardSettingsProps) {
+  const t = useTranslations("Visual");
   const [section, setSection] = useState<Section>(initialSection);
 
   return (
@@ -93,7 +91,7 @@ export function BoardSettings({
               color="inherit"
               sx={{ borderColor: "divider" }}
             >
-              Back to board
+              {t("backToBoard")}
             </Button>
             <UserMenu user={viewer.user} role={viewer.role} />
           </>
@@ -101,7 +99,7 @@ export function BoardSettings({
       />
       <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
         <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-          Board settings
+          {t("boardSettings")}
         </Typography>
         <Box
           sx={{
@@ -112,14 +110,14 @@ export function BoardSettings({
         >
           <Box
             component="nav"
-            aria-label="Settings sections"
+            aria-label={t("settingsSections")}
             sx={{ width: { sm: 184 }, flexShrink: 0 }}
           >
             <Typography
               variant="overline"
               sx={{ color: "text.secondary", px: 1.5, fontWeight: 700 }}
             >
-              Settings
+              {t("settings")}
             </Typography>
             <Stack
               direction={{ xs: "row", sm: "column" }}
@@ -153,7 +151,7 @@ export function BoardSettings({
                       },
                     }}
                   >
-                    {s.label}
+                    {t(s.label)}
                   </Box>
                 );
               })}
@@ -177,8 +175,9 @@ export function BoardSettings({
 }
 
 function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
+  const t = useTranslations("Visual");
   const router = useRouter();
-  const contents = describeContents(stats);
+  const contents = useContentsDescription(stats);
   const [name, setName] = useState(board.name);
   const [description, setDescription] = useState(board.description ?? "");
   const [saving, setSaving] = useState(false);
@@ -192,7 +191,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
 
   const save = async () => {
     if (!name.trim()) {
-      setError("Board name can't be empty.");
+      setError(t("boardNameEmpty"));
       return;
     }
     setSaving(true);
@@ -208,7 +207,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't save changes.");
+        setError(body.error ?? t("saveChangesError"));
         return;
       }
       const updated: Board = await res.json();
@@ -217,7 +216,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
       setSaved(true);
       router.refresh();
     } catch {
-      setError("Couldn't save changes.");
+      setError(t("saveChangesError"));
     } finally {
       setSaving(false);
     }
@@ -226,15 +225,15 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
   return (
     <>
       <Typography component="h2" variant="h6" sx={{ mb: 0.75 }}>
-        Board details
+        {t("boardDetails")}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Name this product and give reviewers a little context.
+        {t("boardDetailsDescription")}
       </Typography>
 
       <Stack spacing={2.5}>
         <TextField
-          label="Board name"
+          label={t("boardName")}
           value={name}
           disabled={saving}
           onChange={(e) => setName(e.target.value)}
@@ -243,7 +242,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
           placeholder="StateBoard"
         />
         <TextField
-          label="Description"
+          label={t("description")}
           value={description}
           disabled={saving}
           onChange={(e) => setDescription(e.target.value)}
@@ -251,7 +250,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
           size="small"
           multiline
           minRows={2}
-          helperText="Appears beneath the name on the share link."
+          helperText={t("descriptionHelp")}
         />
         <Box>
           <Button
@@ -259,13 +258,13 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
             onClick={save}
             disabled={!dirty || saving}
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("saving") : t("saveChanges")}
           </Button>
         </Box>
       </Stack>
 
       <Typography variant="h6" component="h2" sx={{ mt: 5, mb: 1.5 }}>
-        Delete board
+        {t("deleteBoard")}
       </Typography>
       <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1 }}>
         <Box
@@ -279,11 +278,13 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
           }}
         >
           <Box>
-            <Typography sx={{ fontWeight: 600 }}>Delete this board</Typography>
+            <Typography sx={{ fontWeight: 600 }}>
+              {t("deleteThisBoard")}
+            </Typography>
             <Typography variant="body2" color="text.secondary">
-              Permanently removes this board
-              {contents ? ` and its ${contents}` : ""}. Boards with release
-              history cannot be deleted.
+              {contents
+                ? t("deleteBoardWithContents", { contents })
+                : t("deleteBoardWithoutContents")}
             </Typography>
           </Box>
           <Button
@@ -292,7 +293,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
             onClick={() => setDeleteOpen(true)}
             sx={{ flexShrink: 0 }}
           >
-            Delete this board
+            {t("deleteThisBoard")}
           </Button>
         </Box>
       </Box>
@@ -317,7 +318,7 @@ function GeneralSection({ board, stats }: { board: Board; stats: BoardStats }) {
           onClose={() => setSaved(false)}
           sx={{ width: "100%" }}
         >
-          Changes saved.
+          {t("changesSaved")}
         </Alert>
       </Snackbar>
       <Snackbar
@@ -346,6 +347,7 @@ function SharingSection({
   board: Board;
   initialShareLinks: ShareLink[];
 }) {
+  const t = useTranslations("Visual");
   const [links, setLinks] = useState<ShareLink[]>(initialShareLinks);
   const [label, setLabel] = useState("");
   const [creating, setCreating] = useState(false);
@@ -366,25 +368,21 @@ function SharingSection({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't create the link.");
+        setError(body.error ?? t("createLinkError"));
         return;
       }
       const link: ShareLink = await res.json();
       setLinks((prev) => [link, ...prev]);
       setLabel("");
     } catch {
-      setError("Couldn't create the link.");
+      setError(t("createLinkError"));
     } finally {
       setCreating(false);
     }
   };
 
   const revoke = async (token: string) => {
-    if (
-      !confirm(
-        "Revoke this link? Anyone using it will lose access immediately.",
-      )
-    ) {
+    if (!confirm(t("revokeLinkConfirm"))) {
       return;
     }
     setError(null);
@@ -394,7 +392,7 @@ function SharingSection({
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't revoke the link.");
+        setError(body.error ?? t("revokeLinkError"));
         return;
       }
       const revokedAt = Date.now();
@@ -402,7 +400,7 @@ function SharingSection({
         prev.map((l) => (l.token === token ? { ...l, revokedAt } : l)),
       );
     } catch {
-      setError("Couldn't revoke the link.");
+      setError(t("revokeLinkError"));
     }
   };
 
@@ -414,18 +412,17 @@ function SharingSection({
       setCopiedToken(token);
       window.setTimeout(() => setCopiedToken(null), 1500);
     } catch {
-      setError("Couldn't copy to the clipboard.");
+      setError(t("clipboardError"));
     }
   };
 
   return (
     <>
       <Typography component="h2" variant="h6" sx={{ mb: 0.75 }}>
-        Visual share links
+        {t("visualShareLinks")}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Share screens and annotations without sign-in. Release assessments stay
-        private until an owner publishes a release review.
+        {t("visualShareDescription")}
       </Typography>
 
       <Stack
@@ -437,8 +434,8 @@ function SharingSection({
         <TextField
           size="small"
           fullWidth
-          label="Link name (optional)"
-          placeholder="Design review"
+          label={t("linkNameOptional")}
+          placeholder={t("designReview")}
           disabled={creating}
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -452,13 +449,13 @@ function SharingSection({
           disabled={creating}
           sx={{ flexShrink: 0 }}
         >
-          {creating ? "Creating…" : "Create link"}
+          {creating ? t("creating") : t("createLink")}
         </Button>
       </Stack>
 
       {active.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-          No active share links. Create one to share this board.
+          {t("noActiveLinks")}
         </Typography>
       ) : (
         <Stack spacing={1}>
@@ -478,7 +475,7 @@ function SharingSection({
             >
               <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography sx={{ fontWeight: 600 }} noWrap>
-                  {link.label || "Untitled link"}
+                  {link.label || t("untitledLink")}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -498,16 +495,16 @@ function SharingSection({
                   onClick={() => copy(link.token)}
                   sx={{ borderColor: "divider" }}
                 >
-                  {copiedToken === link.token ? "Copied" : "Copy"}
+                  {copiedToken === link.token ? t("copied") : t("copy")}
                 </Button>
-                <Tooltip title="Open share view">
+                <Tooltip title={t("openShareView")}>
                   <IconButton
                     size="small"
                     component="a"
                     href={`/share/${link.token}`}
                     target="_blank"
                     rel="noopener"
-                    aria-label="Open share view in a new tab"
+                    aria-label={t("openShareViewNewTab")}
                   >
                     <OpenInNewIcon fontSize="small" />
                   </IconButton>
@@ -517,7 +514,7 @@ function SharingSection({
                   color="error"
                   onClick={() => revoke(link.token)}
                 >
-                  Revoke
+                  {t("revoke")}
                 </Button>
               </Stack>
             </Box>
@@ -531,7 +528,7 @@ function SharingSection({
             variant="overline"
             sx={{ color: "text.secondary", fontWeight: 700 }}
           >
-            Revoked
+            {t("revoked")}
           </Typography>
           <Stack spacing={1} sx={{ mt: 0.5 }}>
             {revoked.map((link) => (
@@ -550,7 +547,7 @@ function SharingSection({
               >
                 <Box sx={{ minWidth: 0, flex: 1 }}>
                   <Typography sx={{ fontWeight: 600 }} noWrap>
-                    {link.label || "Untitled link"}
+                    {link.label || t("untitledLink")}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -561,7 +558,7 @@ function SharingSection({
                     /share/{link.token}
                   </Typography>
                 </Box>
-                <Chip size="small" label="Revoked" />
+                <Chip size="small" label={t("revoked")} />
               </Box>
             ))}
           </Stack>
@@ -600,12 +597,13 @@ function DeleteBoardDialog({
   stats: BoardStats;
   onClose: () => void;
 }) {
+  const t = useTranslations("Visual");
   const router = useRouter();
   const [confirm, setConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const matches = confirm.trim() === board.name;
-  const contents = describeContents(stats);
+  const contents = useContentsDescription(stats);
 
   const deleteInFlight = useRef(false);
   const onDelete = async () => {
@@ -617,7 +615,7 @@ function DeleteBoardDialog({
       const res = await fetch(`/api/boards/${board.id}`, { method: "DELETE" });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(body.error ?? "Couldn't delete the board.");
+        setError(body.error ?? t("deleteBoardError"));
         setDeleting(false);
         deleteInFlight.current = false;
         return;
@@ -625,7 +623,7 @@ function DeleteBoardDialog({
       router.push("/boards");
       router.refresh();
     } catch {
-      setError("Couldn't delete the board.");
+      setError(t("deleteBoardError"));
       setDeleting(false);
       deleteInFlight.current = false;
     }
@@ -638,14 +636,19 @@ function DeleteBoardDialog({
       maxWidth="xs"
       fullWidth
     >
-      <DialogTitle>Delete this board?</DialogTitle>
+      <DialogTitle>{t("deleteBoardQuestion")}</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          This permanently deletes <b>{board.name}</b>
-          {contents ? ` and its ${contents}` : ""}. This cannot be undone.
+          {t.rich(
+            contents ? "deleteConfirmationWithContents" : "deleteConfirmation",
+            { name: board.name, contents, strong: (chunks) => <b>{chunks}</b> },
+          )}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          Type <b>{board.name}</b> to confirm.
+          {t.rich("typeToConfirm", {
+            name: board.name,
+            strong: (chunks) => <b>{chunks}</b>,
+          })}
         </Typography>
         <TextField
           value={confirm}
@@ -653,7 +656,7 @@ function DeleteBoardDialog({
           fullWidth
           size="small"
           autoFocus
-          label="Board name to confirm"
+          label={t("confirmBoardName")}
           disabled={deleting}
           placeholder={board.name}
           error={confirm.length > 0 && !matches}
@@ -673,7 +676,7 @@ function DeleteBoardDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={deleting}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button
           color="error"
@@ -681,7 +684,7 @@ function DeleteBoardDialog({
           disabled={!matches || deleting}
           onClick={onDelete}
         >
-          {deleting ? "Deleting…" : "Delete this board"}
+          {deleting ? t("deleting") : t("deleteThisBoard")}
         </Button>
       </DialogActions>
     </Dialog>

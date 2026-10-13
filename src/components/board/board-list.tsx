@@ -1,5 +1,7 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
+
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -38,7 +40,9 @@ export interface BoardListItem {
   shareToken: string | null;
   screens: ScreenWithRegions[];
   totals: { shipped: number; mock: number; missing: number };
-  updatedLabel: string;
+  updatedLabel?: string;
+  updatedAt?: number;
+  now?: number;
   releaseOverview?: ReleaseOverview;
 }
 
@@ -82,6 +86,7 @@ export function BoardListView({
   onDuplicate,
   onOpen,
 }: BoardListProps & BoardListActions) {
+  const t = useTranslations("Visual");
   const [items, setItems] = useState(initialItems);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -107,18 +112,14 @@ export function BoardListView({
           shareToken: null,
           screens: [],
           totals: { shipped: 0, mock: 0, missing: 0 },
-          updatedLabel: "Just now",
+          updatedLabel: t("justNow"),
         },
         ...current,
       ]);
       setOpen(false);
       onOpen(board);
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to create this board. Try again.",
-      );
+      setError(cause instanceof Error ? cause.message : t("createBoardError"));
     } finally {
       inFlight.current = false;
       setCreating(false);
@@ -129,7 +130,7 @@ export function BoardListView({
     <>
       <AppHeader
         homeHref="/boards"
-        crumb="Workspace"
+        crumb={t("workspace")}
         actions={<UserMenu user={viewer.user} role={viewer.role} />}
       />
       <Container component="main" maxWidth="lg" sx={{ py: { xs: 3, md: 4 } }}>
@@ -142,10 +143,10 @@ export function BoardListView({
         >
           <Box>
             <Typography component="h1" variant="h5">
-              Boards
+              {t("boards")}
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-              Your products and their latest release assessments.
+              {t("boardListDescription")}
             </Typography>
           </Box>
           {editable && (
@@ -159,7 +160,7 @@ export function BoardListView({
                 setOpen(true);
               }}
             >
-              New board
+              {t("newBoard")}
             </Button>
           )}
         </Stack>
@@ -174,7 +175,7 @@ export function BoardListView({
               }}
             >
               <Typography variant="caption" color="text.secondary">
-                {items.length} {items.length === 1 ? "product" : "products"}
+                {t("productCount", { count: items.length })}
               </Typography>
             </Box>
             <Stack
@@ -196,12 +197,12 @@ export function BoardListView({
             <Stack spacing={1.5} alignItems="flex-start" sx={{ maxWidth: 460 }}>
               <FolderOutlinedIcon sx={{ color: "text.secondary" }} />
               <Typography component="h2" variant="h6">
-                Your first product starts here
+                {t("firstProduct")}
               </Typography>
               <Typography color="text.secondary">
                 {editable
-                  ? "Create a board to connect capabilities, evidence, and release decisions."
-                  : "An editor can create the first board for this workspace."}
+                  ? t("createBoardDescription")
+                  : t("createBoardEditor")}
               </Typography>
               <Button
                 component={Link}
@@ -209,7 +210,7 @@ export function BoardListView({
                 color="inherit"
                 endIcon={<ArrowForwardIcon />}
               >
-                Explore an example
+                {t("exploreExample")}
               </Button>
             </Stack>
           </Paper>
@@ -222,7 +223,7 @@ export function BoardListView({
             size="small"
             sx={{ mt: 2, color: "text.secondary" }}
           >
-            View example assessment
+            {t("viewExampleAssessment")}
           </Button>
         )}
       </Container>
@@ -239,12 +240,12 @@ export function BoardListView({
             void create();
           }}
         >
-          <DialogTitle>New board</DialogTitle>
+          <DialogTitle>{t("newBoard")}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <TextField
                 autoFocus
-                label="Product name"
+                label={t("productName")}
                 required
                 fullWidth
                 value={name}
@@ -253,7 +254,7 @@ export function BoardListView({
                 placeholder="StateBoard"
               />
               <TextField
-                label="Description (optional)"
+                label={t("descriptionOptional")}
                 fullWidth
                 multiline
                 minRows={2}
@@ -266,14 +267,14 @@ export function BoardListView({
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setOpen(false)} disabled={creating}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button
               type="submit"
               variant="contained"
               disabled={creating || !name.trim()}
             >
-              {creating ? "Creating…" : "Create board"}
+              {creating ? t("creating") : t("createBoard")}
             </Button>
           </DialogActions>
         </Box>
@@ -291,7 +292,13 @@ function BoardRow({
   BoardListActions,
   "onDuplicate" | "onOpen"
 >) {
-  const { board, screens, shareToken, updatedLabel } = item;
+  const t = useTranslations("Visual");
+  const format = useFormatter();
+  const { board, screens, shareToken } = item;
+  const updatedLabel =
+    item.updatedAt !== undefined && item.now !== undefined
+      ? format.relativeTime(item.updatedAt, item.now)
+      : (item.updatedLabel ?? t("justNow"));
   const [cloning, setCloning] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -305,9 +312,7 @@ function BoardRow({
       onOpen(await onDuplicate(board));
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to duplicate this board. Try again.",
+        cause instanceof Error ? cause.message : t("duplicateBoardError"),
       );
     } finally {
       inFlight.current = false;
@@ -322,7 +327,7 @@ function BoardRow({
       );
       setCopied(true);
     } catch {
-      setError("Unable to copy the link. Open Screens to manage sharing.");
+      setError(t("copyLinkScreensError"));
     }
   };
   return (
@@ -363,7 +368,7 @@ function BoardRow({
             color="text.secondary"
             sx={{ display: "block", mt: 1.25 }}
           >
-            Updated {updatedLabel}
+            {t("updatedAt", { time: updatedLabel })}
           </Typography>
         </Box>
         <Box sx={{ minWidth: 0, "& > .MuiStack-root": { my: 0 } }}>
@@ -380,7 +385,7 @@ function BoardRow({
             color="inherit"
             endIcon={<ArrowForwardIcon />}
           >
-            Open board
+            {t("openBoard")}
           </Button>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Button
@@ -391,16 +396,16 @@ function BoardRow({
               startIcon={<ImageOutlinedIcon />}
               sx={{ color: "text.secondary" }}
             >
-              {screens.length} {screens.length === 1 ? "screen" : "screens"}
+              {t("screenCount", { count: screens.length })}
             </Button>
             {editable && (
-              <Tooltip title="Copy screens and annotations into a new board">
+              <Tooltip title={t("copyScreensTooltip")}>
                 <span>
                   <IconButton
                     size="small"
                     onClick={() => void duplicate()}
                     disabled={cloning}
-                    aria-label={`Copy screens from ${board.name}`}
+                    aria-label={t("copyBoardScreens", { name: board.name })}
                   >
                     <LibraryAddOutlinedIcon fontSize="small" />
                   </IconButton>
@@ -408,11 +413,11 @@ function BoardRow({
               </Tooltip>
             )}
             {shareToken && (
-              <Tooltip title={copied ? "Copied" : "Copy visual share link"}>
+              <Tooltip title={copied ? t("copied") : t("copyVisualShareLink")}>
                 <IconButton
                   size="small"
                   onClick={() => void copy()}
-                  aria-label={`Copy visual share link for ${board.name}`}
+                  aria-label={t("copyBoardVisualLink", { name: board.name })}
                 >
                   <ContentCopyIcon fontSize="small" />
                 </IconButton>

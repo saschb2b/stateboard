@@ -56,3 +56,30 @@ export const ScreensAndPresentationFocus: Story = {
     await expect(present).toHaveFocus();
   },
 };
+
+export const GermanVisualReview: Story = {
+  parameters: { locale: "de" },
+  args: {
+    screens: demo.screens.map((screen) => ({ ...screen, label: null })),
+    updatedAt: demo.board.updatedAt,
+    now: demo.board.updatedAt + 3_600_000,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole("heading", { name: demo.board.name, level: 1 }),
+    ).toBeVisible();
+    await expect(canvas.getByText("Aktualisiert vor 1 Stunde")).toBeVisible();
+    await expect(canvas.getByRole("tab", { name: "Ansicht 1" })).toBeVisible();
+    await expect(canvas.getAllByText("PRODUKTIV")[0]).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Präsentieren" }));
+    const dialog = within(
+      await within(document.body).findByRole("dialog", {
+        name: "Präsentationsmodus",
+      }),
+    );
+    await expect(
+      dialog.getByRole("button", { name: "Präsentation beenden" }),
+    ).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+  },
+};
