@@ -16,3 +16,9 @@
 *.pdf   binary
 *.woff  binary
 *.woff2 binary
+
+# Knowledge logs append independent entries.
+**/log.md merge=union
+
+# Keep upstream signatures and source hashes valid across checkouts.
+.agents/skills/** -text
