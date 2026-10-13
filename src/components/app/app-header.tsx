@@ -55,12 +55,13 @@ export function AppHeader({
         sx={{
           position: "relative",
           minHeight: { xs: 56, sm: 60 },
-          gap: 2,
+          gap: { xs: 1, sm: 2 },
           px: { xs: 2, sm: 3 },
         }}
       >
         <Link
           href={homeHref}
+          aria-label="STATEBOARD"
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <Stack direction="row" alignItems="center" spacing={1.25}>
@@ -73,7 +74,14 @@ export function AppHeader({
             />
             <Typography
               variant="subtitle1"
-              sx={{ fontWeight: 700, letterSpacing: "0.08em" }}
+              sx={{
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                display: {
+                  xs: crumb || actions ? "none" : "block",
+                  sm: "block",
+                },
+              }}
             >
               STATEBOARD
             </Typography>
@@ -98,6 +106,7 @@ export function AppHeader({
                   color: "text.secondary",
                   fontWeight: 500,
                   maxWidth: { xs: 120, sm: 260 },
+                  minWidth: 0,
                 }}
               >
                 {crumb}
@@ -107,7 +116,12 @@ export function AppHeader({
         ) : null}
         <Box sx={{ flex: 1 }} />
         {actions ? (
-          <Stack direction="row" spacing={1.5} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1.5}
+            alignItems="center"
+            sx={{ flexShrink: 0 }}
+          >
             {actions}
           </Stack>
         ) : null}

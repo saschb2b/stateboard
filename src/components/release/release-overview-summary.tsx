@@ -9,9 +9,11 @@ import { useServerClock } from "./use-server-clock";
 export function ReleaseOverviewSummary({
   overview,
   showCandidate = false,
+  compact = false,
 }: {
   overview?: ReleaseOverview;
   showCandidate?: boolean;
+  compact?: boolean;
 }) {
   const { now, advance } = useServerClock(
     overview?.evaluatedAt ?? 0,
@@ -41,7 +43,7 @@ export function ReleaseOverviewSummary({
   const currentReview =
     overview.decisionRevision === overview.assessment.revision && !expired;
   return (
-    <Stack spacing={0.5} sx={{ my: 1.5 }}>
+    <Stack spacing={0.75} sx={{ mt: compact ? 0.75 : 2, mb: compact ? 0 : 2 }}>
       {showCandidate && (
         <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>
           Latest candidate · {overview.assessment.candidateLabel}
@@ -55,12 +57,14 @@ export function ReleaseOverviewSummary({
             : `${overview.blockerCount} blockers · ${overview.gapCount} evidence gaps`}
         </Typography>
       </Stack>
-      <Typography variant="caption" color="text.secondary">
-        Validation: {overview.assessment.validationEnvironment} ·{" "}
-        {overview.decision === null
-          ? "No recorded decision"
-          : `${currentReview ? "Recorded" : "Earlier"} ${overview.decision} review`}
-      </Typography>
+      {!compact && (
+        <Typography variant="caption" color="text.secondary">
+          Validation: {overview.assessment.validationEnvironment} ·{" "}
+          {overview.decision === null
+            ? "No recorded decision"
+            : `${currentReview ? "Recorded" : "Earlier"} ${overview.decision} review`}
+        </Typography>
+      )}
     </Stack>
   );
 }

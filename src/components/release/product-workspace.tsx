@@ -10,7 +10,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  Paper,
   Stack,
   Tab,
   Tabs,
@@ -23,7 +22,7 @@ import { ComponentManager } from "@/components/dependency/component-manager";
 import { ProductConnections } from "@/components/dependency/product-connections";
 import { AssessmentCreateForm } from "./assessment-create-form";
 import { releaseRequest } from "./release-request";
-import { ReleaseOverviewSummary } from "./release-overview-summary";
+import { ProductReleaseList } from "./product-release-list";
 import type {
   ProductContext,
   ProductMutation,
@@ -80,39 +79,25 @@ export function ProductWorkspace({
           </>
         }
       />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
         <Stack spacing={3}>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            justifyContent="space-between"
-            gap={2}
-          >
-            <Stack>
-              <Typography variant="overline" color="primary">
-                Product overview
-              </Typography>
-              <Typography variant="h4">{product.board.name}</Typography>
-              <Typography color="text.secondary">
-                Assess a release through capabilities, dependencies, and
-                evidence.
-              </Typography>
-            </Stack>
-            <Button
-              component={Link}
-              href="/share/demo/releases"
-              size="small"
-              sx={{ alignSelf: "center" }}
-            >
-              View example ↗
-            </Button>
-          </Stack>
+          <Typography variant="h5" component="h1" sx={{ maxWidth: 720 }}>
+            {product.board.name}
+          </Typography>
           <Tabs
             value={tab}
             onChange={(_, value: string) => setTab(value)}
             variant="scrollable"
+            allowScrollButtonsMobile
             aria-label="Product sections"
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              minHeight: 44,
+              "& .MuiTab-root": { minHeight: 44, px: 2, minWidth: 0 },
+            }}
           >
-            <Tab value="releases" label="Release assessments" />
+            <Tab value="releases" label="Releases" />
             <Tab value="capabilities" label="Capabilities" />
             <Tab value="dependencies" label="Components" />
             <Tab value="connections" label="Connections" />
@@ -148,71 +133,12 @@ export function ProductWorkspace({
             </Alert>
           )}
           {tab === "releases" && (
-            <Stack spacing={2}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography variant="h6">Release assessments</Typography>
-                {editable && (
-                  <Button
-                    variant="contained"
-                    disabled={product.capabilities.every(
-                      (item) => item.archivedAt !== null,
-                    )}
-                    onClick={() => setCreating(true)}
-                  >
-                    New assessment
-                  </Button>
-                )}
-              </Stack>
-              {product.releases.map((release) => (
-                <Paper key={release.id} sx={{ p: 2.5 }}>
-                  <Stack
-                    direction={{ xs: "column", sm: "row" }}
-                    justifyContent="space-between"
-                    gap={2}
-                  >
-                    <Stack>
-                      <Typography variant="h6">
-                        {release.candidateLabel}
-                      </Typography>
-                      <Typography variant="body2">
-                        {release.targetEnvironment} · {release.audience}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {release.ownerLabel} · {release.candidateRef}
-                      </Typography>
-                      <ReleaseOverviewSummary
-                        overview={product.releaseOverviews?.find(
-                          (overview) => overview.assessment.id === release.id,
-                        )}
-                      />
-                    </Stack>
-                    <Button
-                      component={Link}
-                      href={`/boards/${product.board.id}/releases/${release.id}`}
-                    >
-                      Open assessment
-                    </Button>
-                  </Stack>
-                </Paper>
-              ))}
-              {product.releases.length === 0 && (
-                <Paper sx={{ p: 3 }}>
-                  <Typography variant="h6">
-                    Start with the critical outcomes
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ mb: 2 }}>
-                    Add capabilities, connect their dependencies, then create a
-                    candidate assessment.
-                  </Typography>
-                  <Button onClick={() => setTab("capabilities")}>
-                    View capabilities
-                  </Button>
-                  <Button component={Link} href="/share/demo/releases">
-                    View example ↗
-                  </Button>
-                </Paper>
-              )}
-            </Stack>
+            <ProductReleaseList
+              product={product}
+              editable={editable}
+              onCreate={() => setCreating(true)}
+              onSetup={() => setTab("capabilities")}
+            />
           )}
           {tab === "capabilities" && (
             <CapabilityManager
