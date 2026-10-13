@@ -357,6 +357,12 @@ export function BoardEditor({
         ]
       : []),
     {
+      id: "release-readiness",
+      label: "Release readiness",
+      hint: "Go",
+      run: () => router.push(`/boards/${board.id}/releases`),
+    },
+    {
       id: "history",
       label: "Board history",
       hint: "Go",
@@ -410,6 +416,15 @@ export function BoardEditor({
         }
         actions={
           <>
+            {screens.length === 0 && (
+              <Button
+                component={Link}
+                href={`/boards/${board.id}/releases`}
+                size="small"
+              >
+                Readiness
+              </Button>
+            )}
             <HeaderStateFilter
               totals={totals}
               filterState={filterState}
@@ -505,6 +520,13 @@ export function BoardEditor({
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
+              <MenuItem
+                component={Link}
+                href={`/boards/${board.id}/releases`}
+                onClick={() => setMoreAnchorEl(null)}
+              >
+                Release readiness
+              </MenuItem>
               <MenuItem
                 component={Link}
                 href={`/boards/${board.id}/history`}

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { BoardShare } from "@/components/board/board-share";
 import { getDemoBoard } from "@/lib/demo-data";
+import Link from "next/link";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 
 /**
  * Permanent example board, served from memory at /share/demo.
@@ -24,5 +27,21 @@ export const metadata: Metadata = {
 
 export default function DemoBoardPage() {
   const { board, screens } = getDemoBoard();
-  return <BoardShare board={board} screens={screens} />;
+  return (
+    <>
+      <Box
+        sx={{
+          textAlign: "center",
+          py: 1,
+          borderBottom: 1,
+          borderColor: "divider",
+        }}
+      >
+        <Link href="/share/demo/releases" style={{ textDecoration: "none" }}>
+          <Button>Explore the release-readiness example →</Button>
+        </Link>
+      </Box>
+      <BoardShare board={board} screens={screens} />
+    </>
+  );
 }

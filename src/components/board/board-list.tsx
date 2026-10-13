@@ -96,7 +96,9 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
       setOpen(false);
       setName("");
       setDescription("");
-      router.push(`/boards/${created.id}`);
+      router.push(`/boards/${created.id}/releases`);
+    } catch {
+      setError("Unable to create this board. Try again.");
     } finally {
       setCreating(false);
     }
@@ -120,7 +122,7 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
               variant="text"
               color="inherit"
               component={Link}
-              href="/share/demo"
+              href="/share/demo/releases"
               target="_blank"
               rel="noopener"
               endIcon={<OpenInNewIcon fontSize="inherit" />}
@@ -145,8 +147,8 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
                 Boards
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                One board per product or per quarterly review. Most teams keep 3
-                to 8.
+                One board per product. Keep its capabilities, dependencies, and
+                release reviews together.
               </Typography>
             </Box>
             {editable ? (
@@ -195,8 +197,8 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
           color="text.secondary"
           sx={{ px: 3, pb: 2 }}
         >
-          A board collects the screens you want to talk about with stakeholders.
-          You can edit everything later.
+          A board holds product capabilities and release assessments. Add
+          screens where they help explain the outcome.
         </Typography>
         <DialogContent sx={{ pt: 1 }}>
           <Stack spacing={2.5}>
@@ -206,16 +208,16 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
               fullWidth
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Acme Dashboard / Q2 2026"
+              placeholder="e.g. Acme Dashboard"
               helperText={
                 <>
-                  This is the title stakeholders see at the top of the share
-                  link. Common pattern:{" "}
+                  Names the product in your overview and visual share links,
+                  e.g.{" "}
                   <Box
                     component="span"
                     sx={{ fontFamily: MONO_FONT, color: "text.primary" }}
                   >
-                    Product / Quarter
+                    Acme Dashboard
                   </Box>
                   .
                 </>
@@ -228,7 +230,7 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
               minRows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional · e.g. End-of-Q2 review for the leadership team."
+              placeholder="e.g. Customer billing and partner event processing."
               helperText="Appears beneath the name on the share link. Useful for context the title can't carry."
             />
 
@@ -258,11 +260,11 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
                 spacing={1}
                 sx={{ mt: 1, flexWrap: "wrap", rowGap: 1 }}
               >
-                <NextStep n={1} label="Upload a screenshot" />
+                <NextStep n={1} label="Define capabilities" />
                 <StepArrow />
-                <NextStep n={2} label="Mark regions" />
+                <NextStep n={2} label="Assess a candidate" />
                 <StepArrow />
-                <NextStep n={3} label="Share the link" />
+                <NextStep n={3} label="Review and share" />
               </Stack>
             </Box>
 
@@ -283,7 +285,7 @@ export function BoardList({ initialItems, viewer }: BoardListProps) {
           <Button
             size="small"
             component={Link}
-            href="/share/demo"
+            href="/share/demo/releases"
             target="_blank"
             rel="noopener"
             endIcon={<OpenInNewIcon fontSize="inherit" />}
@@ -327,12 +329,12 @@ function EmptyState({ canCreate }: { canCreate: boolean }) {
         sx={{ mb: 3, maxWidth: 460, mx: "auto" }}
       >
         {canCreate
-          ? "Open the example board: two screens, twelve regions across all three states. It's the fastest way to feel what a finished board does."
+          ? "Explore an example release through product, frontend, backend, QA, operations, and decision views."
           : "An editor in this workspace hasn't created any boards yet. Open the example to see what one looks like."}
       </Typography>
       <Button
         component={Link}
-        href="/share/demo"
+        href="/share/demo/releases"
         target="_blank"
         rel="noopener"
         variant="outlined"
@@ -436,13 +438,8 @@ function BoardCard({
     }
   };
 
-  // Editors land on the editor; viewers go straight to the public share
-  // view (read-only) so the editor's edit affordances aren't a tease.
-  const href = editable
-    ? `/boards/${board.id}`
-    : shareToken
-      ? `/share/${shareToken}`
-      : `/boards/${board.id}`;
+  // Every member starts with the product assessment. Screens remain an explicit view.
+  const href = `/boards/${board.id}/releases`;
 
   return (
     <Paper
@@ -462,6 +459,17 @@ function BoardCard({
     >
       <BoardScreenCarousel screens={screens} />
       <Box sx={{ p: 2 }}>
+        <Button
+          size="small"
+          sx={{ mb: 1 }}
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            router.push(`/boards/${board.id}`);
+          }}
+        >
+          Screens →
+        </Button>
         <Stack
           direction="row"
           spacing={1}
