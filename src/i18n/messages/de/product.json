@@ -124,7 +124,7 @@
   "editCapability": "Funktion bearbeiten",
   "saveCapability": "Funktion speichern",
   "allScreens": "Alle Ansichten",
-  "annotationHelp": "Markierungen zeigen produktive, simulierte oder fehlende Oberflächenelemente. Prüfungen bewerten den Kandidaten.",
+  "annotationHelp": "Ansichten zeigen den Produktkontext und können eine andere Version abbilden. Prüfergebnisse belegen den Stand dieses Release-Kandidaten.",
   "manageScreens": "Ansichten verwalten",
   "noScreens": "Noch keine Ansichten",
   "noLinkedScreen": "Keine verknüpfte Ansicht",
@@ -241,5 +241,9 @@
   "reuseContext": "Kontext aus {name} übernommen. Vor dem Erstellen prüfen. Ergebnisse werden nicht übernommen.",
   "contextSummary": "Prüfung in {validation} → Bereitstellung in {target} · {audience} · Konfiguration: {configuration}",
   "supportingSystem": "Unterstützendes System",
-  "defaultFeatureRelation": "verwendet"
+  "defaultFeatureRelation": "verwendet",
+  "viewFeatureChecks": "Prüfungen für {name} ansehen",
+  "screenNotes": "Notizen und Quelle",
+  "editScreen": "Ansicht bearbeiten",
+  "openFullSizeScreen": "Bild in Originalgröße öffnen"
 }

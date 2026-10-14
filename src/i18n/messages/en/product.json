@@ -124,7 +124,7 @@
   "editCapability": "Edit feature",
   "saveCapability": "Save feature",
   "allScreens": "All screens",
-  "annotationHelp": "Annotations show shipped, mock, or missing UI. Checks verify the candidate.",
+  "annotationHelp": "Screens show product context and may depict another version. Check results verify this release candidate.",
   "manageScreens": "Manage screens",
   "noScreens": "No screens yet",
   "noLinkedScreen": "No linked screen",
@@ -241,5 +241,9 @@
   "reuseContext": "Context copied from {name}. Check it before creating this review. Results are not copied.",
   "contextSummary": "Verify in {validation} → deploy to {target} · {audience} · Configuration: {configuration}",
   "supportingSystem": "Supporting system",
-  "defaultFeatureRelation": "uses"
+  "defaultFeatureRelation": "uses",
+  "viewFeatureChecks": "View checks for {name}",
+  "screenNotes": "Notes and source",
+  "editScreen": "Edit screen",
+  "openFullSizeScreen": "Open full-size image"
 }

@@ -16,6 +16,7 @@ import {
 import { RegionOverlay } from "@/components/region/region-overlay";
 import { StateChip } from "@/components/region/state-chip";
 import { ReadinessChip } from "@/components/release/readiness-summary";
+import { VerificationMethod } from "@/components/evidence/verification-method";
 import type {
   ProductContext,
   ReleaseDetail,
@@ -29,16 +30,29 @@ export function CapabilityVisualView({
   readiness,
   onReviewView,
   screensHref,
+  selectedCapabilityId,
+  onCapabilityChange,
 }: {
   product: ProductContext;
   detail: ReleaseDetail;
   readiness: ReleaseEvaluation;
   onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   screensHref?: string;
+  selectedCapabilityId?: string | null;
+  onCapabilityChange?: (capabilityId: string | null) => void;
 }) {
   const t = useTranslations("Product");
-  const [capabilityId, setCapabilityId] = useState("all");
+  const [localCapabilityId, setLocalCapabilityId] = useState("all");
   const included = detail.scope.filter((item) => item.included);
+  const requestedCapabilityId =
+    selectedCapabilityId === undefined
+      ? localCapabilityId
+      : selectedCapabilityId;
+  const capabilityId =
+    requestedCapabilityId &&
+    included.some((item) => item.capabilityId === requestedCapabilityId)
+      ? requestedCapabilityId
+      : "all";
   const linked = product.regionCapabilities.filter(
     (link) =>
       included.some((item) => item.capabilityId === link.capabilityId) &&
@@ -72,7 +86,11 @@ export function CapabilityVisualView({
           fullWidth
           size="small"
           sx={{ flex: 1, minWidth: 0 }}
-          onChange={(event) => setCapabilityId(event.target.value)}
+          onChange={(event) => {
+            const next = event.target.value;
+            setLocalCapabilityId(next);
+            onCapabilityChange?.(next === "all" ? null : next);
+          }}
         >
           <MenuItem value="all">{t("allScreens")}</MenuItem>
           {included.map((item) => (
@@ -81,30 +99,39 @@ export function CapabilityVisualView({
             </MenuItem>
           ))}
         </TextField>
-        {onReviewView && (
+        {(onReviewView || screensHref) && (
           <Stack direction="row" gap={0.5} flexWrap="wrap">
-            <Button
-              size="small"
-              onClick={() =>
-                onReviewView(
-                  "backend",
-                  capabilityId === "all" ? undefined : capabilityId,
-                )
-              }
-            >
-              {t("viewArchitecture")}
-            </Button>
-            <Button
-              size="small"
-              onClick={() =>
-                onReviewView(
-                  "qa",
-                  capabilityId === "all" ? undefined : capabilityId,
-                )
-              }
-            >
-              {t("viewChecks")}
-            </Button>
+            {screensHref && (
+              <Button component={Link} href={screensHref} size="small">
+                {t("manageScreens")}
+              </Button>
+            )}
+            {onReviewView && (
+              <>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    onReviewView(
+                      "backend",
+                      capabilityId === "all" ? undefined : capabilityId,
+                    )
+                  }
+                >
+                  {t("viewArchitecture")}
+                </Button>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    onReviewView(
+                      "qa",
+                      capabilityId === "all" ? undefined : capabilityId,
+                    )
+                  }
+                >
+                  {t("viewChecks")}
+                </Button>
+              </>
+            )}
           </Stack>
         )}
       </Stack>
@@ -115,9 +142,44 @@ export function CapabilityVisualView({
       )}
       {screens.map((screen) => (
         <Paper key={screen.id} sx={{ overflow: "hidden" }}>
-          <Typography variant="subtitle2" sx={{ px: 2, py: 1.5 }}>
-            {screen.label ?? t("productScreen")}
-          </Typography>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            gap={1}
+            flexWrap="wrap"
+            sx={{ px: 2, py: 1.5 }}
+          >
+            <Typography
+              variant="subtitle2"
+              sx={{ minWidth: 0, overflowWrap: "anywhere" }}
+            >
+              {screen.label ?? t("productScreen")}
+            </Typography>
+            <Stack direction="row" gap={1} flexWrap="wrap">
+              <Button
+                component="a"
+                href={screen.mediaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                size="small"
+                aria-label={`${t("openFullSizeScreen")}: ${screen.label ?? t("productScreen")}`}
+              >
+                {t("openFullSizeScreen")}
+              </Button>
+              {screensHref && (
+                <Button
+                  component={Link}
+                  href={`${screensHref}${screensHref.includes("?") ? "&" : "?"}screen=${encodeURIComponent(screen.id)}`}
+                  size="small"
+                  sx={{ flexShrink: 0 }}
+                  aria-label={`${t("editScreen")}: ${screen.label ?? t("productScreen")}`}
+                >
+                  {t("editScreen")}
+                </Button>
+              )}
+            </Stack>
+          </Stack>
           <Box
             sx={{
               position: "relative",
@@ -147,10 +209,7 @@ export function CapabilityVisualView({
               .map((region) => (
                 <Stack
                   key={region.id}
-                  direction="row"
-                  alignItems="center"
                   gap={1}
-                  flexWrap="wrap"
                   sx={{
                     py: 1,
                     borderBottom: 1,
@@ -158,38 +217,102 @@ export function CapabilityVisualView({
                     "&:last-child": { borderBottom: 0 },
                   }}
                 >
-                  <StateChip state={region.state} size="sm" />
-                  <Typography variant="body2">
-                    {region.label ?? t("region")}
-                  </Typography>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    gap={1}
+                    flexWrap="wrap"
+                  >
+                    <StateChip state={region.state} size="sm" />
+                    <Typography
+                      variant="body2"
+                      sx={{ overflowWrap: "anywhere", minWidth: 0 }}
+                    >
+                      {region.label ?? t("region")}
+                    </Typography>
+                  </Stack>
                   {product.regionCapabilities
                     .filter((link) => link.regionId === region.id)
-                    .map((link) => (
-                      <Stack
-                        key={link.capabilityId}
-                        direction="row"
-                        gap={1}
-                        alignItems="center"
+                    .map((link) => {
+                      const scope = detail.scope.find(
+                        (item) => item.capabilityId === link.capabilityId,
+                      );
+                      const name =
+                        scope?.name ??
+                        product.capabilities.find(
+                          (item) => item.id === link.capabilityId,
+                        )?.name ??
+                        t("capability");
+                      return (
+                        <Stack
+                          key={link.capabilityId}
+                          direction="row"
+                          gap={1}
+                          alignItems="center"
+                          flexWrap="wrap"
+                        >
+                          {onReviewView && scope?.included ? (
+                            <Button
+                              size="small"
+                              sx={{
+                                justifyContent: "flex-start",
+                                textAlign: "left",
+                                overflowWrap: "anywhere",
+                                minWidth: 0,
+                                p: 0,
+                              }}
+                              aria-label={t("viewFeatureChecks", { name })}
+                              onClick={() =>
+                                onReviewView("qa", link.capabilityId)
+                              }
+                            >
+                              {name}
+                            </Button>
+                          ) : (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ overflowWrap: "anywhere", minWidth: 0 }}
+                            >
+                              {name}
+                            </Typography>
+                          )}
+                          {scope?.included ? (
+                            <ReadinessChip
+                              verification
+                              state={
+                                readiness.capabilities.find(
+                                  (item) =>
+                                    item.capabilityId === link.capabilityId,
+                                )?.state ?? "needs_evidence"
+                              }
+                            />
+                          ) : (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {scope ? t("excluded") : t("notInAssessment")}
+                            </Typography>
+                          )}
+                        </Stack>
+                      );
+                    })}
+                  {region.notes && (
+                    <Box component="details">
+                      <Typography
+                        component="summary"
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ cursor: "pointer", width: "fit-content" }}
                       >
-                        <Typography variant="caption" color="text.secondary">
-                          {detail.scope.find(
-                            (item) => item.capabilityId === link.capabilityId,
-                          )?.name ??
-                            product.capabilities.find(
-                              (item) => item.id === link.capabilityId,
-                            )?.name ??
-                            t("capability")}
-                        </Typography>
-                        <ReadinessChip
-                          verification
-                          state={
-                            readiness.capabilities.find(
-                              (item) => item.capabilityId === link.capabilityId,
-                            )?.state ?? "needs_evidence"
-                          }
-                        />
-                      </Stack>
-                    ))}
+                        {t("screenNotes")}
+                      </Typography>
+                      <Box sx={{ pt: 1 }}>
+                        <VerificationMethod text={region.notes} />
+                      </Box>
+                    </Box>
+                  )}
                 </Stack>
               ))}
           </Stack>
@@ -200,11 +323,6 @@ export function CapabilityVisualView({
           <Typography variant="subtitle1">
             {capabilityId === "all" ? t("noScreens") : t("noLinkedScreen")}
           </Typography>
-          {screensHref && (
-            <Button component={Link} href={screensHref} sx={{ mt: 1.5 }}>
-              {t("manageScreens")}
-            </Button>
-          )}
         </Box>
       )}
       {noUI.length > 0 && (

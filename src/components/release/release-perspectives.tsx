@@ -81,6 +81,8 @@ export function ReleasePerspectives({
 }) {
   const t = useTranslations("Release");
   const productT = useTranslations("Product");
+  const screenContext = new URLSearchParams({ release: detail.assessment.id });
+  if (focusedCapabilityId) screenContext.set("capability", focusedCapabilityId);
   return (
     <>
       {view === "release" && (
@@ -101,7 +103,18 @@ export function ReleasePerspectives({
           product={product}
           readiness={readiness}
           onReviewView={onReviewView}
-          screensHref={editable ? `/boards/${product.board.id}` : undefined}
+          screensHref={
+            editable
+              ? `/boards/${product.board.id}?${screenContext}`
+              : undefined
+          }
+          selectedCapabilityId={focusedCapabilityId}
+          onCapabilityChange={
+            onReviewView
+              ? (capabilityId) =>
+                  onReviewView("visual", capabilityId ?? undefined)
+              : undefined
+          }
         />
       )}
       {view === "backend" && (
