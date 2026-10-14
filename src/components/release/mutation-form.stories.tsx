@@ -65,3 +65,35 @@ export const SaveFailure: Story = {
     ).resolves.toBeVisible();
   },
 };
+
+export const HiddenRequiredField: Story = {
+  args: {
+    fields: [{ name: "claim", label: "Claim", required: true }],
+    initial: { claim: "An event is stored once." },
+    details: {
+      label: "Verification settings",
+      fields: [{ name: "owner", label: "Owner", required: true }],
+    },
+  },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByLabelText(/Owner/)).not.toBeVisible();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Save capability" }),
+    );
+    await expect(canvas.findByRole("alert")).resolves.toHaveTextContent(
+      "Owner is required.",
+    );
+    await expect(canvas.getByLabelText(/Owner/)).toBeVisible();
+    await expect(canvas.getByLabelText(/Owner/)).toHaveFocus();
+    await expect(args.onSubmit).not.toHaveBeenCalled();
+    await userEvent.type(canvas.getByLabelText(/Owner/), "Integrations team");
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Save capability" }),
+    );
+    await expect(args.onSubmit).toHaveBeenCalledWith({
+      claim: "An event is stored once.",
+      owner: "Integrations team",
+    });
+  },
+};
