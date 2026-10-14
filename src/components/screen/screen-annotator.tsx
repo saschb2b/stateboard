@@ -35,6 +35,7 @@ import {
 import { StateChip } from "@/components/region/state-chip";
 import { createMutationQueue } from "@/lib/mutation-queue";
 import { mergeSavedRegion, type RegionPatch } from "@/lib/region-update";
+import { isInteractiveKeyEvent } from "@/lib/keyboard-shortcuts";
 import { clientRequest } from "@/lib/client-request";
 
 interface ScreenAnnotatorProps {
@@ -55,11 +56,8 @@ interface ScreenAnnotatorProps {
   authors: Record<string, UserRef>;
   /** Server render time, so the relative-time label needs no client clock. */
   now: number;
-  /**
-   * Fired when the user starts working on the canvas (any mousedown on the
-   * surface). Lets the shell tuck the screens sidebar away to free up room.
-   */
-  onWorkStart?: () => void;
+  /** Supporting product context, shown beside the selected region. */
+  renderRegionDetails?: (region: Region) => React.ReactNode;
   /**
    * A region on this screen to select — set by the command palette when it
    * jumps to a region. One-shot: `onFocusConsumed` fires once it's applied so
@@ -132,7 +130,7 @@ export function ScreenAnnotatorView({
   filterState = null,
   authors,
   now,
-  onWorkStart,
+  renderRegionDetails,
   focusRegionId,
   onFocusConsumed,
   createRegion,
@@ -149,6 +147,9 @@ export function ScreenAnnotatorView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<DraftRect | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [interactionInspectorOpen, setInteractionInspectorOpen] = useState<
+    boolean | null
+  >(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [enqueueMutation] = useState(createMutationQueue);
   const [creating, setCreating] = useState(false);
@@ -224,6 +225,17 @@ export function ScreenAnnotatorView({
     [regions, selectedId],
   );
 
+  // The inspector is contextual: it only claims canvas width when there's
+  // something to edit — a selected region, an in-progress draft, or the
+  // first-region onboarding on an empty screen. Otherwise it slides away so the
+  // canvas spans the full width.
+  const draftActive = Boolean(
+    draft && draft.w >= MIN_REGION_SIZE && draft.h >= MIN_REGION_SIZE,
+  );
+  const inspectorOpen =
+    interactionInspectorOpen ??
+    (Boolean(selected) || draftActive || regions.length === 0);
+
   // --- drawing -----------------------------------------------------------
 
   const toRel = useCallback(
@@ -250,11 +262,13 @@ export function ScreenAnnotatorView({
       }
       const rel = toRel(e.clientX, e.clientY);
       if (!rel) return;
+      surfaceRef.current?.focus();
+      setInteractionInspectorOpen(inspectorOpen);
       setSelectedId(null);
       setDraft({ x: rel.x, y: rel.y, w: 0, h: 0 });
       setDrawing(true);
     },
-    [readOnly, toRel],
+    [readOnly, toRel, inspectorOpen],
   );
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -279,6 +293,7 @@ export function ScreenAnnotatorView({
   };
 
   const handleMouseUp = () => {
+    setInteractionInspectorOpen(null);
     if (drag) {
       const region = regions.find((r) => r.id === drag.id);
       const { orig, id } = drag;
@@ -313,6 +328,8 @@ export function ScreenAnnotatorView({
     const region = regions.find((r) => r.id === id);
     const rel = toRel(e.clientX, e.clientY);
     if (!region || !rel) return;
+    surfaceRef.current?.focus();
+    setInteractionInspectorOpen(inspectorOpen);
     setDraft(null);
     setSelectedId(id);
     setDrag({
@@ -333,6 +350,8 @@ export function ScreenAnnotatorView({
     const region = regions.find((r) => r.id === id);
     const rel = toRel(e.clientX, e.clientY);
     if (!region || !rel) return;
+    surfaceRef.current?.focus();
+    setInteractionInspectorOpen(inspectorOpen);
     setSelectedId(id);
     setDrag({
       id,
@@ -576,16 +595,7 @@ export function ScreenAnnotatorView({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // skip while typing in form fields
-      const t = e.target as HTMLElement | null;
-      if (
-        t &&
-        (t.tagName === "INPUT" ||
-          t.tagName === "TEXTAREA" ||
-          t.isContentEditable)
-      ) {
-        return;
-      }
+      if (isInteractiveKeyEvent(e)) return;
 
       if (e.key === "Escape") {
         setDraft(null);
@@ -649,16 +659,6 @@ export function ScreenAnnotatorView({
   const aspect = `${screen.width} / ${screen.height}`;
   const hintVisible = !readOnly && Boolean(selectedId);
 
-  // The inspector is contextual: it only claims canvas width when there's
-  // something to edit — a selected region, an in-progress draft, or the
-  // first-region onboarding on an empty screen. Otherwise it slides away so the
-  // canvas spans the full width.
-  const draftActive = Boolean(
-    draft && draft.w >= MIN_REGION_SIZE && draft.h >= MIN_REGION_SIZE,
-  );
-  const inspectorOpen =
-    Boolean(selected) || draftActive || regions.length === 0;
-
   return (
     <Box
       sx={{
@@ -675,9 +675,9 @@ export function ScreenAnnotatorView({
           wide screenshot also uses the vertical space, no JS measurement. */}
       <Box
         sx={{
-          flex: 1,
+          flex: { xs: "0 0 auto", md: 1 },
           minWidth: 0,
-          minHeight: 0,
+          minHeight: { xs: "auto", md: 0 },
           display: "flex",
           flexDirection: "column",
           p: 2,
@@ -685,8 +685,8 @@ export function ScreenAnnotatorView({
       >
         <Box
           sx={{
-            flex: 1,
-            minHeight: 0,
+            flex: { xs: "0 0 auto", md: 1 },
+            minHeight: { xs: "auto", md: 0 },
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -694,7 +694,9 @@ export function ScreenAnnotatorView({
         >
           <Box
             ref={surfaceRef}
-            onMouseDownCapture={() => onWorkStart?.()}
+            role="group"
+            aria-label={t("annotationCanvas")}
+            tabIndex={0}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -702,7 +704,10 @@ export function ScreenAnnotatorView({
             sx={{
               position: "relative",
               width: "100%",
-              maxWidth: `calc((100dvh - 150px) * ${screen.width} / ${screen.height})`,
+              maxWidth: {
+                xs: "100%",
+                md: `calc((100dvh - 150px) * ${screen.width} / ${screen.height})`,
+              },
               aspectRatio: aspect,
               bgcolor: "background.paper",
               border: 1,
@@ -711,6 +716,11 @@ export function ScreenAnnotatorView({
               overflow: "hidden",
               cursor: readOnly ? "default" : "crosshair",
               userSelect: "none",
+              "&:focus-visible": {
+                outline: "2px solid",
+                outlineColor: "primary.main",
+                outlineOffset: 2,
+              },
             }}
           >
             {/* background image */}
@@ -789,6 +799,7 @@ export function ScreenAnnotatorView({
         aria-label={t("inspector")}
         aria-hidden={!inspectorOpen}
         sx={{
+          display: inspectorOpen ? "block" : { xs: "none", md: "block" },
           width: inspectorOpen ? { xs: "100%", md: 312 } : 0,
           flexShrink: 0,
           overflow: "hidden",
@@ -802,8 +813,8 @@ export function ScreenAnnotatorView({
         <Box
           sx={{
             width: { xs: "100%", md: 312 },
-            height: "100%",
-            overflowY: "auto",
+            height: { xs: "auto", md: "100%" },
+            overflowY: { xs: "visible", md: "auto" },
             p: 2,
           }}
         >
@@ -836,6 +847,7 @@ export function ScreenAnnotatorView({
                   {selected.notes}
                 </Typography>
               ) : null}
+              {renderRegionDetails?.(selected)}
               <RegionAttribution
                 region={selected}
                 authors={authors}
@@ -887,6 +899,7 @@ export function ScreenAnnotatorView({
                 label={t("notesOptional")}
                 multiline
                 minRows={2}
+                maxRows={6}
                 value={draftDefaults.notes}
                 onChange={(e) =>
                   setDraftDefaults((d) => ({ ...d, notes: e.target.value }))
@@ -947,6 +960,7 @@ export function ScreenAnnotatorView({
                 label={t("notes")}
                 multiline
                 minRows={2}
+                maxRows={6}
                 value={draftNotes}
                 onChange={(e) => {
                   setDraftNotes(e.target.value);
@@ -954,6 +968,7 @@ export function ScreenAnnotatorView({
                 }}
                 onBlur={() => flushText()}
               />
+              {renderRegionDetails?.(selected)}
               <Button
                 color="error"
                 variant="outlined"

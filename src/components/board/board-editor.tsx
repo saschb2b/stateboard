@@ -32,6 +32,13 @@ import { AddScreenDialog } from "@/components/screen/add-screen-dialog";
 import { PresentMode } from "./present-mode";
 import { CommandPalette, type PaletteAction } from "./command-palette";
 import { ScreenAnnotator } from "@/components/screen/screen-annotator";
+import { RegionFeatureLinks } from "@/components/screen/region-feature-links";
+import type {
+  Capability,
+  ProductContext,
+  RegionCapability,
+} from "@/lib/release-types";
+import type { ScreenEditorContext } from "@/lib/screen-editor-context";
 import { ScreenSidebar } from "@/components/screen/screen-sidebar";
 import { ScreenUploader } from "@/components/screen/screen-uploader";
 import { UserMenu } from "@/components/app/user-menu";
@@ -46,12 +53,16 @@ import { MONO_FONT } from "@/lib/theme";
 import { REGION_STATES, attributionName } from "@/lib/types";
 import { STATE_META } from "@/lib/state-meta";
 import type { CurrentMember } from "@/lib/auth";
+import { isInteractiveKeyEvent } from "@/lib/keyboard-shortcuts";
 import { clientRequest } from "@/lib/client-request";
 import { createMutationQueue } from "@/lib/mutation-queue";
 import { applySavedOrder } from "@/lib/screen-order";
 
 interface BoardEditorProps {
   board: Board;
+  initialCapabilities?: Capability[];
+  initialRegionCapabilities?: RegionCapability[];
+  initialContext?: ScreenEditorContext;
   initialScreens: ScreenWithRegions[];
   initialShareLinks: ShareLink[];
   viewer: CurrentMember;
@@ -68,6 +79,9 @@ export function BoardEditor({
   board,
   initialScreens,
   initialShareLinks,
+  initialCapabilities = [],
+  initialRegionCapabilities = [],
+  initialContext = {},
   viewer,
   authors,
   now,
@@ -82,10 +96,14 @@ export function BoardEditor({
   const orderVersion = useRef(0);
   const savedScreenOrder = useRef(initialScreens.map((screen) => screen.id));
   const shareCreation = useRef<Promise<ShareLink | null> | null>(null);
+  const [features, setFeatures] = useState({
+    capabilities: initialCapabilities,
+    links: initialRegionCapabilities,
+  });
   const [screens, setScreens] = useState<ScreenWithRegions[]>(initialScreens);
   const [shareLinks, setShareLinks] = useState<ShareLink[]>(initialShareLinks);
   const [activeId, setActiveId] = useState<string | null>(
-    initialScreens[0]?.id ?? null,
+    initialContext.screenId ?? initialScreens[0]?.id ?? null,
   );
   const [copied, setCopied] = useState(false);
   const [presenting, setPresenting] = useState(false);
@@ -107,7 +125,11 @@ export function BoardEditor({
   const [focusReq, setFocusReq] = useState<{
     screenId: string;
     regionId: string;
-  } | null>(null);
+  } | null>(
+    initialContext.screenId && initialContext.regionId
+      ? { screenId: initialContext.screenId, regionId: initialContext.regionId }
+      : null,
+  );
   // "⌘" on Mac, "Ctrl" elsewhere — resolved after mount to avoid a hydration
   // mismatch on the server-rendered header.
   const [modKey, setModKey] = useState("Ctrl");
@@ -159,6 +181,28 @@ export function BoardEditor({
     () => shareLinks.find((l) => l.revokedAt === null) ?? null,
     [shareLinks],
   );
+
+  const changeRegionFeature = async (
+    regionId: string,
+    capabilityId: string,
+    linked: boolean,
+  ) => {
+    if (!editable) return;
+    const product = await enqueueMutation("region-features", () =>
+      clientRequest<ProductContext>(`/api/boards/${board.id}/product`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          type: linked ? "region_capability.put" : "region_capability.delete",
+          data: { regionId, capabilityId },
+        }),
+      }),
+    );
+    setFeatures({
+      capabilities: product.capabilities,
+      links: product.regionCapabilities,
+    });
+  };
 
   const handleUploaded = (screen: ScreenWithRegions) => {
     setScreens((prev) => [...prev, screen]);
@@ -310,15 +354,7 @@ export function BoardEditor({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "p" && e.key !== "P") return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const t = e.target as HTMLElement | null;
-      if (
-        t &&
-        (t.tagName === "INPUT" ||
-          t.tagName === "TEXTAREA" ||
-          t.isContentEditable)
-      ) {
-        return;
-      }
+      if (isInteractiveKeyEvent(e)) return;
       if (presenting) return;
       if (screens.length === 0) return;
       e.preventDefault();
@@ -438,6 +474,14 @@ export function BoardEditor({
         breadcrumbs={[
           { label: common("boards"), href: "/boards" },
           { label: board.name, href: `/boards/${board.id}/releases` },
+          ...(initialContext.review
+            ? [
+                {
+                  label: initialContext.review.label,
+                  href: initialContext.review.href,
+                },
+              ]
+            : []),
           { label: t("screens") },
         ]}
         actions={
@@ -805,7 +849,17 @@ export function BoardEditor({
               filterState={filterState}
               authors={authorsWithViewer}
               now={now}
-              onWorkStart={() => setSidebarPreference(true)}
+              renderRegionDetails={(region) => (
+                <RegionFeatureLinks
+                  key={region.id}
+                  regionId={region.id}
+                  capabilities={features.capabilities}
+                  links={features.links}
+                  readOnly={!editable}
+                  preferredCapabilityId={initialContext.capabilityId}
+                  onChange={changeRegionFeature}
+                />
+              )}
               focusRegionId={
                 focusReq && active.id === focusReq.screenId
                   ? focusReq.regionId

@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   getBoard,
-  getBoardWithScreens,
+  readProductContext,
   getUserRefs,
   listShareLinks,
 } from "@/lib/db";
 import { requirePageMember } from "@/lib/auth-helpers";
+import { screenEditorContext } from "@/lib/screen-editor-context";
 import { BoardEditor } from "@/components/board/board-editor";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 /** Title the tab with the board's name so open editors stay tellable apart. */
@@ -26,10 +28,13 @@ export async function generateMetadata({
   return { title: board.name };
 }
 
-export default async function BoardEditorPage({ params }: PageProps) {
+export default async function BoardEditorPage({
+  params,
+  searchParams,
+}: PageProps) {
   const member = await requirePageMember("viewer");
   const { id } = await params;
-  const result = await getBoardWithScreens(id);
+  const result = await readProductContext(id, member.workspaceId);
   if (!result || result.board.workspaceId !== member.workspaceId) notFound();
   const links = await listShareLinks(id);
 
@@ -52,6 +57,9 @@ export default async function BoardEditorPage({ params }: PageProps) {
     <BoardEditor
       board={result.board}
       initialScreens={result.screens}
+      initialCapabilities={result.capabilities}
+      initialRegionCapabilities={result.regionCapabilities}
+      initialContext={screenEditorContext(result, await searchParams)}
       initialShareLinks={links}
       viewer={member}
       authors={authors}
