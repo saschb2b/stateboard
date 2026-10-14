@@ -22,7 +22,6 @@ import { WorkspaceNavigation } from "./workspace-navigation";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
@@ -254,18 +253,6 @@ export function ProductWorkspace({
               >
                 {common("history")}
               </Button>
-              {editable && (
-                <Button
-                  component={Link}
-                  href={`/boards/${product.board.id}/settings`}
-                  color="inherit"
-                  size="small"
-                  startIcon={<SettingsOutlinedIcon fontSize="small" />}
-                  sx={{ justifyContent: "flex-start", px: 1.5 }}
-                >
-                  {common("boardSettings")}
-                </Button>
-              )}
             </Stack>
           </Stack>
         }

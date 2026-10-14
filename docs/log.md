@@ -2,6 +2,8 @@
 
 ## 2026-10-14
 
+- **Correction**: Removed the duplicate Board settings link from the product navigation. Edit board beside the title is the single editing entry point on that screen; History remains available. Updated the contracts, paired specimens, and getting-started guide.
+
 - **Update**: Clarified mobile editing, sharing, presentation, and screen expansion in user guides. Distinguished assessment URL restoration from local view filters.
 
 - **Update**: Linked the board editing and wayfinding contracts, updated getting-started and sharing instructions, and added German editing and history terms to the localization glossary.

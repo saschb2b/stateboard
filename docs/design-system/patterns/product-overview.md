@@ -27,7 +27,7 @@ The product overview answers what the product contains, which candidate the chec
 | Region                | Order and content                                                                                                    | Reflow                                                        |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | Product heading       | Product name, short purpose, visible Edit board action for editors                                                   | Keep the heading first and wrap the purpose.                  |
-| Navigation            | Existing 184px rail with Overview selected, Board settings and History as tools                                      | Below 1200px, show horizontal navigation beneath the heading. |
+| Navigation            | Existing 184px rail with Overview selected and History as a tool                                                     | Below 1200px, show horizontal navigation beneath the heading. |
 | Latest assessment     | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.              |
 | Findings              | A labelled disclosure inside the assessment band                                                                     | Expand beneath the band without opening another column.       |
 | Active capabilities   | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.     |
@@ -48,7 +48,7 @@ The six coverage rows describe the latest assessment's acceptance checks. Show n
 
 QA keeps a visible category chip outside its collapsed filters. Clearing the chip or resetting filters also removes the category from the URL.
 
-Keep **Edit board** beside the product identity for members with editing permission. It opens name and description settings. Keep **Board settings** and **History** visible in the product tools. Returning from these pages uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
+Keep **Edit board** beside the product identity for members with editing permission. It opens name and description settings. Use this single entry point for board editing on the product screen. Keep **History** in the product tools. Returning from either page uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
 
 Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. They correspond to Assessments, Capabilities, Components, and Connections.
 
