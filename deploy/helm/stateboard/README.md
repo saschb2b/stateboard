@@ -1,66 +1,67 @@
 # StateBoard Helm chart
 
-Kubernetes deployment for [StateBoard](../../../README.md), status reporting for visual products.
+Chart `1.1.0` deploys StateBoard `2026.10.0`, with OIDC sign-in, Postgres, persistent media, and release reviews. The image defaults to `ghcr.io/saschb2b/stateboard:2026.10.0`.
 
-## TL;DR
+## Configure the deployment
+
+Copy the relevant settings from [values.yaml](./values.yaml) into a private values file. Configure `auth.baseUrl`, the OIDC issuer and client, and a session secret. Existing Kubernetes Secrets are supported through `auth.existingSecret` and `externalDatabaseUrlExistingSecret`.
+
+Register `<auth.baseUrl>/api/auth/callback/keycloak` as a valid redirect URI in your identity provider. Terminate HTTPS at your ingress or reverse proxy.
+
+The chart bundles Postgres by default. Set `postgresql.enabled=false` and configure an external database to use an existing server. Replace the example database password before installation. Keep secrets out of Git and shell history.
+
+## First installation
+
+The migration hook runs before ordinary chart resources exist. Bootstrap those resources first, with application replicas and migration disabled:
 
 ```bash
+helm dependency build deploy/helm/stateboard
 helm install stateboard ./deploy/helm/stateboard \
   --namespace stateboard --create-namespace \
-  --set image.repository=ghcr.io/saschb2b/stateboard \
-  --set image.tag=0.1.0
+  --values stateboard-values.yaml \
+  --set replicaCount=0 --set migrate.enabled=false --wait
 ```
 
-Then port-forward and open it:
+Confirm that Postgres is accepting connections. Then run the migration hook and start the application:
 
 ```bash
-kubectl -n stateboard port-forward svc/stateboard 3000:80
-open http://localhost:3000
+helm upgrade stateboard ./deploy/helm/stateboard \
+  --namespace stateboard \
+  --values stateboard-values.yaml \
+  --set replicaCount=1 --set migrate.enabled=true --wait
 ```
 
-## Scope (v0)
+This sequence also creates the chart's service account before the migration Job uses it. Use it for both bundled and external databases on a new installation.
 
-The chart matches v0 of StateBoard:
+## Upgrade to 2026.10.0
 
-- **Single replica.** SQLite on a `ReadWriteOnce` PVC means there is exactly one writer. The chart will refuse to render if `replicaCount > 1`.
-- **One PVC** mounted at `/data`. Holds both the SQLite database (`db/stateboard.db`) and the uploaded screenshots (`uploads/`). **Back this up.** Losing it loses every board.
-- **No auth, no ingress by default.** v0 lives behind your VPN or a `kubectl port-forward`. Enable the bundled ingress only after you've put auth in front of it (e.g. an oauth2-proxy sidecar via `extraContainers`).
-- **Recreate strategy.** RollingUpdate would briefly run two pods sharing the volume, which corrupts SQLite. Don't change this until the chart supports Postgres.
-- **No outbound calls.** Telemetry is off; the app does not phone home. The chart is safe to run in airgapped clusters.
+1. Back up Postgres and the application media volume.
+2. Change the identity provider callback from `/api/auth/oauth2/callback/keycloak` to `/api/auth/callback/keycloak`.
+3. Run `helm dependency build deploy/helm/stateboard`.
+4. Upgrade with your private values file and `migrate.enabled=true`.
+5. Verify sign-in, an existing board, and a release review.
 
-## Values reference
+The pre-upgrade Job applies pending SQL migrations, including `0008` through `0010` for release readiness. If migrations run outside Helm, disable the hook and complete them before serving the new image.
 
-| Key                                   | Default                        | Notes                                                   |
-| ------------------------------------- | ------------------------------ | ------------------------------------------------------- |
-| `image.repository`                    | `ghcr.io/saschb2b/stateboard`  | Override to your registry mirror in airgapped clusters. |
-| `image.tag`                           | `""` (uses `Chart.AppVersion`) | Pin this in production.                                 |
-| `replicaCount`                        | `1`                            | **Do not change.** Hard-blocked above 1 in v0.          |
-| `persistence.enabled`                 | `true`                         | Set `false` only for ephemeral demos.                   |
-| `persistence.size`                    | `5Gi`                          | Each screenshot is ~0.5 to 2 MB; 5 GiB holds thousands. |
-| `persistence.storageClass`            | `""`                           | `""` = cluster default; `"-"` = none.                   |
-| `persistence.existingClaim`           | `""`                           | Mount a PVC managed elsewhere instead of creating one.  |
-| `service.type`                        | `ClusterIP`                    | Use `LoadBalancer` only behind auth.                    |
-| `service.port` / `service.targetPort` | `80` / `3000`                  | The container always listens on 3000.                   |
-| `ingress.enabled`                     | `false`                        | See above re: auth.                                     |
-| `resources`                           | 50m/128Mi → 500m/512Mi         | Idle StateBoard is tiny; bump for large boards.         |
-| `strategy.type`                       | `Recreate`                     | **Do not change** while on SQLite.                      |
-| `extraEnv`                            | `[]`                           | Inject extra env vars (e.g. for v1 OIDC config).        |
-| `extraContainers`                     | `[]`                           | Sidecars (oauth2-proxy, log shippers).                  |
-| `podSecurityContext`                  | runs as UID 1000 (`node`)      | Matches the Dockerfile.                                 |
+## Storage and replicas
 
-Full schema lives in `values.yaml`.
+Postgres stores product records, evidence, decisions, and history. The application volume stores `uploads` and private `release-assets`. Back up both the database and media. A volume snapshot alone is insufficient.
 
-## Verifying without a cluster
+The default media volume is 10 GiB with `ReadWriteOnce`. Multiple replicas require shared `ReadWriteMany` storage. S3 storage remains deferred. Existing board uploads retain their public image behavior; confidential release evidence uses private media routes.
 
-```bash
-helm lint deploy/helm/stateboard
-helm template stateboard deploy/helm/stateboard | kubectl apply --dry-run=client -f -
-```
+## Key settings
 
-## Backups
+| Setting                     | Default           | Purpose                                                                        |
+| --------------------------- | ----------------- | ------------------------------------------------------------------------------ |
+| `image.tag`                 | Chart app version | Pin the application image.                                                     |
+| `replicaCount`              | `1`               | Application replicas. Use `0` for initial bootstrap.                           |
+| `postgresql.enabled`        | `true`            | Use the bundled database.                                                      |
+| `persistence.size`          | `10Gi`            | Application media capacity.                                                    |
+| `persistence.existingClaim` | Empty             | Use a volume claim managed separately.                                         |
+| `persistence.accessMode`    | `ReadWriteOnce`   | Use `ReadWriteMany` for multiple replicas.                                     |
+| `migrate.enabled`           | `true`            | Run migrations before installation or upgrade.                                 |
+| `auth.existingSecret`       | Empty             | Read authentication settings from an existing Secret.                          |
+| `caCert`                    | Empty             | Trust your identity provider's internal CA without disabling TLS verification. |
+| `ingress.enabled`           | `false`           | Expose the service through your ingress controller.                            |
 
-Everything that matters is on the PVC. A nightly snapshot of the volume (Velero, CSI snapshot, or a sidecar that `tar`s `/data` to your object store) is enough.
-
-## Why no chart for v1+ yet
-
-`replicaCount > 1`, Postgres, and S3 are all real concerns and they will land in a follow-up chart version when StateBoard itself supports them. Until then, the explicit guardrail (`fail` on `replicaCount > 1`) is on purpose: it is much better to fail at `helm install` than to discover SQLite corruption at 3am.
+See [values.yaml](./values.yaml) for all settings and [repository verification](../../../docs/engineering/verification.md) for Helm validation. No cluster deployment is required for the lint and manifest checks.

@@ -48,7 +48,7 @@ jobs:
             type=sha,prefix=sha-,format=short
           labels: |
             org.opencontainers.image.title=StateBoard
-            org.opencontainers.image.description=Status reporting for visual products. Show, don't tell.
+            org.opencontainers.image.description=Release readiness for every role.
             org.opencontainers.image.licenses=MIT
 
       - name: Build (and push on main / tags)
