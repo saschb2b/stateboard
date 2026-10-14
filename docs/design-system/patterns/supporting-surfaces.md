@@ -1,10 +1,11 @@
 ---
 type: Guideline
 title: Supporting screen contracts
-description: Layout and interaction requirements for boards, settings, sharing, and presentation.
+description: Layout and interaction requirements for boards, screen annotations, feature links, settings, sharing, and presentation.
 status: draft
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/review-clarity-research.md
   - resource: docs/design-system/references/ux-navigation-research.md
   - resource: src/components/app/page-breadcrumbs.tsx
   - resource: src/components/board/board-editor.tsx
@@ -19,6 +20,12 @@ sources:
   - resource: src/components/board/board-share.tsx
   - resource: src/components/board/present-mode.tsx
   - resource: src/components/region/region-overlay.tsx
+  - resource: src/components/capability/capability-visual-view.tsx
+  - resource: src/components/screen/region-feature-links.tsx
+  - resource: src/components/screen/screen-sidebar.tsx
+  - resource: src/components/screen/screen-annotator.tsx
+  - resource: src/components/screen/add-screen-dialog.tsx
+  - resource: src/lib/screen-editor-context.ts
 ---
 
 # Screen contracts
@@ -43,9 +50,21 @@ On compact screenshots, hide region titles while retaining the state chip. A tap
 
 # Visual editor
 
-Keep desktop search in the header's normal layout so it cannot overlap the board identity or actions. As the header narrows, move search, visual-state filters, sharing, and Present into **More board options**. Preserve their labels and selected filter state. The screen rail starts collapsed below 600px. **Expand screens** reveals its names and controls, and the user's choice remains active while the editor stays open.
+Keep desktop search in the header's normal layout so it cannot overlap the board identity or actions. As the header narrows, move search, visual-state filters, sharing, and Present into **More board options**. Preserve their labels and selected filter state. The screen rail starts collapsed below 600px. **Expand screens** reveals its names and controls. Change that choice only through an explicit rail action while the editor stays open.
 
 The editor's **More board options** menu exposes **Edit board** to members with editing permission. The empty state also exposes this action. Both open name and description settings. The board breadcrumb links to the overview and does not rename the board.
+
+Opening the editor from a release preserves the release, selected feature, and requested image. Keep a visible return to that release's Screens view. The release workspace retains **Manage screens** with existing images and exposes **Edit screen** for each image.
+
+The selected region exposes **Features shown here**, existing links, and controls to link or unlink a feature. Put the originating feature first when it remains available. Keep linking inside the inspector and show pending or failed saves there. Viewers can read the mappings. Editing requires the existing product permissions.
+
+Limit the notes field to six visible rows with internal scrolling, so long source text does not bury feature links.
+
+At narrow widths, stack the image above the inspector in normal flow. Preserve the image's natural aspect ratio and prevent tall details from shrinking its canvas to zero height. Keep the side-by-side inspector on desktop.
+
+At each gesture start, retain the inspector's visible state, including an unsaved draft. Keep the image layout stable during drawing, moving, and resizing, then update after pointer release. Global region shortcuts ignore handled events and interactive controls, including the feature picker. Screen Actions → Rename waits for the menu to close before focusing the name input. Upload and image reuse always offer **Cancel**. Prevent dismissal and tab changes while saving.
+
+Source notes belong to the annotated region and remain accessible through keyboard and touch. Preserve the authored source, capture context, and unknowns. A vendor image or an older screenshot may explain a feature without establishing a result for the current candidate. The [screen exercise](../references/review-clarity-research.md#screens-and-feature-links) records the evidence boundary and the linking friction.
 
 # Board details and return paths
 

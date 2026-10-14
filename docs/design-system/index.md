@@ -20,16 +20,16 @@ okf_version: "0.2"
 - [Product overview](patterns/product-overview.md) - One release review summary followed by product features and check coverage, with architecture as optional context.
 
 - [Product landing page](patterns/product-landing.md) - An editorial introduction, interactive assessment preview, role routes, and agent maintenance explanation.
-- [Release review workspace](patterns/review-workspace.md) - A candidate review with features, contextual checks and results, and a separate owner decision.
-- [Supporting screen contracts](patterns/supporting-surfaces.md) - Layout and interaction requirements for boards, settings, sharing, and presentation.
+- [Release review workspace](patterns/review-workspace.md) - A candidate review with linked screens, contextual checks and results, and a separate owner decision.
+- [Supporting screen contracts](patterns/supporting-surfaces.md) - Layout and interaction requirements for boards, screen annotations, feature links, settings, sharing, and presentation.
 
 ## Behaviors
 
-- [Review interactions](behaviors/interaction.md) - Keyboard, status, disclosure, and responsive behavior for release review.
+- [Review interactions](behaviors/interaction.md) - Keyboard, status, disclosure, screen linking, and return paths for release review.
 
 ## References
 
-- [Release review clarity research](references/review-clarity-research.md) - UX literature, simulated role findings, and real-product use behind contextual release review.
+- [Release review clarity research](references/review-clarity-research.md) - UX literature, simulated role findings, and real-product screen linking behind contextual release review.
 
 - [Product overview research](references/product-overview-research.md) - Visual references and hierarchy guidance for a compact product state overview.
 

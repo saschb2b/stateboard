@@ -1,13 +1,20 @@
 ---
 type: Accessibility
 title: Review interactions
-description: Keyboard, status, disclosure, and responsive behavior for release review.
+description: Keyboard, status, disclosure, screen linking, and return paths for release review.
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
   - resource: docs/design-system/references/review-clarity-research.md
   - resource: src/components/app/page-breadcrumbs.tsx
   - resource: src/components/board/board-editor.tsx
+  - resource: src/components/capability/capability-visual-view.tsx
+  - resource: src/components/release/release-perspectives.tsx
+  - resource: src/components/screen/region-feature-links.tsx
+  - resource: src/components/screen/screen-sidebar.tsx
+  - resource: src/components/screen/screen-annotator.tsx
+  - resource: src/components/screen/add-screen-dialog.tsx
+  - resource: src/lib/screen-editor-context.ts
   - resource: src/components/release/release-location.ts
   - resource: src/components/board/board-settings.tsx
   - resource: src/components/release/use-release-navigation.ts
@@ -43,6 +50,10 @@ Each tab connects to its panel through `aria-controls`. The current panel uses `
 
 A category deep link opens its checks and exposes the active category chip even while advanced filters remain hidden. Chip removal and **Reset filters** update the URL. Category changes preserve exact-check focus, unrelated query parameters, and fragments. Browser navigation and reload must restore the category filter. These controls only filter the displayed checks.
 
+The Screens feature filter reads and updates the existing `capability` query parameter. Reload, Back, and Forward restore that selection. Included feature names open the feature's Checks view. **Notes and source** uses a native disclosure beside each annotated region. Keep the authored notes intact and apply the same safe source-link rendering as check methods.
+
+**Open full-size image** opens the original media in a separate tab. Keep this inspection action available to readers. Feature state reflects the selected review's scope. Show **Not in release review** for absent scope and **Excluded** for an explicit exclusion, rather than substituting an evidence state.
+
 Every control has a visible keyboard focus ring. Status labels state Ready, Blocked, or Needs evidence and do not rely on hue alone. Keep label text visible at narrow widths. Wrap long names and references inside their container.
 
 Evidence history retains the full candidate, run, and configuration references. Wrap unbroken hashes at narrow widths rather than clipping or shortening their identities.
@@ -71,7 +82,9 @@ Place **Add check** and **Record result** within the expanded release feature. K
 
 Result entry asks what happened and what the reviewer observed. Source and time remain available in details. An automatically assigned manual review reference removes a field without removing attribution or retry identity.
 
-Link a supporting system or screen from its feature. The form inherits the feature rather than asking for it again. Existing record selectors remain available for reuse. Keep these shortcuts within the same permission, scope, revision, and evidence rules as the full forms. The [clarity study](../references/review-clarity-research.md) explains the distinction between reducing work and hiding required information.
+Link a supporting system or screen from its feature. The form inherits the feature rather than asking for it again. Existing record selectors remain available for reuse.
+
+In the image editor, link features directly from the selected region's **Features shown here** section. Put the originating feature first in the available choices. Keep these shortcuts within the same permission, scope, revision, and evidence rules as the full forms. The [clarity study](../references/review-clarity-research.md) explains the distinction between reducing work and hiding required information.
 
 # Location and editing
 
@@ -82,6 +95,14 @@ Parent links work when the page opens directly, without prior browser history. D
 The product's section navigation remains available for sibling destinations. Screens, settings, and history identify their board parent. A release review also links to its review list. Keep editing separate from breadcrumb navigation through a visible **Edit board** action. Follow the [board details contract](../patterns/supporting-surfaces.md#board-details-and-return-paths) for saving, discarding, errors, and draft retention.
 
 In the visual editor, **More board options** keeps the actions that no longer fit in the header. Its menu retains labelled search, sharing, presentation, and checked visual-state filters. Keep the menu and screen-rail expansion reachable by keyboard. The board title remains a location cue. Use **Edit board** for name and description changes.
+
+Release screen actions carry `release` and the selected `capability` into the editor URL. **Edit screen** also carries `screen`. A valid `region` selects an annotation within that image. Resolve all identities against the current board, including the release and the region's parent screen. The editor keeps a breadcrumb return to the release's Screens view and selected feature. The mobile trail exposes that immediate parent.
+
+Screen Actions → Rename transfers focus after the menu closes, so menu focus restoration cannot dismiss the input. Freeze the inspector's current visibility at every gesture start, including when it shows an unsaved draft. Keep that layout through drawing, moving, and resizing, then update after pointer release. A canvas action must not collapse the screen rail. Upload and reuse dialogs retain a visible **Cancel** action, with dismissal and tab changes disabled during saving.
+
+Global region shortcuts ignore handled events and events from interactive controls. Arrow keys inside feature pickers, menus, or fields must not move or resize a region. Keep text editing and control actions within the focused control.
+
+The canvas exposes a labelled **Screen annotations** focus group with a visible theme focus outline. Selecting or drawing on the canvas gives it keyboard focus. Picker typeahead must not trigger presentation or region shortcuts. At narrow widths, keep the image above the inspector without overlap and preserve desktop's side panel.
 
 Use the [wayfinding study](../references/ux-navigation-research.md) for source guidance. Verify desktop and mobile trails with long names, keyboard focus, both languages, and direct deep links. Check Back and Forward after switching product sections or opening a finding from another assessment view. Parent links must update the visible section as well as the address.
 

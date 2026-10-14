@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Release review clarity research
-description: UX literature, simulated role findings, and real-product use behind contextual release review.
+description: UX literature, simulated role findings, and real-product screen linking behind contextual release review.
 tags: [research, clarity, forms, progressive-disclosure]
 status: draft
 generated: { by: codex/gpt-6, at: 2026-10-14 }
@@ -34,6 +34,14 @@ sources:
   - id: release-notes
     resource: https://learn.chatgpt.com/docs/changelog
     title: ChatGPT and Codex changelog
+  - id: screen-use
+    resource: Agent use of the ChatGPT desktop app product board to upload official reference images, annotate regions, and link features on 2026-10-14; no independent human participants.
+  - id: browser-image
+    resource: https://learn.chatgpt.com/docs/changelog#codex-2026-04-16-app
+    title: Official browser image in the Codex app 26.415 entry
+  - id: project-image
+    resource: https://learn.chatgpt.com/docs/changelog#codex-2026-02-02
+    title: Official app image in the Codex launch entry
   - resource: src/components/release/assessment-create-form.tsx
   - resource: src/components/evidence/verification-method.tsx
   - resource: src/components/evidence/evidence-history.tsx
@@ -89,6 +97,44 @@ Project and chat reads succeeded through the app tools. An app-created worktree 
 
 File and review opening requests returned queued responses, which did not verify rendered previews. The terminal snapshot was blank, and native-app control was unavailable. These limits constrain the recorded claims. They do not establish that the product features failed.[^product-use]
 
+# Screens and feature links
+
+The screen pass used original OpenAI images to connect visible interface areas with the product's existing features. Native capture remained unavailable. Each image retained its source and limitations.[^screen-use]
+
+The board holds two reference screens, three regions, and three feature mappings. The agent saved each mapping through the region's new inline controls.[^screen-use]
+
+| Region               | Linked product feature                      |
+| -------------------- | ------------------------------------------- |
+| Project navigation   | Find and continue project work              |
+| Built-in browser     | Inspect a local app in the built-in browser |
+| Changed-file summary | Review code changes                         |
+
+The browser image shows a conversation beside a local web preview, with a numbered comment on a chart. Its source entry describes release `26.415` on 2026-04-16.[^browser-image] The other image shows project navigation and a new-chat composer. It appears in the 2026-02-02 launch entry. Its downloaded contents have no open review pane, despite the page's alt text.[^project-image]
+
+These are vendor-published references. Mutable image URLs do not establish the exact captured build. Neither image proves behavior in the installed Linux candidate. The current documentation also contains HTML interface mockups, which this pass excluded. A linked region declares where a feature appears. It does not create a passing result.[^screen-use]
+
+| Observed friction                                                           | Required correction                                                                       |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Screens ignored a feature selected in the URL.                              | Restore the selected feature when opening or revisiting the view.                         |
+| Manage screens disappeared after the first upload.                          | Keep the management action available in empty and populated states.                       |
+| Linked feature names did not open their review context.                     | Let the reviewer follow the link to that feature's checks.                                |
+| Region provenance depended on hovering.                                     | Provide the same context through keyboard focus and touch.                                |
+| Dense source images were difficult to inspect inside the review.            | Open the original image separately while keeping the review in place.                     |
+| A shared screen's feature could appear in a review that did not include it. | Distinguish absent or excluded scope from missing evidence.                               |
+| Opening the image editor lost the release return path.                      | Carry the release and selected feature through editing.                                   |
+| Screen Actions → Rename dismissed the new input during focus restoration.   | Transfer focus to the input after the menu closes.                                        |
+| Linking a region required leaving the image.                                | Put feature linking beside the region and preserve the selected target.                   |
+| Arrow keys in the feature picker also moved the selected region.            | Ignore handled key events and interactive controls in global region shortcuts.            |
+| Inspector visibility could change the image layout when a gesture began.    | Retain the current inspector layout through every gesture, including unsaved drafts.      |
+| Upload and image reuse lacked a consistent visible cancellation action.     | Keep Cancel visible and protect pending saves from dismissal.                             |
+| At 390px, the image overlapped the region heading above a tall inspector.   | Stack the image and inspector in normal flow, retaining the image's natural aspect ratio. |
+
+These findings came from actual StateBoard interactions, not inferred persona preferences.[^screen-use] The [screen contracts](../patterns/supporting-surfaces.md#visual-editor) and [interaction rules](../behaviors/interaction.md#location-and-editing) define the resulting behavior. Screens remain optional supporting context in the [release workspace](../patterns/review-workspace.md).
+
+Runtime retests kept the Rename input active and closed the upload dialog through Cancel. The image rectangle stayed constant during drawing. The return breadcrumb preserved the selected feature. These checks covered the stated StateBoard paths and left the recorded two screens, three regions, and three mappings intact.[^screen-use]
+
+Long provenance notes grew to about 440px and pushed feature links below the fold at 1440 × 1000. Limit the notes field to six visible rows and retain its full text through scrolling.[^screen-use]
+
 # Review criteria
 
 Retest the [review workflow](../../product/model.md) without an AI connection. A product manager should explain scope and the current blocker. An engineer should add a check to the selected feature without selecting that feature again. QA should record a result and identify the exact candidate it covers. Operations should find relevant checks without treating an empty category as passed. An owner should distinguish a calculated result from the final human decision.[^application]
@@ -114,3 +160,9 @@ Screens, architecture, and AI remain optional for this path. A new candidate sti
 [^product-use]: Agent observations from creating and inspecting the real local product board on 2026-10-14. These observations cover the stated paths and candidate only.
 
 [^release-notes]: OpenAI's changelog identifies Codex app 26.410 and its publication date. Release notes describe intended changes, not a runtime test.
+
+[^screen-use]: Agent observations while maintaining board `koxCb-c26Umw` on 2026-10-14. The agent retained official originals and their source manifest locally as ignored browser artifacts.
+
+[^browser-image]: [Original browser image](https://learn.chatgpt.com/images/codex/app/in-app-browser-light.webp), inspected at 3976 × 2688 pixels on 2026-10-14.
+
+[^project-image]: [Original project image](https://learn.chatgpt.com/images/codex/app/codex-app-basic-light.webp), inspected at 3600 × 2026 pixels on 2026-10-14.

@@ -1,7 +1,7 @@
 ---
 type: Pattern
 title: Release review workspace
-description: A candidate review with features, contextual checks and results, and a separate owner decision.
+description: A candidate review with linked screens, contextual checks and results, and a separate owner decision.
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
@@ -16,6 +16,8 @@ sources:
   - resource: src/components/evidence/check-editor.tsx
   - resource: src/components/evidence/verification-method.tsx
   - resource: src/components/evidence/evidence-form.tsx
+  - resource: src/components/capability/capability-visual-view.tsx
+  - resource: src/components/release/release-perspectives.tsx
   - resource: docs/design-system/references/interface-research.md
   - resource: docs/design-system/references/product-overview-research.md
 examples:
@@ -42,6 +44,12 @@ The verdict, validation context, target, and human decision precede feature scop
 Show each feature's name, owner, and own-check state in its collapsed row. Expansion reveals its retained outcome, scope reason, checks, and results. **Add check** keeps this feature selected and starts from its outcome. The claim remains editable. **Record result** stays beside the check. Supporting architecture and screens are available when they explain that feature. Attention rows state the claim, evidence state, and owner. Selecting one opens its evidence.
 
 The primary destinations are **Overview**, **Checks**, and **Decision**. **Screens** and **Architecture** form secondary supporting context. Operational, security, and data concerns filter the same checks instead of creating another maintenance task. Use **Checks & results** as the check page heading.
+
+Screens restores the feature filter from the review URL. Keep **Manage screens** visible after images exist and offer **Edit screen** beside each image. Editing preserves the release, selected feature, and chosen screen. Included feature names open their focused checks. Region notes and source references use a keyboard-accessible disclosure.
+
+**Open full-size image** opens the original media separately and keeps the review in place. Wrap long image titles and actions at narrow widths. A linked feature outside the review shows **Not in release review**. Explicitly excluded scope shows **Excluded**. Neither state becomes **Needs evidence** through a missing lookup.
+
+State that screens may show another product version. Feature links describe the interface. Applicable check results establish candidate readiness. An official reference image retains its source and unknown capture version. The [screen exercise](../references/review-clarity-research.md#screens-and-feature-links) records the distinction and the observed friction.
 
 On mobile, put the supporting-context label and its tabs in one row below the primary tabs. On desktop, place the label above its tabs. Keep legacy view URLs functional. The [clarity study](../references/review-clarity-research.md) records the rationale.
 

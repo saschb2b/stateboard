@@ -6,4 +6,4 @@
 - [Product overview research](product-overview-research.md) - Visual references and hierarchy guidance for a compact product state overview.
 - [Board editing and wayfinding research](ux-navigation-research.md) - Inspected project interfaces and guidance for board editing, parent navigation, and save feedback.
 
-- [Release review clarity research](review-clarity-research.md) - UX literature, simulated role findings, and real-product use behind contextual release review.
+- [Release review clarity research](review-clarity-research.md) - UX literature, simulated role findings, and real-product screen linking behind contextual release review.

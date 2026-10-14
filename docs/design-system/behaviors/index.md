@@ -1,3 +1,3 @@
 # Behaviors
 
-- [Review interactions](interaction.md) - Keyboard, status, disclosure, and responsive behavior for release review.
+- [Review interactions](interaction.md) - Keyboard, status, disclosure, screen linking, and return paths for release review.
