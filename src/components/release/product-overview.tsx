@@ -11,6 +11,7 @@ import type { ProductContext } from "@/lib/release-types";
 import { ReadinessChip } from "./readiness-summary";
 import { ProductOverviewCapabilities } from "./product-overview-capabilities";
 import { ProductOverviewCoverage } from "./product-overview-coverage";
+import { ReviewGuide } from "./review-guide";
 import { useServerClock } from "./use-server-clock";
 import type { ProductSection } from "./use-product-section";
 
@@ -64,6 +65,7 @@ export function ProductOverview({
     model.findings.length + model.missingAcceptance.length + Number(emptyScope);
   return (
     <Stack spacing={3}>
+      <ReviewGuide />
       <Box
         component="section"
         aria-label={t("latestAssessment")}

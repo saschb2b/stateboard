@@ -33,7 +33,7 @@ export const LatestAndHistory: Story = {
   },
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole("link", { name: "Review assessment" }),
+      canvas.getByRole("link", { name: "Open release review" }),
     ).toHaveAttribute(
       "href",
       `/boards/${example.product.board.id}/releases/${example.detail.assessment.id}`,
@@ -53,7 +53,7 @@ export const FirstRelease: Story = {
   args: { product: { ...example.product, releases: [] } },
   play: async ({ canvas, args }) => {
     await userEvent.click(
-      canvas.getByRole("button", { name: "New assessment" }),
+      canvas.getByRole("button", { name: "New release review" }),
     );
     await expect(args.onCreate).toHaveBeenCalled();
   },
@@ -65,10 +65,10 @@ export const ViewerEmptyState: Story = {
   },
   play: async ({ canvas, args }) => {
     await expect(
-      canvas.queryByRole("button", { name: "Add capabilities" }),
+      canvas.queryByRole("button", { name: "Add features" }),
     ).toBeNull();
     await userEvent.click(
-      canvas.getByRole("button", { name: "View capabilities" }),
+      canvas.getByRole("button", { name: "View features" }),
     );
     await expect(args.onSetup).toHaveBeenCalled();
   },

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { useRef } from "react";
-import { Alert, Paper, Stack, Typography } from "@mui/material";
+import { Paper, Stack, Typography } from "@mui/material";
 import { MutationForm } from "@/components/release/mutation-form";
 import type {
   ReleaseAssessment,
@@ -30,7 +30,7 @@ export function EvidenceForm({
   const eventId = useRef<string | null>(null);
   return (
     <Stack spacing={2}>
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: 2, overflowWrap: "anywhere" }}>
         <Typography variant="subtitle2">
           {t("evidence.claimRevision", {
             claim: check.claim,
@@ -53,7 +53,9 @@ export function EvidenceForm({
           {t("evidence.configuration", { value: assessment.configurationRef })}
         </Typography>
       </Paper>
-      <Alert severity="info">{t("evidence.contextHelp")}</Alert>
+      <Typography variant="body2" color="text.secondary">
+        {t("evidence.contextHelp")}
+      </Typography>
       <MutationForm
         fields={[
           {
@@ -70,24 +72,46 @@ export function EvidenceForm({
           {
             name: "summary",
             label: t("evidence.observation"),
+            helper: t("evidence.observationHelp"),
             type: "textarea",
             required: true,
           },
-          {
-            name: "observedAt",
-            label: t("evidence.observedAt"),
-            type: "datetime-local",
-            required: true,
-            helper: t("evidence.localTime"),
-          },
-          { name: "source", label: t("evidence.source"), required: true },
-          { name: "runRef", label: t("evidence.runReference"), required: true },
           {
             name: "referenceUrl",
             label: t("evidence.supportingLink"),
             helper: t("evidence.linkHelp"),
           },
         ]}
+        details={{
+          label: t("evidence.sourceDetails"),
+          summary: (values) => {
+            const source =
+              values.source === "manual-review"
+                ? t("evidence.manualSource")
+                : String(values.source);
+            return values.runRef
+              ? t("evidence.sourceReferenceSummary", {
+                  source,
+                  reference: String(values.runRef),
+                })
+              : t("evidence.sourceSummary", { source });
+          },
+          fields: [
+            {
+              name: "observedAt",
+              label: t("evidence.observedAt"),
+              type: "datetime-local",
+              required: true,
+              helper: t("evidence.localTime"),
+            },
+            { name: "source", label: t("evidence.source"), required: true },
+            {
+              name: "runRef",
+              label: t("evidence.runReference"),
+              helper: t("evidence.referenceHelp"),
+            },
+          ],
+        }}
         initial={{
           result: "inconclusive",
           observedAt: new Date(now - new Date(now).getTimezoneOffset() * 60_000)
@@ -108,6 +132,9 @@ export function EvidenceForm({
             type: "evidence.create",
             data: {
               ...values,
+              runRef:
+                String(values.runRef).trim() ||
+                `manual-review:${eventId.current}`,
               observedAt,
               checkId: check.id,
               checkRevision: check.revision,

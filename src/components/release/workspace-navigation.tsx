@@ -26,68 +26,101 @@ export function WorkspaceNavigation<T extends string>({
   sections,
   onChange,
   idPrefix,
+  secondary,
 }: {
   label: string;
   value: T;
   sections: WorkspaceSection<T>[];
   onChange: (value: T) => void;
   idPrefix?: string;
+  secondary?: { label: string; sections: WorkspaceSection<T>[] };
 }) {
   const theme = useTheme();
   const vertical = useMediaQuery(theme.breakpoints.up("lg"));
-  return (
-    <Box>
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: { xs: "none", lg: "block" }, px: 1.5, mb: 1.5 }}
+  function group(groupLabel: string, items: WorkspaceSection<T>[]) {
+    return (
+      <Box
+        sx={
+          secondary && groupLabel === secondary.label
+            ? {
+                display: { xs: "flex", lg: "block" },
+                alignItems: "center",
+                gap: 0.5,
+              }
+            : undefined
+        }
       >
-        {label}
-      </Typography>
-      <Tabs
-        value={value}
-        onChange={(_, next: T) => onChange(next)}
-        orientation={vertical ? "vertical" : "horizontal"}
-        variant="scrollable"
-        scrollButtons={vertical ? false : "auto"}
-        slots={{ scrollButtons: NavigationScrollButton }}
-        allowScrollButtonsMobile
-        aria-label={label}
-        sx={{
-          minHeight: 40,
-          borderBottom: { xs: 1, lg: 0 },
-          borderColor: "divider",
-          "& .MuiTabs-list": { gap: 0.5 },
-          "& .MuiTabs-indicator": { display: { lg: "none" } },
-          "& .MuiTab-root": {
-            minWidth: 0,
-            minHeight: 40,
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            display:
+              secondary && groupLabel === secondary.label
+                ? "block"
+                : { xs: "none", lg: "block" },
             px: 1.5,
-            gap: 1.25,
-            borderRadius: { lg: 1 },
-            justifyContent: { lg: "flex-start" },
-            color: "text.secondary",
-            "&.Mui-selected": {
-              color: "text.primary",
-              bgcolor: { lg: "action.selected" },
+            mb: { xs: 0, lg: 0.75 },
+            flexShrink: 0,
+            maxWidth: { xs: 120, lg: "none" },
+          }}
+        >
+          {groupLabel}
+        </Typography>
+        <Tabs
+          value={
+            items.some((section) => section.value === value) ? value : false
+          }
+          onChange={(_, next: T) => onChange(next)}
+          orientation={vertical ? "vertical" : "horizontal"}
+          variant="scrollable"
+          scrollButtons={vertical ? false : "auto"}
+          slots={{ scrollButtons: NavigationScrollButton }}
+          allowScrollButtonsMobile
+          aria-label={groupLabel}
+          sx={{
+            minHeight: 40,
+            minWidth: 0,
+            flex: 1,
+            borderBottom: { xs: 1, lg: 0 },
+            borderColor: "divider",
+            "& .MuiTabs-list": { gap: 0.5 },
+            "& .MuiTabs-indicator": { display: { lg: "none" } },
+            "& .MuiTab-root": {
+              minWidth: 0,
+              minHeight: 40,
+              px: 1.5,
+              gap: 1.25,
+              borderRadius: { lg: 1 },
+              justifyContent: { lg: "flex-start" },
+              color: "text.secondary",
+              "&.Mui-selected": {
+                color: "text.primary",
+                bgcolor: { lg: "action.selected" },
+              },
             },
-          },
-        }}
-      >
-        {sections.map((section) => (
-          <Tab
-            key={section.value}
-            id={idPrefix ? `${idPrefix}-tab-${section.value}` : undefined}
-            aria-controls={
-              idPrefix ? `${idPrefix}-panel-${section.value}` : undefined
-            }
-            value={section.value}
-            label={section.label}
-            iconPosition="start"
-            icon={vertical ? section.icon : undefined}
-          />
-        ))}
-      </Tabs>
+          }}
+        >
+          {items.map((section) => (
+            <Tab
+              key={section.value}
+              id={idPrefix ? `${idPrefix}-tab-${section.value}` : undefined}
+              aria-controls={
+                idPrefix ? `${idPrefix}-panel-${section.value}` : undefined
+              }
+              value={section.value}
+              label={section.label}
+              iconPosition="start"
+              icon={vertical ? section.icon : undefined}
+            />
+          ))}
+        </Tabs>
+      </Box>
+    );
+  }
+  return (
+    <Box sx={{ display: "grid", gap: { xs: 1, lg: 3 } }}>
+      {group(label, sections)}
+      {secondary && group(secondary.label, secondary.sections)}
     </Box>
   );
 }

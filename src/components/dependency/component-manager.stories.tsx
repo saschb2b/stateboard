@@ -70,7 +70,7 @@ export const WorkspaceReuse: Story = {
     await expect(canvas.getByText("Available to link")).toBeVisible();
     await expect(canvas.queryByText("Billing API")).not.toBeInTheDocument();
     await userEvent.click(
-      canvas.getByRole("button", { name: "Link to capability" }),
+      canvas.getByRole("button", { name: "Link to feature" }),
     );
     await expect(page.getByRole("dialog")).toHaveTextContent(
       "Link Other product API to this product",

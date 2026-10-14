@@ -23,7 +23,6 @@ const meta = {
     upload: fn(async () => {}),
     onDependencyFocusChange: fn(),
     onClearFocus: fn(),
-    onInspectCheck: fn(),
   },
 } satisfies Meta<typeof ReleasePerspectives>;
 export default meta;

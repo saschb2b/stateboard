@@ -17,7 +17,7 @@
   "redirecting": "Redirecting…",
   "companyAccount": "Continue with company account",
   "exploring": "Just exploring?",
-  "exampleAssessment": "View an example assessment",
+  "exampleAssessment": "View an example release review",
   "newKey": "New key",
   "keyHelp": "Use a name that identifies the agent or workflow. Editor keys can maintain boards; viewer keys can read them.",
   "keyName": "Key name",
@@ -52,7 +52,7 @@
   "noMembers": "No members yet.",
   "rolePermissions": "Role permissions",
   "ownerDescription": "Manage workspace access, record release decisions, and publish reviews. Includes editor permissions.",
-  "editorDescription": "Maintain product mappings, assessments, checks, evidence, and visual boards. Manage visual share links.",
+  "editorDescription": "Maintain product mappings, release reviews, checks, evidence, and visual boards. Manage visual share links.",
   "viewerDescription": "Read boards inside the app. Public share links work without any role.",
   "actor": "Actor",
   "allActors": "All actors",
@@ -78,7 +78,7 @@
   "openWorkspace": "Open workspace",
   "landingKicker": "Release readiness for the whole team",
   "landingTitle": "Know what’s ready to release.",
-  "landingLead": "Connect product capabilities to their dependencies and evidence. Give every role a clear view of what works, what’s missing, and what needs a decision.",
+  "landingLead": "Connect product features to their dependencies and evidence. Give every role a clear view of what works, what’s missing, and what needs a decision.",
   "exploreDemo": "Explore the demo",
   "getStarted": "Get started",
   "screenPart": "A screen is one part of the product. See the work behind it.",
@@ -89,16 +89,16 @@
   "agentUpkeep": "Built for agent upkeep",
   "letAgents": "Let agents keep",
   "recordCurrent": "the record current.",
-  "agentLead": "Your coding agent can map capabilities, update dependencies, and submit observed results through MCP or REST. CI can append evidence from the checks it runs.",
+  "agentLead": "Your coding agent can map features, update dependencies, and submit observed results through MCP or REST. CI can append evidence from the checks it runs.",
   "connectAgent": "Connect your agent",
   "readProduct": "Read the product",
-  "reuseProduct": "Reuse its capabilities, owners, and dependencies.",
+  "reuseProduct": "Reuse its features, owners, and dependencies.",
   "recordObserved": "Record what was observed",
   "keepResults": "Keep passing, failing, and inconclusive results tied to the candidate.",
   "bringReview": "Bring it back for review",
   "humanDecision": "A human owner records the release decision and its rationale.",
   "noBackground": "Runs in your agent or CI workflow. Connecting MCP does not start background maintenance.",
-  "keepAssessment": "Keep the assessment with your team.",
+  "keepAssessment": "Keep the release review with your team.",
   "selfHostLead": "Self-host StateBoard with PostgreSQL and your company’s identity provider.",
   "selfHostGuide": "Self-hosting guide",
   "changelog": "Changelog",
@@ -128,7 +128,7 @@
   "history": "History",
   "boardHistory": "{name} · History",
   "auditSubtitle": "Changes across this workspace, newest first. Visible to owners.",
-  "historySubtitle": "Recorded changes to this product, its assessments, evidence, and screens. Newest first.",
+  "historySubtitle": "Recorded changes to this product, its release reviews, evidence, and screens. Newest first.",
   "readOnlyExample": "Read-only example",
   "exploreReadiness": "Explore release readiness",
   "developmentVersion": "Development preview · baseline v{version} · MIT",
@@ -139,7 +139,7 @@
   "perspectiveOperations": "Operations",
   "perspectiveDecision": "Release owners",
   "questionProduct": "Which outcomes can we release?",
-  "questionBackend": "What does this capability depend on?",
+  "questionBackend": "What does this feature depend on?",
   "questionQa": "What passed for this exact candidate?",
   "questionFrontend": "What works behind this screen?",
   "questionOperations": "Can we deploy and recover it?",
@@ -181,9 +181,9 @@
       "role_change": "Changed member role"
     },
     "capability": {
-      "create": "Capability create",
-      "update": "Capability update",
-      "archive": "Capability archive"
+      "create": "Feature create",
+      "update": "Feature update",
+      "archive": "Feature archive"
     },
     "component": {
       "create": "Component create",
@@ -191,16 +191,16 @@
       "archive": "Component archive"
     },
     "capability_component": {
-      "put": "Capability component put",
-      "delete": "Capability component delete"
+      "put": "Feature component put",
+      "delete": "Feature component delete"
     },
     "dependency": {
       "create": "Dependency create",
       "delete": "Dependency delete"
     },
     "region_capability": {
-      "put": "Region capability put",
-      "delete": "Region capability delete"
+      "put": "Region feature put",
+      "delete": "Region feature delete"
     },
     "release": {
       "create": "Release create",
@@ -222,7 +222,7 @@
     "share_link": "share link",
     "api_key": "api key",
     "user": "user",
-    "capability": "capability",
+    "capability": "feature",
     "component": "component",
     "release": "release",
     "release_check": "release check",
@@ -233,7 +233,7 @@
   },
   "loadingBoards": "Loading boards",
   "boards": "Boards",
-  "boardsDescription": "Your products and their latest release assessments.",
+  "boardsDescription": "Your products and their latest release reviews.",
   "loadingSignIn": "Loading sign-in",
   "loadingBoardSettings": "Loading board settings",
   "loadingHistory": "Loading product history",

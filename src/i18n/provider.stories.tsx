@@ -99,14 +99,14 @@ export const PreserveDraftAndKeyboardSelection: Story = {
     await userEvent.keyboard("{Escape}");
     await expect(germanButton).toHaveFocus();
     await userEvent.click(
-      canvas.getByRole("button", { name: "Nachweis ergänzen" }),
+      canvas.getByRole("button", { name: "Ergebnis speichern" }),
     );
     await expect(args.onSubmit).toHaveBeenCalledWith({ summary: draft });
     await userEvent.click(germanButton);
     await userEvent.click(page.getByRole("menuitemradio", { name: "English" }));
     await expect(canvas.getByLabelText(/^Observation/)).toHaveValue(draft);
     await expect(
-      canvas.getByRole("button", { name: "Append evidence" }),
+      canvas.getByRole("button", { name: "Save result" }),
     ).toBeVisible();
     await waitFor(() =>
       expect(canvasElement.ownerDocument.documentElement).toHaveAttribute(

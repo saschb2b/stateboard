@@ -25,9 +25,7 @@ export const OlderReviewWithoutMappings: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText(
-        /Capability links were not captured in this older review/,
-      ),
+      canvas.getByText(/Feature links were not captured in this older review/),
     ).toBeVisible();
     await expect(canvas.queryByText("Linked to Export an invoice")).toBeNull();
   },

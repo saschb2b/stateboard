@@ -5,7 +5,6 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import {
   Button,
-  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -22,15 +21,18 @@ import type {
   ProductContext,
   ProductMutation,
 } from "@/lib/release-types";
+import { FeatureSupport } from "./feature-support";
 
 export function CapabilityManager({
   product,
   editable,
   mutate,
+  ownerLabel = "",
 }: {
   product: ProductContext;
   editable: boolean;
   mutate: (mutation: ProductMutation) => Promise<void>;
+  ownerLabel?: string;
 }) {
   const t = useTranslations("Product");
   const fields: FormField[] = [
@@ -59,11 +61,18 @@ export function CapabilityManager({
           </Button>
         )}
       </Stack>
+      <Typography variant="body2" color="text.secondary">
+        {t("capabilityExplained")}
+      </Typography>
       {product.capabilities
         .filter((item) => item.archivedAt === null)
         .map((item) => (
           <Paper key={item.id} sx={{ p: 2 }}>
-            <Stack direction="row" justifyContent="space-between" gap={1}>
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              justifyContent="space-between"
+              gap={1}
+            >
               <Stack spacing={0.5}>
                 <Typography variant="subtitle1">{item.name}</Typography>
                 <Typography variant="body2">{item.outcome}</Typography>
@@ -100,14 +109,11 @@ export function CapabilityManager({
                 </Stack>
               )}
             </Stack>
-            <Chip
-              size="small"
-              sx={{ mt: 1 }}
-              label={t("visualAnchorCount", {
-                count: product.regionCapabilities.filter(
-                  (link) => link.capabilityId === item.id,
-                ).length,
-              })}
+            <FeatureSupport
+              capability={item}
+              product={product}
+              editable={editable}
+              mutate={mutate}
             />
           </Paper>
         ))}
@@ -133,7 +139,7 @@ export function CapabilityManager({
               fields={fields}
               initial={
                 typeof editing === "string"
-                  ? {}
+                  ? { ownerLabel }
                   : {
                       name: editing.name,
                       outcome: editing.outcome,

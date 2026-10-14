@@ -69,14 +69,16 @@ export function CheckFilters({
             })}
           </ToggleButton>
         </ToggleButtonGroup>
-        <TextField
-          label={t("filters.search")}
-          value={filters.query ?? ""}
-          size="small"
-          sx={{ flex: 1 }}
-          disabled={disabled}
-          onChange={(event) => onChange({ query: event.target.value })}
-        />
+        {(total > 3 || filters.query) && (
+          <TextField
+            label={t("filters.search")}
+            value={filters.query ?? ""}
+            size="small"
+            sx={{ flex: 1 }}
+            disabled={disabled}
+            onChange={(event) => onChange({ query: event.target.value })}
+          />
+        )}
         <Button
           size="small"
           disabled={disabled}
@@ -155,23 +157,23 @@ export function CheckFilters({
             ))}
           </TextField>
         </Stack>
+        {operationsOnly && (
+          <Stack>
+            <FormControlLabel
+              label={t("filters.includeFunctional")}
+              control={
+                <Checkbox
+                  checked={filters.includeFunctional ?? false}
+                  disabled={disabled}
+                  onChange={(event) =>
+                    onChange({ includeFunctional: event.target.checked })
+                  }
+                />
+              }
+            />
+          </Stack>
+        )}
       </Collapse>
-      {operationsOnly && (
-        <Stack>
-          <FormControlLabel
-            label={t("filters.includeFunctional")}
-            control={
-              <Checkbox
-                checked={filters.includeFunctional ?? false}
-                disabled={disabled}
-                onChange={(event) =>
-                  onChange({ includeFunctional: event.target.checked })
-                }
-              />
-            }
-          />
-        </Stack>
-      )}
       <Stack
         direction="row"
         justifyContent="space-between"

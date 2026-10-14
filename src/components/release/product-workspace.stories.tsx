@@ -50,7 +50,7 @@ export const Example: Story = {
     await expect(canvas.getByText(/No recorded decision/)).toBeVisible();
     const tabs = canvas.getByRole("tablist", { name: "Product sections" });
     const overview = canvas.getByRole("tab", { name: "Overview" });
-    const assessments = canvas.getByRole("tab", { name: "Assessments" });
+    const assessments = canvas.getByRole("tab", { name: "Release reviews" });
     await expect(overview).toHaveAttribute("aria-selected", "true");
     await expect(
       canvas.getByRole("tabpanel", { name: "Overview" }),
@@ -65,7 +65,7 @@ export const Example: Story = {
     await userEvent.keyboard("{Enter}");
     await expect(assessments).toHaveAttribute("aria-selected", "true");
     await expect(
-      canvas.getByRole("tabpanel", { name: "Assessments" }),
+      canvas.getByRole("tabpanel", { name: "Release reviews" }),
     ).toBeVisible();
     await expect(
       canvas.queryByRole("region", { name: "Verification coverage" }),
@@ -108,9 +108,9 @@ export const ViewerBoardNavigation: Story = {
       "href",
       `/boards/${example.product.board.id}/history`,
     );
-    await userEvent.click(canvas.getByRole("tab", { name: "Capabilities" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Features" }));
     await expect(
-      canvas.queryByRole("button", { name: "Add capability" }),
+      canvas.queryByRole("button", { name: "Add feature" }),
     ).not.toBeInTheDocument();
     const path = within(
       canvas.getByRole("navigation", { name: "Page location" }),
@@ -118,7 +118,7 @@ export const ViewerBoardNavigation: Story = {
     await expect(
       path.getByRole("link", { name: example.product.board.name }),
     ).toHaveAttribute("href", `/boards/${example.product.board.id}/releases`);
-    await expect(path.getByText("Capabilities")).toHaveAttribute(
+    await expect(path.getByText("Features")).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -137,14 +137,21 @@ export const ProductSectionHistory: Story = {
     return () => window.history.replaceState(originalState, "", originalUrl);
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole("tab", { name: "Capabilities" }));
-    await userEvent.click(canvas.getByRole("tab", { name: "Connections" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Features" }));
+    await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Connections" }));
     await expect(
       new URL(window.location.href).searchParams.get("section"),
     ).toBe("connections");
     window.history.back();
     await waitFor(() =>
-      expect(canvas.getByRole("tab", { name: "Capabilities" })).toHaveAttribute(
+      expect(
+        canvas.getByRole("button", { name: "Components" }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+    window.history.back();
+    await waitFor(() =>
+      expect(canvas.getByRole("tab", { name: "Features" })).toHaveAttribute(
         "aria-selected",
         "true",
       ),

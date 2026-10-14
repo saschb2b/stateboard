@@ -37,7 +37,7 @@ export const RequestedCapabilityAndDependencyNavigation: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toHaveTextContent("Export an invoice");
     const api = canvas.getByRole("button", {
       name: /Billing API.*1 dependency/,
@@ -55,7 +55,7 @@ export const RequestedCapabilityAndDependencyNavigation: Story = {
     await expect(target).toHaveFocus();
     await expect(api).toHaveAttribute("aria-expanded", "false");
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toHaveTextContent("Export an invoice");
     await expect(args.onCheckScopeChange).not.toHaveBeenCalled();
   },
@@ -66,8 +66,8 @@ export const UnavailableRequestedCapability: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
-    ).toHaveTextContent("All capabilities");
+      canvas.getByRole("combobox", { name: "Feature" }),
+    ).toHaveTextContent("All features");
   },
 };
 
@@ -183,7 +183,7 @@ export const FocusedSubjectsWithWorkspaceCatalog: Story = {
       includeRelease: true,
     });
     await expect(canvas.getByText(/Supporting cycle context\./)).toBeVisible();
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await waitFor(() =>
       expect(
         page.getByRole("option", { name: "Export an invoice" }),

@@ -6,10 +6,8 @@ import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
-import DnsOutlinedIcon from "@mui/icons-material/DnsOutlined";
 import GavelOutlinedIcon from "@mui/icons-material/GavelOutlined";
 import type { ReleaseView } from "@/lib/release-types";
-import { RELEASE_VIEWS } from "@/lib/release-types";
 import { WorkspaceNavigation } from "./workspace-navigation";
 
 const icons = {
@@ -17,7 +15,6 @@ const icons = {
   visual: <ImageOutlinedIcon fontSize="small" />,
   backend: <AccountTreeOutlinedIcon fontSize="small" />,
   qa: <FactCheckOutlinedIcon fontSize="small" />,
-  operations: <DnsOutlinedIcon fontSize="small" />,
   decision: <GavelOutlinedIcon fontSize="small" />,
 };
 export function ReleaseViewTabs({
@@ -28,17 +25,26 @@ export function ReleaseViewTabs({
   onChange: (view: ReleaseView) => void;
 }) {
   const t = useTranslations("Release");
+  const productT = useTranslations("Product");
   return (
     <WorkspaceNavigation
       label={t("views.label")}
       idPrefix="assessment"
-      value={view}
+      value={view === "operations" ? "qa" : view}
       onChange={onChange}
-      sections={RELEASE_VIEWS.map((value) => ({
+      sections={(["release", "qa", "decision"] as const).map((value) => ({
         value,
         label: t(`views.${value}`),
         icon: icons[value],
       }))}
+      secondary={{
+        label: productT("supportingContext"),
+        sections: (["visual", "backend"] as const).map((value) => ({
+          value,
+          label: t(`views.${value}`),
+          icon: icons[value],
+        })),
+      }}
     />
   );
 }

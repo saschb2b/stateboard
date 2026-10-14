@@ -98,7 +98,9 @@ export const MixedCatalogAndRetainedDefinitions: Story = {
       throw new Error("Each capability must have a disclosure row.");
     await expect(within(included).getByText("Ready · checks")).toBeVisible();
     await expect(within(excluded).getByText("Excluded")).toBeVisible();
-    await expect(within(unscoped).getByText("Not in assessment")).toBeVisible();
+    await expect(
+      within(unscoped).getByText("Not in release review"),
+    ).toBeVisible();
     await expect(
       within(included).getByText(/Definition changed/),
     ).toBeVisible();
@@ -145,7 +147,7 @@ export const MissingCategoryAndOptionalWarning: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const latest = within(
-      canvas.getByRole("region", { name: "Latest assessment" }),
+      canvas.getByRole("region", { name: "Latest release review" }),
     );
     const coverage = within(
       canvas.getByRole("region", { name: "Verification coverage" }),
@@ -184,25 +186,29 @@ export const NoAssessment: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("heading", { name: "No release assessment yet" }),
+      canvas.getByRole("heading", { name: "No release release review yet" }),
     ).toBeVisible();
     await expect(
       canvas.getByText("Not assessed", { exact: true }),
     ).toBeVisible();
     await expect(canvas.queryByText(/^Ready/)).not.toBeInTheDocument();
     await expect(
-      canvas.queryByRole("link", { name: "Review assessment" }),
+      canvas.queryByRole("link", { name: "Open release review" }),
     ).not.toBeInTheDocument();
     const coverage = within(
       canvas.getByRole("region", { name: "Verification coverage" }),
     );
     await expect(coverage.queryAllByRole("link")).toHaveLength(0);
-    await expect(coverage.getAllByText("No assessment yet")).toHaveLength(6);
+    await expect(coverage.getAllByText("No release review yet")).toHaveLength(
+      6,
+    );
     await userEvent.click(
-      canvas.getByRole("button", { name: "New assessment" }),
+      canvas.getByRole("button", { name: "New release review" }),
     );
     await expect(args.onCreate).toHaveBeenCalledOnce();
-    await userEvent.click(canvas.getByRole("button", { name: "View catalog" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Manage features" }),
+    );
     await expect(args.onNavigate).toHaveBeenCalledWith("capabilities");
   },
 };
@@ -212,10 +218,10 @@ export const NoAssessmentViewer: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("heading", { name: "No release assessment yet" }),
+      canvas.getByRole("heading", { name: "No release release review yet" }),
     ).toBeVisible();
     await expect(
-      canvas.queryByRole("button", { name: "New assessment" }),
+      canvas.queryByRole("button", { name: "New release review" }),
     ).not.toBeInTheDocument();
     await expect(canvas.queryByText(/^Ready/)).not.toBeInTheDocument();
   },
@@ -231,23 +237,23 @@ export const EmptyIncludedScope: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const latest = within(
-      canvas.getByRole("region", { name: "Latest assessment" }),
+      canvas.getByRole("region", { name: "Latest release review" }),
     );
     await expect(
       latest.getByText("Needs evidence", { exact: true }),
     ).toBeVisible();
     const finding = latest.getByText("1 unresolved item");
     await expect(
-      latest.getByText("No capabilities included in this assessment."),
+      latest.getByText("No features included in this release review."),
     ).not.toBeVisible();
     finding.focus();
     await expect(finding).toHaveFocus();
     await userEvent.click(finding);
     await expect(
-      latest.getByText("No capabilities included in this assessment."),
+      latest.getByText("No features included in this release review."),
     ).toBeVisible();
     await expect(
-      canvas.getByText("Not in assessment", { exact: true }),
+      canvas.getByText("Not in release review", { exact: true }),
     ).toBeVisible();
   },
 };
@@ -261,7 +267,7 @@ export const IncludedCapabilityWithoutAcceptance: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const latest = within(
-      canvas.getByRole("region", { name: "Latest assessment" }),
+      canvas.getByRole("region", { name: "Latest release review" }),
     );
     await expect(
       latest.getByText("Needs evidence", { exact: true }),
@@ -308,12 +314,12 @@ export const FindingUsesLatestCandidate: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const latest = within(
-      canvas.getByRole("region", { name: "Latest assessment" }),
+      canvas.getByRole("region", { name: "Latest release review" }),
     );
     await expect(latest.getByRole("heading", { name: "RC 1" })).toBeVisible();
     await expect(latest.getByText("Blocked", { exact: true })).toBeVisible();
     await expect(
-      latest.getByRole("link", { name: "Review assessment" }),
+      latest.getByRole("link", { name: "Open release review" }),
     ).toHaveAttribute("href", "/boards/board1/releases/release1");
     await userEvent.click(latest.getByText("1 unresolved item"));
     await expect(
@@ -347,12 +353,12 @@ export const GermanOverview: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const latest = within(
-      canvas.getByRole("region", { name: "Neueste Bewertung" }),
+      canvas.getByRole("region", { name: "Neueste Release-Prüfung" }),
     );
     await expect(latest.getByText("Bereit", { exact: true })).toBeVisible();
     await expect(latest.getByText("Keine Entscheidung erfasst")).toBeVisible();
     await expect(
-      latest.getByRole("link", { name: "Bewertung prüfen" }),
+      latest.getByRole("link", { name: "Release-Prüfung öffnen" }),
     ).toHaveAttribute("href", "/boards/board1/releases/release1");
     await expect(canvas.getByText(longCapabilityName)).toBeVisible();
     const coverage = within(

@@ -25,7 +25,7 @@ export function ReleaseFindings({
   detail: ReleaseDetail;
   readiness: ReleaseEvaluation;
   onInspectCheck?: (checkId: string) => void;
-  onReviewChecks?: () => void;
+  onReviewChecks?: (capabilityId?: string) => void;
   editable?: boolean;
   includePassing?: boolean;
   subjectTypes?: ReleaseCheck["subjectType"][];
@@ -189,7 +189,7 @@ export function ReleaseFindings({
               {onReviewChecks && (
                 <Button
                   size="small"
-                  onClick={onReviewChecks}
+                  onClick={() => onReviewChecks(capability.capabilityId)}
                   sx={{ display: "block", mt: 0.5, px: 0 }}
                 >
                   {t("findings.reviewChecks")}

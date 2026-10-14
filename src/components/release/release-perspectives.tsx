@@ -2,7 +2,12 @@
 
 import { useTranslations } from "next-intl";
 
-import { Stack } from "@mui/material";
+import {
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
 import { ReleaseScope } from "@/components/capability/release-scope";
 import { CapabilityVisualView } from "@/components/capability/capability-visual-view";
 import {
@@ -42,7 +47,6 @@ export function ReleasePerspectives({
   category,
   onCategoryChange,
   onClearFocus,
-  onInspectCheck,
   onReviewView,
   canRecord,
   record,
@@ -68,7 +72,6 @@ export function ReleasePerspectives({
   category?: CheckCategory | null;
   onCategoryChange?: (category: CheckCategory | null) => void;
   onClearFocus: () => void;
-  onInspectCheck: (checkId: string) => void;
   onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   canRecord: boolean;
   record: (input: DecisionInput) => Promise<void>;
@@ -77,6 +80,7 @@ export function ReleasePerspectives({
   upload: (file: File, label: string) => Promise<void>;
 }) {
   const t = useTranslations("Release");
+  const productT = useTranslations("Product");
   return (
     <>
       {view === "release" && (
@@ -86,8 +90,9 @@ export function ReleasePerspectives({
           readiness={readiness}
           editable={editable}
           mutate={mutate}
-          onInspectCheck={onInspectCheck}
           onReviewView={onReviewView}
+          now={now}
+          loadCheckRevisions={loadCheckRevisions}
         />
       )}
       {view === "visual" && (
@@ -116,8 +121,42 @@ export function ReleasePerspectives({
           readiness={readiness}
         />
       )}
-      {(view === "backend" || view === "qa" || view === "operations") && (
-        <Stack component="section" aria-label={t("workspace.checkEvidence")}>
+      {view === "backend" &&
+        !focusedCapabilityId &&
+        !focusedComponentId &&
+        !focusedCheckId && (
+          <Typography variant="body2" color="text.secondary">
+            {productT("chooseSupportingContext")}
+          </Typography>
+        )}
+      {((view === "backend" &&
+        (focusedCapabilityId || focusedComponentId || focusedCheckId)) ||
+        view === "qa" ||
+        view === "operations") && (
+        <Stack
+          component="section"
+          aria-label={t("workspace.checkEvidence")}
+          spacing={2}
+        >
+          {(view === "qa" || view === "operations") && onReviewView && (
+            <ToggleButtonGroup
+              exclusive
+              value={view}
+              aria-label={productT("checkArea")}
+              size="small"
+              onChange={(_, next: "qa" | "operations" | null) => {
+                if (next) onReviewView(next);
+              }}
+              sx={{ alignSelf: "flex-start", flexWrap: "wrap" }}
+            >
+              <ToggleButton value="qa">
+                {productT("allCheckAreas")}
+              </ToggleButton>
+              <ToggleButton value="operations">
+                {productT("operationsCheckAreas")}
+              </ToggleButton>
+            </ToggleButtonGroup>
+          )}
           <CheckManager
             key={`${view}:${focusedCapabilityId ?? "all"}:${focusedComponentId ?? "all"}`}
             category={category}
@@ -131,6 +170,13 @@ export function ReleasePerspectives({
             operationsOnly={view === "operations"}
             loadCheckRevisions={loadCheckRevisions}
             subjectScope={subjectScope ?? undefined}
+            defaultSubject={
+              focusedComponentId
+                ? { type: "component", id: focusedComponentId }
+                : focusedCapabilityId
+                  ? { type: "capability", id: focusedCapabilityId }
+                  : undefined
+            }
             subjectLabel={
               view === "qa" && focusedCapabilityId
                 ? detail.scope.find(

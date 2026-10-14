@@ -35,7 +35,7 @@ export const ExplorePerspectives: Story = {
       canvas.getByRole("heading", { name: "Needs evidence" }),
     ).toBeVisible();
     await expect(
-      canvas.getByText("Illustrative assessment · no live data"),
+      canvas.getByText("Illustrative release review · no live data"),
     ).toBeVisible();
     await expect(
       canvas.getByRole("link", { name: /Explore checks/ }),

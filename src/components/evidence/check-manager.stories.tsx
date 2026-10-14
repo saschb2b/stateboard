@@ -94,6 +94,7 @@ export const FunctionalOperationsClaims: Story = {
     await expect(
       canvas.queryByText(example.detail.checks[0]!.claim),
     ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "More filters" }));
     await userEvent.click(canvas.getByLabelText("Include functional checks"));
     await expect(
       canvas.getByText(example.detail.checks[0]!.claim),
@@ -176,7 +177,7 @@ export const ExpandCheckDetails: Story = {
     const check = example.detail.checks[0]!;
     await expect(canvas.queryByText(check.method)).not.toBeInTheDocument();
     await expect(
-      canvas.queryByRole("button", { name: "Record evidence" }),
+      canvas.queryByRole("button", { name: "Record result" }),
     ).not.toBeInTheDocument();
     const row = canvas.getByRole("button", { name: check.claim });
     row.focus();
@@ -184,7 +185,7 @@ export const ExpandCheckDetails: Story = {
     await expect(row).toHaveAttribute("aria-expanded", "true");
     await expect(canvas.getByText(check.method)).toBeVisible();
     await expect(
-      canvas.getByRole("button", { name: "Record evidence" }),
+      canvas.getByRole("button", { name: "Record result" }),
     ).toBeVisible();
     await userEvent.click(row);
     await expect(row).toHaveAttribute("aria-expanded", "false");
@@ -208,7 +209,7 @@ export const ShortDialogDismissal: Story = {
   ],
   play: async ({ canvas, args }) => {
     const page = within(document.body);
-    const record = canvas.getByRole("button", { name: "Record evidence" });
+    const record = canvas.getByRole("button", { name: "Record result" });
     await userEvent.click(record);
     const dialog = page.getByRole("dialog");
     const close = within(dialog).getByRole("button", { name: "Close" });
@@ -381,5 +382,97 @@ export const CategoryLocationAndHistory: Story = {
     await expect(
       canvas.queryByText("Category: security"),
     ).not.toBeInTheDocument();
+  },
+};
+
+export const EmbeddedFeatureChecks: Story = {
+  args: {
+    editable: true,
+    presentation: "embedded",
+    defaultSubject: { type: "capability", id: "cap-webhook" },
+    defaultClaim: "An event is stored once.",
+    subjectScope: {
+      capabilityIds: ["cap-webhook"],
+      componentIds: [],
+      includeRelease: false,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.queryByRole("group", { name: "Check coverage" }),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByLabelText("Search claims or owners"),
+    ).not.toBeInTheDocument();
+    await expect(
+      canvas.getByText(example.detail.checks[1]!.claim),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByText(example.detail.checks[5]!.claim),
+    ).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole("button", { name: "Add check" }));
+    const dialog = within(within(document.body).getByRole("dialog"));
+    await waitFor(() =>
+      expect(
+        dialog.getByText("For: Feature · Receive a partner webhook"),
+      ).toBeVisible(),
+    );
+    await expect(dialog.getByLabelText(/What must work/)).toHaveValue(
+      "An event is stored once.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Close" }));
+  },
+};
+
+export const CreateOperationalCheck: Story = {
+  args: { editable: true, operationsOnly: true },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Add check" }));
+    const dialog = within(within(document.body).getByRole("dialog"));
+    const claim = dialog.getByLabelText(/What must work/);
+    await waitFor(() => expect(claim).toBeVisible());
+    await userEvent.type(claim, "The latest backup restores successfully.");
+    await userEvent.type(
+      dialog.getByLabelText(/How to verify/),
+      "Restore into an isolated environment and verify its records.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add check" }));
+    await expect(args.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "check.create",
+        data: expect.objectContaining({
+          category: "operational",
+          subjectType: "release",
+        }),
+      }),
+    );
+  },
+};
+
+export const CreateFilteredSecurityCheck: Story = {
+  args: { editable: true, category: "security" },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Add check" }));
+    const dialog = within(within(document.body).getByRole("dialog"));
+    const claim = dialog.getByLabelText(/What must work/);
+    await waitFor(() => expect(claim).toBeVisible());
+    await userEvent.type(claim, "Expired access tokens are rejected.");
+    await userEvent.type(
+      dialog.getByLabelText(/How to verify/),
+      "Submit an expired token and verify the request is denied.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add check" }));
+    await expect(args.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "check.create",
+        data: expect.objectContaining({
+          category: "security",
+          subjectType: "release",
+        }),
+      }),
+    );
   },
 };

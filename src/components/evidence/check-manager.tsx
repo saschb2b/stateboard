@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { CheckEditor } from "./check-editor";
+import { CheckEditor, type CheckSubject } from "./check-editor";
 import { EvidenceForm } from "./evidence-form";
 import { CheckRow } from "./check-row";
 import {
@@ -48,6 +48,9 @@ export function CheckManager({
   initialCategory,
   category,
   onCategoryChange,
+  presentation = "standalone",
+  defaultSubject,
+  defaultClaim,
 }: {
   detail: ReleaseDetail;
   product: ProductContext;
@@ -66,6 +69,9 @@ export function CheckManager({
   initialCategory?: CheckCategory | null;
   category?: CheckCategory | null;
   onCategoryChange?: (category: CheckCategory | null) => void;
+  presentation?: "standalone" | "embedded";
+  defaultSubject?: CheckSubject;
+  defaultClaim?: string;
 }) {
   const t = useTranslations("Release");
   const [editing, setEditing] = useState<ReleaseCheck | "new" | null>(null);
@@ -138,14 +144,17 @@ export function CheckManager({
   return (
     <Stack spacing={2}>
       <Stack direction="row" justifyContent="space-between" gap={1}>
-        <Typography variant="h6">
+        <Typography
+          variant={presentation === "embedded" ? "subtitle2" : "h6"}
+          component={presentation === "embedded" ? "h4" : "h2"}
+        >
           {operationsOnly ? t("check.operations") : t("common.checks")}
         </Typography>
         {editable && (
           <Button onClick={() => setEditing("new")}>{t("check.add")}</Button>
         )}
       </Stack>
-      {focusedCheckId && (
+      {presentation === "standalone" && focusedCheckId && (
         <Stack
           direction="row"
           alignItems="center"
@@ -167,7 +176,7 @@ export function CheckManager({
           )}
         </Stack>
       )}
-      {!focusedCheckId && subjectLabel && (
+      {presentation === "standalone" && !focusedCheckId && subjectLabel && (
         <Stack
           direction="row"
           alignItems="center"
@@ -193,7 +202,7 @@ export function CheckManager({
           )}
         </Stack>
       )}
-      {!focusedCheckId && (
+      {presentation === "standalone" && !focusedCheckId && (
         <CheckFilters
           filters={filters}
           onChange={changeFilters}
@@ -276,6 +285,15 @@ export function CheckManager({
               detail={detail}
               product={product}
               check={editing === "new" ? null : editing}
+              defaultSubject={defaultSubject}
+              defaultClaim={defaultClaim}
+              defaultCategory={
+                filters.category && filters.category !== "all"
+                  ? filters.category
+                  : operationsOnly
+                    ? "operational"
+                    : "functional"
+              }
               onSave={saveDialog}
               onCancel={() => setEditing(null)}
             />

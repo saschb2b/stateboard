@@ -89,7 +89,7 @@ export const FrozenReviewAfterChanges: Story = {
     await expect(canvas.queryByText("Captured image file")).toBeNull();
     await expect(canvas.queryByText("Current invoice capability")).toBeNull();
     await expect(
-      canvas.getByText(/live assessment has changed since this review/),
+      canvas.getByText(/live release review has changed since this review/),
     ).toBeVisible();
   },
 };

@@ -100,7 +100,7 @@ export function ReadinessSummary({
   readiness: ReleaseEvaluation;
   detail?: ReleaseDetail;
   onInspectCheck?: (checkId: string) => void;
-  onReviewChecks?: () => void;
+  onReviewChecks?: (capabilityId?: string) => void;
   onReviewDecision?: () => void;
   editable?: boolean;
 }) {

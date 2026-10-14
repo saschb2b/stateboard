@@ -79,7 +79,7 @@ const assessmentPath = [
   { label: "Boards", href: "/boards" },
   { label: "StateBoard", href: "/boards/stateboard/releases" },
   {
-    label: "Assessments",
+    label: "Release reviews",
     href: "/boards/stateboard/releases?section=releases",
   },
   { label: "Release candidate 2026.10" },
@@ -98,7 +98,7 @@ export const AssessmentHierarchy: Story = {
       navigation.getByRole("link", { name: "StateBoard" }),
     ).toHaveAttribute("href", "/boards/stateboard/releases");
     await expect(
-      navigation.getByRole("link", { name: "Assessments" }),
+      navigation.getByRole("link", { name: "Release reviews" }),
     ).toHaveAttribute("href", "/boards/stateboard/releases?section=releases");
     await expect(
       navigation.getByText("Release candidate 2026.10"),
@@ -128,7 +128,7 @@ export const MobileParentNavigation: Story = {
       canvas.getByRole("navigation", { name: "Page location" }),
     );
     const parent = navigation.getByRole("link", {
-      name: "Back to Assessments",
+      name: "Back to Release reviews",
     });
     await expect(parent).toHaveAttribute(
       "href",

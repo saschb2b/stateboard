@@ -23,6 +23,7 @@ import { WorkspaceFrame } from "./workspace-frame";
 import { ReleaseViewTabs } from "./release-view-tabs";
 import { releaseRequest } from "./release-request";
 import { ReleaseContext } from "./release-context";
+import { ReviewGuide } from "./review-guide";
 import { ReleasePerspectives } from "./release-perspectives";
 import { useReleaseNavigation } from "./use-release-navigation";
 import type { DependencySelection } from "@/components/dependency/dependency-view";
@@ -129,8 +130,8 @@ export function ReleaseWorkspace({
       component: null,
     });
   }
-  function reviewChecks() {
-    selectView("qa");
+  function reviewChecks(capabilityId?: string) {
+    reviewView("qa", capabilityId);
   }
   function selectDependencyFocus(focus: DependencySelection) {
     navigate({
@@ -318,10 +319,11 @@ export function ReleaseWorkspace({
         <Stack
           spacing={3}
           role="tabpanel"
-          id={`assessment-panel-${view}`}
-          aria-labelledby={`assessment-tab-${view}`}
+          id={`assessment-panel-${view === "operations" ? "qa" : view}`}
+          aria-labelledby={`assessment-tab-${view === "operations" ? "qa" : view}`}
           tabIndex={0}
         >
+          {view === "release" && <ReviewGuide />}
           {error && (
             <Alert severity="error">
               {error}
@@ -375,7 +377,6 @@ export function ReleaseWorkspace({
               category={category}
               onCategoryChange={setCategory}
               onClearFocus={clearCheckFocus}
-              onInspectCheck={inspectCheck}
               onReviewView={reviewView}
               canRecord={canRecord}
               record={record}

@@ -46,9 +46,7 @@ export const ProductWiringWithReusableCatalog: Story = {
     await expect(
       canvas.queryByText(/Other product dependency context/),
     ).not.toBeInTheDocument();
-    await userEvent.click(
-      canvas.getByRole("button", { name: "Link capability" }),
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Link feature" }));
     await userEvent.click(page.getByRole("combobox", { name: "Component" }));
     await waitFor(() =>
       expect(

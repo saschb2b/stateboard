@@ -3,7 +3,6 @@
 import { useFormatter, useTranslations } from "next-intl";
 
 import { useState } from "react";
-import { useReleaseReason } from "@/components/release/use-release-reason";
 import {
   Accordion,
   AccordionDetails,
@@ -19,10 +18,12 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { MutationForm } from "@/components/release/mutation-form";
+import { CheckManager } from "@/components/evidence/check-manager";
 import { ReadinessChip } from "@/components/release/readiness-summary";
 import type {
   ProductContext,
   ReleaseCapability,
+  ReleaseCheck,
   ReleaseDetail,
   ReleaseEvaluation,
   ReleaseMutation,
@@ -35,14 +36,16 @@ export function ReleaseScope({
   readiness,
   editable,
   mutate,
-  onInspectCheck,
   onReviewView,
+  now,
+  loadCheckRevisions,
 }: {
   detail: ReleaseDetail;
   product: ProductContext;
   readiness: ReleaseEvaluation;
   editable: boolean;
-  onInspectCheck?: (checkId: string) => void;
+  now?: number;
+  loadCheckRevisions?: (checkId: string) => Promise<ReleaseCheck[]>;
   onReviewView?: (view: ReleaseView, capabilityId?: string) => void;
   mutate: (
     mutation: Omit<ReleaseMutation, "expectedRevision">,
@@ -50,7 +53,6 @@ export function ReleaseScope({
 }) {
   const t = useTranslations("Product");
   const format = useFormatter();
-  const localizeReason = useReleaseReason();
   const [editing, setEditing] = useState<ReleaseCapability | "add" | null>(
     null,
   );
@@ -77,6 +79,9 @@ export function ReleaseScope({
           </Button>
         )}
       </Stack>
+      <Typography variant="body2" color="text.secondary">
+        {t("scopeHelp")}
+      </Typography>
       <Box
         sx={{
           border: 1,
@@ -99,14 +104,6 @@ export function ReleaseScope({
           );
           const newerDefinition =
             latest && latest.definitionRevision > item.definitionRevision;
-          const acceptanceCheck = detail.checks.find(
-            (check) =>
-              check.subjectType === "capability" &&
-              check.subjectId === item.capabilityId &&
-              check.category === "functional" &&
-              check.required &&
-              check.archivedAt === null,
-          );
           return (
             <Accordion
               key={item.capabilityId}
@@ -184,30 +181,6 @@ export function ReleaseScope({
               <AccordionDetails sx={{ px: 2, pt: 0.5, pb: 2.5 }}>
                 <Stack spacing={1.5} sx={{ maxWidth: 760 }}>
                   <Typography variant="body2">{item.outcome}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("ownerDefinition", {
-                      owner: item.ownerLabel,
-                      revision: item.definitionRevision,
-                    })}
-                  </Typography>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {item.included
-                        ? t("includedBecause")
-                        : t("excludedBecause")}
-                    </Typography>
-                    <Typography variant="body2">{item.scopeReason}</Typography>
-                  </Box>
-                  {item.included &&
-                    evaluation?.reasons.map((reason, index) => (
-                      <Typography
-                        key={index}
-                        variant="body2"
-                        color="text.secondary"
-                      >
-                        {localizeReason(reason, item.name)}
-                      </Typography>
-                    ))}
                   {newerDefinition && (
                     <Typography variant="body2" color="warning.main">
                       {t(
@@ -221,39 +194,82 @@ export function ReleaseScope({
                       )}
                     </Typography>
                   )}
-                  {(editable ||
-                    (item.included && onReviewView) ||
-                    (item.included && acceptanceCheck && onInspectCheck)) && (
+                  {item.included && (
+                    <CheckManager
+                      presentation="embedded"
+                      detail={detail}
+                      product={product}
+                      readiness={readiness}
+                      editable={editable}
+                      mutate={mutate}
+                      now={now ?? readiness.evaluatedAt}
+                      loadCheckRevisions={loadCheckRevisions}
+                      subjectScope={{
+                        capabilityIds: [item.capabilityId],
+                        componentIds: [],
+                        includeRelease: false,
+                      }}
+                      defaultSubject={{
+                        type: "capability",
+                        id: item.capabilityId,
+                      }}
+                      defaultClaim={item.outcome}
+                    />
+                  )}
+                  {item.included && onReviewView && (
                     <Stack direction="row" gap={1} flexWrap="wrap">
-                      {item.included && acceptanceCheck && onInspectCheck && (
-                        <Button
-                          size="small"
-                          onClick={() => onInspectCheck(acceptanceCheck.id)}
-                        >
-                          {t("inspectAcceptance")}
-                        </Button>
-                      )}
-                      {item.included && onReviewView && (
-                        <Button
-                          size="small"
-                          onClick={() =>
-                            onReviewView("backend", item.capabilityId)
-                          }
-                        >
-                          {t("viewArchitecture")}
-                        </Button>
-                      )}
+                      <Button
+                        size="small"
+                        color="inherit"
+                        onClick={() =>
+                          onReviewView("backend", item.capabilityId)
+                        }
+                      >
+                        {t("viewArchitecture")}
+                      </Button>
+                      <Button
+                        size="small"
+                        color="inherit"
+                        onClick={() => onReviewView("qa", item.capabilityId)}
+                      >
+                        {t("viewRelatedChecks")}
+                      </Button>
+                    </Stack>
+                  )}
+                  <Box component="details" open={!item.included}>
+                    <Typography
+                      component="summary"
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ cursor: "pointer" }}
+                    >
+                      {t("scopeDetails")}
+                    </Typography>
+                    <Stack spacing={1} sx={{ mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {t("ownerDefinition", {
+                          owner: item.ownerLabel,
+                          revision: item.definitionRevision,
+                        })}
+                      </Typography>
+                      <Typography variant="body2">
+                        {item.included
+                          ? t("includedBecause")
+                          : t("excludedBecause")}
+                        : {item.scopeReason}
+                      </Typography>
                       {editable && (
                         <Button
                           size="small"
                           color="inherit"
                           onClick={() => setEditing(item)}
+                          sx={{ alignSelf: "flex-start" }}
                         >
                           {t("editScope")}
                         </Button>
                       )}
                     </Stack>
-                  )}
+                  </Box>
                 </Stack>
               </AccordionDetails>
             </Accordion>

@@ -24,9 +24,7 @@ export const NoScreensYet: Story = {
   play: async ({ canvas, args }) => {
     await expect(canvas.getByText("No screens yet")).toBeVisible();
     await expect(canvas.getByText("Export an invoice")).not.toBeVisible();
-    await userEvent.click(
-      canvas.getByText(/capabilities without a linked screen/),
-    );
+    await userEvent.click(canvas.getByText(/features without a linked screen/));
     await expect(canvas.getByText("Export an invoice")).toBeVisible();
     await expect(
       canvas.getByRole("link", { name: "Manage screens" }),
@@ -48,7 +46,7 @@ export const SelectedCapabilityNavigation: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await userEvent.click(
       page.getByRole("option", { name: "Export an invoice" }),
     );
@@ -73,7 +71,7 @@ export const LinkedCapabilityNavigation: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await userEvent.click(
       page.getByRole("option", { name: "Export an invoice" }),
     );

@@ -14,6 +14,8 @@ import {
   IconButton,
   Stack,
   Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { AppHeader } from "@/components/app/app-header";
@@ -25,7 +27,6 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
-import WidgetsOutlinedIcon from "@mui/icons-material/WidgetsOutlined";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import { UserMenu } from "@/components/app/user-menu";
 import { CapabilityManager } from "@/components/capability/capability-manager";
@@ -59,6 +60,7 @@ export function ProductWorkspace({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const editable = viewer.role !== "viewer";
+  const navigationTab = tab === "connections" ? "dependencies" : tab;
   async function reload() {
     setReloading(true);
     setError(null);
@@ -111,8 +113,8 @@ export function ProductWorkspace({
                   label: t(
                     tab === "releases"
                       ? "assessments"
-                      : tab === "dependencies"
-                        ? "components"
+                      : tab === "dependencies" || tab === "connections"
+                        ? "architecture"
                         : tab,
                   ),
                 },
@@ -212,7 +214,7 @@ export function ProductWorkspace({
           <WorkspaceNavigation
             label={t("sections")}
             idPrefix="product"
-            value={tab}
+            value={navigationTab}
             onChange={setTab}
             sections={[
               {
@@ -230,25 +232,25 @@ export function ProductWorkspace({
                 label: t("capabilities"),
                 icon: <ViewQuiltOutlinedIcon fontSize="small" />,
               },
-              {
-                value: "dependencies",
-                label: t("components"),
-                icon: <WidgetsOutlinedIcon fontSize="small" />,
-              },
-              {
-                value: "connections",
-                label: t("connections"),
-                icon: <AccountTreeOutlinedIcon fontSize="small" />,
-              },
             ]}
+            secondary={{
+              label: t("supportingContext"),
+              sections: [
+                {
+                  value: "dependencies",
+                  label: t("architecture"),
+                  icon: <AccountTreeOutlinedIcon fontSize="small" />,
+                },
+              ],
+            }}
           />
         }
       >
         <Stack
           spacing={3}
           role="tabpanel"
-          id={`product-panel-${tab}`}
-          aria-labelledby={`product-tab-${tab}`}
+          id={`product-panel-${navigationTab}`}
+          aria-labelledby={`product-tab-${navigationTab}`}
           tabIndex={0}
         >
           {error && (
@@ -283,8 +285,33 @@ export function ProductWorkspace({
             <CapabilityManager
               product={product}
               editable={editable}
+              ownerLabel={viewer.user.name ?? viewer.user.email}
               mutate={mutate}
             />
+          )}
+          {(tab === "dependencies" || tab === "connections") && (
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                {t("architectureHelp")}
+              </Typography>
+              <ToggleButtonGroup
+                exclusive
+                value={tab}
+                aria-label={t("architecture")}
+                size="small"
+                onChange={(_, next: "dependencies" | "connections" | null) => {
+                  if (next) setTab(next);
+                }}
+                sx={{ alignSelf: "flex-start", flexWrap: "wrap" }}
+              >
+                <ToggleButton value="dependencies">
+                  {t("components")}
+                </ToggleButton>
+                <ToggleButton value="connections">
+                  {t("connections")}
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
           )}
           {tab === "dependencies" && (
             <ComponentManager
@@ -312,6 +339,7 @@ export function ProductWorkspace({
         <DialogContent>
           <AssessmentCreateForm
             capabilities={product.capabilities}
+            previous={product.releases[0]}
             ownerLabel={viewer.user.name ?? viewer.user.email}
             onSubmit={async (data) => {
               const release = await releaseRequest<ReleaseDetail>(

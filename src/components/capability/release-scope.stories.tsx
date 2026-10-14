@@ -13,7 +13,6 @@ const meta = {
     readiness: example.readiness,
     editable: false,
     mutate: fn(async () => {}),
-    onInspectCheck: fn(),
     onReviewView: fn(),
   },
 } satisfies Meta<typeof ReleaseScope>;
@@ -43,12 +42,21 @@ export const CapabilityReadiness: Story = {
     await expect(row).toHaveAttribute("aria-expanded", "true");
     await expect(canvas.getByText(outcome)).toBeVisible();
     await expect(
-      canvas.getByText("Frontend + billing · Definition 1"),
+      canvas.getByRole("button", {
+        name: "Invoice CSV includes all tax fields.",
+      }),
     ).toBeVisible();
     await userEvent.click(
-      canvas.getByRole("button", { name: "Inspect acceptance check" }),
+      canvas.getByRole("button", {
+        name: "Invoice CSV includes all tax fields.",
+      }),
     );
-    await expect(args.onInspectCheck).toHaveBeenCalledWith("check-export");
+    await expect(
+      canvas.getByText("Review the relevant test run and record its result."),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("button", { name: "Record result" }),
+    ).not.toBeInTheDocument();
     await userEvent.click(
       canvas.getByRole("button", { name: "View architecture" }),
     );
@@ -71,12 +79,13 @@ export const EditableScope: Story = {
     await userEvent.click(
       canvas.getByRole("button", { name: "Details for Export an invoice" }),
     );
+    await userEvent.click(canvas.getByText("Scope and definition"));
     await userEvent.click(canvas.getByRole("button", { name: "Edit scope" }));
     const dialog = within(canvasElement.ownerDocument.body).getByRole("dialog");
     await waitFor(() =>
       expect(
         within(dialog).getByRole("heading", {
-          name: "Review capability scope",
+          name: "Review feature scope",
         }),
       ).toBeVisible(),
     );
@@ -119,9 +128,9 @@ export const ExclusionAndNewerDefinition: Story = {
     await userEvent.click(
       canvas.getByRole("button", { name: "Details for Search invoices" }),
     );
-    await expect(canvas.getByText("Excluded because")).toBeVisible();
+    await expect(canvas.getByText(/Excluded because:/)).toBeVisible();
     await expect(
-      canvas.getByText("Search ships in a later release."),
+      canvas.getByText(/Search ships in a later release./),
     ).toBeVisible();
     await expect(
       canvas.queryByRole("button", { name: "Inspect acceptance check" }),
@@ -141,15 +150,56 @@ export const EmptyScope: Story = {
     await waitFor(() =>
       expect(
         within(dialog).getByRole("heading", {
-          name: "Add capability to this assessment",
+          name: "Add feature to this release review",
         }),
       ).toBeVisible(),
     );
     await expect(
-      within(dialog).getByRole("combobox", { name: /Capability/ }),
+      within(dialog).getByRole("combobox", { name: /Feature/ }),
     ).toBeVisible();
     await userEvent.click(
       within(dialog).getByRole("button", { name: "Cancel" }),
+    );
+  },
+};
+
+export const AddCheckWithoutLeavingFeature: Story = {
+  args: { editable: true },
+  play: async ({ canvasElement, args }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Details for Export an invoice" }),
+    );
+    await userEvent.click(canvas.getByRole("button", { name: "Add check" }));
+    const dialog = within(
+      within(canvasElement.ownerDocument.body).getByRole("dialog"),
+    );
+    await expect(
+      dialog.queryByRole("combobox", { name: "What this check verifies" }),
+    ).not.toBeInTheDocument();
+    const feature = example.detail.scope.find(
+      (item) => item.capabilityId === "cap-export",
+    )!;
+    await expect(dialog.getByLabelText(/What must work/)).toHaveValue(
+      feature.outcome,
+    );
+    await userEvent.type(
+      dialog.getByLabelText(/How to verify/),
+      "Export the invoice and compare the tax fields.",
+    );
+    await userEvent.click(dialog.getByRole("button", { name: "Add check" }));
+    await expect(args.mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "check.create",
+        data: expect.objectContaining({
+          subjectType: "capability",
+          subjectId: "cap-export",
+          ownerLabel: feature.ownerLabel,
+          environment: example.detail.assessment.validationEnvironment,
+          claim: feature.outcome,
+          method: "Export the invoice and compare the tax fields.",
+        }),
+      }),
     );
   },
 };

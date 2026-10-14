@@ -23,11 +23,12 @@ export const KeyboardPerspective: Story = {
     await userEvent.tab();
     await expect(canvas.getByRole("tab", { name: "Overview" })).toHaveFocus();
     const vertical =
-      canvas.getByRole("tablist").getAttribute("aria-orientation") ===
-      "vertical";
+      canvas
+        .getByRole("tablist", { name: "Release review" })
+        .getAttribute("aria-orientation") === "vertical";
     await userEvent.keyboard(vertical ? "{ArrowDown}" : "{ArrowRight}");
-    await expect(canvas.getByRole("tab", { name: "Screens" })).toHaveFocus();
+    await expect(canvas.getByRole("tab", { name: "Checks" })).toHaveFocus();
     await userEvent.keyboard("{Enter}");
-    await expect(args.onChange).toHaveBeenCalledWith("visual");
+    await expect(args.onChange).toHaveBeenCalledWith("qa");
   },
 };

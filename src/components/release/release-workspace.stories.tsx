@@ -27,10 +27,12 @@ export const ProductPerspective: Story = {
     ).toBeNull();
     await userEvent.click(canvas.getByRole("tab", { name: "Architecture" }));
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toBeVisible();
     await userEvent.click(canvas.getByRole("tab", { name: "Checks" }));
-    await expect(canvas.getByRole("heading", { name: "Checks" })).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Checks & results" }),
+    ).toBeVisible();
     await expect(
       within(canvas.getByRole("region", { name: "Check evidence" })).getByText(
         "Expired evidence",
@@ -53,7 +55,7 @@ export const CapabilityOverviewOpensItsArchitecture: Story = {
       canvas.getByRole("tab", { name: "Architecture" }),
     ).toHaveAttribute("aria-selected", "true");
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toHaveTextContent("Export an invoice");
     const evidence = within(
       canvas.getByRole("region", { name: "Check evidence" }),
@@ -74,7 +76,7 @@ export const ScreensKeepCapabilityInArchitecture: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole("option", {
         name: "Export an invoice",
@@ -84,7 +86,7 @@ export const ScreensKeepCapabilityInArchitecture: Story = {
       canvas.getByRole("button", { name: "View architecture" }),
     );
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toHaveTextContent("Export an invoice");
     await expect(
       canvas.getByRole("button", { name: /Billing API.*1 dependency/ }),
@@ -114,7 +116,7 @@ export const ScreensKeepCapabilityInChecks: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole("option", {
         name: "Export an invoice",
@@ -125,9 +127,7 @@ export const ScreensKeepCapabilityInChecks: Story = {
       canvas.getByRole("region", { name: "Check evidence" }),
     );
     await expect(
-      evidence.getByText(
-        "Capability, related components and release-wide checks",
-      ),
+      evidence.getByText("Feature, related components and release-wide checks"),
     ).toBeVisible();
     await expect(
       evidence.getByText("Invoice CSV includes all tax fields."),
@@ -144,14 +144,14 @@ export const ScreensKeepCapabilityInChecks: Story = {
       evidence.queryByText("Duplicate delivery creates only one ledger entry."),
     ).toBeNull();
     await userEvent.click(
-      evidence.getByRole("button", { name: "Clear capability" }),
+      evidence.getByRole("button", { name: "Clear feature" }),
     );
     await expect(
       evidence.getByText("Duplicate delivery creates only one ledger entry."),
     ).toBeVisible();
     await expect(
       evidence.queryByText(
-        "Capability, related components and release-wide checks",
+        "Feature, related components and release-wide checks",
       ),
     ).toBeNull();
     await expect(canvas.getByRole("tab", { name: "Checks" })).toHaveAttribute(
@@ -165,7 +165,7 @@ export const ArchitectureScopeEndsWhenChangingPerspective: Story = {
   args: { initialView: "backend" },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await userEvent.click(
       within(document.body).getByRole("option", { name: "Export an invoice" }),
     );
@@ -250,14 +250,14 @@ export const ArchitectureNavigationClearsLinkedCheckFocus: Story = {
     await expect(
       new URL(window.location.href).searchParams.get("check"),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole("combobox", { name: "Capability" }));
+    await userEvent.click(canvas.getByRole("combobox", { name: "Feature" }));
     await userEvent.click(
       within(canvasElement.ownerDocument.body).getByRole("option", {
         name: "Export an invoice",
       }),
     );
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toHaveFocus();
     evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
     await expect(
@@ -309,7 +309,9 @@ export const RoleNavigationClearsFunctionalCheckFocus: Story = {
     await expect(
       evidence.getByText("Recovery tokens expire and cannot be reused."),
     ).toBeVisible();
-    await userEvent.click(canvas.getByRole("tab", { name: "Operations" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Operations, security & data" }),
+    );
     evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
     await expect(
       evidence.getByText(
@@ -352,8 +354,8 @@ export const ClearLinkedCheckKeepsOperationsView: Story = {
       evidence.getByRole("button", { name: "Clear check focus" }),
     );
     await expect(
-      canvas.getByRole("tab", { name: "Operations" }),
-    ).toHaveAttribute("aria-selected", "true");
+      canvas.getByRole("button", { name: "Operations, security & data" }),
+    ).toHaveAttribute("aria-pressed", "true");
     await expect(
       evidence.getByText(
         "Rollback restores the previous worker version without losing events.",
@@ -383,16 +385,22 @@ export const RoleNavigationClearsCheckFilters: Story = {
         "Rollback restores the previous worker version without losing events.",
       ),
     ).toBeNull();
-    await userEvent.click(canvas.getByRole("tab", { name: "Operations" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Operations, security & data" }),
+    );
     evidence = within(canvas.getByRole("region", { name: "Check evidence" }));
     await expect(
-      evidence.getByRole("textbox", { name: "Search claims or owners" }),
-    ).toHaveValue("");
+      evidence.queryByRole("textbox", { name: "Search claims or owners" }),
+    ).toBeNull();
     await expect(
       evidence.getByText(
         "Rollback restores the previous worker version without losing events.",
       ),
     ).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "All areas" }));
+    await expect(
+      canvas.getByRole("textbox", { name: "Search claims or owners" }),
+    ).toHaveValue("");
   },
 };
 export const MissingDefinitionOpensChecks: Story = {
@@ -416,7 +424,9 @@ export const MissingDefinitionOpensChecks: Story = {
       "aria-selected",
       "true",
     );
-    await expect(canvas.getByRole("heading", { name: "Checks" })).toBeVisible();
+    await expect(
+      canvas.getByRole("heading", { name: "Checks & results" }),
+    ).toBeVisible();
   },
 };
 export const DecisionPerspective: Story = {
@@ -455,7 +465,7 @@ export const ViewerPermissions: Story = {
       canvas.queryByRole("button", { name: "Add check" }),
     ).toBeNull();
     await expect(
-      canvas.queryByRole("button", { name: "Record evidence" }),
+      canvas.queryByRole("button", { name: "Record result" }),
     ).toBeNull();
     await userEvent.click(canvas.getByRole("tab", { name: "Decision" }));
     await expect(
@@ -632,15 +642,14 @@ export const BrowserBackRestoresLinkedCheckAndCategory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const push = spyOn(window.history, "pushState");
-    await userEvent.click(canvas.getByRole("tab", { name: "Operations" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Operations, security & data" }),
+    );
     await expect(push).toHaveBeenCalledTimes(1);
     push.mockRestore();
     window.history.back();
     await waitFor(() =>
-      expect(canvas.getByRole("tab", { name: "Checks" })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      ),
+      expect(new URL(window.location.href).searchParams.get("view")).toBe("qa"),
     );
     await expect(new URL(window.location.href).searchParams.get("check")).toBe(
       "check-recovery",
@@ -677,7 +686,7 @@ export const ArchitectureDirectLinkAndHistory: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("combobox", { name: "Capability" }),
+      canvas.getByRole("combobox", { name: "Feature" }),
     ).toHaveTextContent("Export an invoice");
     await expect(
       canvas.queryByRole("button", { name: /Identity API/ }),
@@ -712,7 +721,7 @@ export const ArchitectureDirectLinkAndHistory: Story = {
     window.history.back();
     await waitFor(() =>
       expect(
-        canvas.getByRole("combobox", { name: "Capability" }),
+        canvas.getByRole("combobox", { name: "Feature" }),
       ).toHaveTextContent("Export an invoice"),
     );
   },
@@ -739,5 +748,25 @@ export const CategoryChangeKeepsSearch: Story = {
         name: "Recovery tokens expire and cannot be reused.",
       }),
     ).toBeVisible();
+  },
+};
+
+export const LegacyArchitectureCheckLink: Story = {
+  args: { initialView: "backend" },
+  beforeEach: () =>
+    reviewLocation("/share/demo/releases?view=backend&check=check-recovery"),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole("tab", { name: "Architecture" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await expect(
+      canvas.getByRole("button", {
+        name: "Recovery tokens expire and cannot be reused.",
+      }),
+    ).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      canvas.queryByText(/Select a feature or component to see/),
+    ).not.toBeInTheDocument();
   },
 };
