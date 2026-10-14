@@ -5,7 +5,7 @@ import { ScreenUploadControl } from "./screen-uploader";
 const meta = {
   component: ScreenUploadControl,
   tags: ["ai-generated"],
-  args: { onUpload: fn(async () => {}) },
+  args: { onUpload: fn(async () => {}), onPendingChange: fn() },
 } satisfies Meta<typeof ScreenUploadControl>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -43,6 +43,14 @@ export const FailedUploadCanRetry: Story = {
         canvas.getByRole("button", { name: "Choose screenshot" }),
       ).toBeEnabled();
       await expect(args.onUpload).toHaveBeenCalledTimes(attempt);
+      await expect(args.onPendingChange).toHaveBeenNthCalledWith(
+        attempt * 2 - 1,
+        true,
+      );
+      await expect(args.onPendingChange).toHaveBeenNthCalledWith(
+        attempt * 2,
+        false,
+      );
     }
   },
 };
@@ -61,6 +69,8 @@ export const RepeatedDropDuringUpload: Story = {
       new DragEvent("drop", { bubbles: true, dataTransfer }),
     );
     await waitFor(() => expect(args.onUpload).toHaveBeenCalledOnce());
+    await expect(args.onPendingChange).toHaveBeenCalledOnce();
+    await expect(args.onPendingChange).toHaveBeenCalledWith(true);
     await expect(
       canvas.getByRole("button", { name: "Choose screenshot" }),
     ).toBeDisabled();

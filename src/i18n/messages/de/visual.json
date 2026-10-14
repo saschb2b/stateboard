@@ -248,5 +248,14 @@
   "or": "oder ",
   "controlKey": "Strg",
   "unsavedChanges": "Ungespeicherte Änderungen",
-  "discardChanges": "Änderungen verwerfen"
+  "discardChanges": "Änderungen verwerfen",
+  "screenName": "Screenname",
+  "linkedFeatures": "Hier gezeigte Funktionen",
+  "linkedFeaturesHelp": "Diesen Bereich mit den dargestellten Produktfunktionen verknüpfen. Die Markierung bestätigt kein Prüfergebnis.",
+  "linkFeature": "Funktion verknüpfen",
+  "unlinkFeature": "Verknüpfung mit {name} entfernen",
+  "noLinkedFeatures": "Noch keine Funktion verknüpft.",
+  "linkFeatureError": "Die Funktionsverknüpfung konnte nicht aktualisiert werden. Erneut versuchen.",
+  "createFeatureHelp": "In der Produktübersicht eine Funktion anlegen, um sie hier zu verknüpfen.",
+  "annotationCanvas": "Screen-Markierungen"
 }

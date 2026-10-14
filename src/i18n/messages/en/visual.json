@@ -248,5 +248,14 @@
   "or": "or ",
   "controlKey": "Ctrl",
   "unsavedChanges": "Unsaved changes",
-  "discardChanges": "Discard changes"
+  "discardChanges": "Discard changes",
+  "screenName": "Screen name",
+  "linkedFeatures": "Features shown here",
+  "linkedFeaturesHelp": "Connect this region to the product features it shows. A screen annotation does not verify a release check.",
+  "linkFeature": "Link a feature",
+  "unlinkFeature": "Unlink {name}",
+  "noLinkedFeatures": "No feature linked yet.",
+  "linkFeatureError": "Could not update the feature link. Try again.",
+  "createFeatureHelp": "Add a feature in the product overview to link it here.",
+  "annotationCanvas": "Screen annotations"
 }

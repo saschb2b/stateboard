@@ -17,6 +17,7 @@ interface ScreenUploaderProps {
   onUploaded: (screen: ScreenWithRegions) => void;
   /** When true, renders a smaller in-line button rather than the dropzone. */
   compact?: boolean;
+  onPendingChange?: (pending: boolean) => void;
   /**
    * When set, the upload replaces this screen's image (keeping its regions)
    * instead of creating a new screen. The response already carries the
@@ -30,6 +31,7 @@ export function ScreenUploader({
   onUploaded,
   compact = false,
   replaceScreenId,
+  onPendingChange,
 }: ScreenUploaderProps) {
   const upload = async (file: File) => {
     const form = new FormData();
@@ -46,14 +48,22 @@ export function ScreenUploader({
     onUploaded(screen);
   };
 
-  return <ScreenUploadControl compact={compact} onUpload={upload} />;
+  return (
+    <ScreenUploadControl
+      compact={compact}
+      onUpload={upload}
+      onPendingChange={onPendingChange}
+    />
+  );
 }
 
 export function ScreenUploadControl({
   compact = false,
   onUpload,
+  onPendingChange,
 }: {
   compact?: boolean;
+  onPendingChange?: (pending: boolean) => void;
   onUpload: (file: File) => Promise<void>;
 }) {
   const t = useTranslations("Visual");
@@ -68,6 +78,7 @@ export function ScreenUploadControl({
     uploadInFlight.current = true;
     setError(null);
     setUploading(true);
+    onPendingChange?.(true);
     try {
       await onUpload(file);
     } catch (cause) {
@@ -75,6 +86,7 @@ export function ScreenUploadControl({
     } finally {
       uploadInFlight.current = false;
       setUploading(false);
+      onPendingChange?.(false);
     }
   };
 

@@ -70,6 +70,7 @@ export function ScreenSidebar({
 }: ScreenSidebarProps) {
   const t = useTranslations("Visual");
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [pendingRenameId, setPendingRenameId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ el: HTMLElement; id: string } | null>(
@@ -324,6 +325,16 @@ export function ScreenSidebar({
         anchorEl={menu?.el ?? null}
         open={Boolean(menu)}
         onClose={() => setMenu(null)}
+        slotProps={{
+          transition: {
+            onExited: () => {
+              if (pendingRenameId) {
+                setRenamingId(pendingRenameId);
+                setPendingRenameId(null);
+              }
+            },
+          },
+        }}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
@@ -331,7 +342,7 @@ export function ScreenSidebar({
           onClick={() => {
             const id = menu?.id;
             setMenu(null);
-            if (id) setRenamingId(id);
+            if (id) setPendingRenameId(id);
           }}
         >
           <ListItemIcon>
@@ -434,6 +445,7 @@ function RenameField({
   onCommit: (next: string) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("Visual");
   const [draft, setDraft] = useState(initial);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -460,6 +472,7 @@ function RenameField({
       onDoubleClick={(e) => e.stopPropagation()}
       autoFocus
       placeholder={placeholder}
+      inputProps={{ "aria-label": t("screenName") }}
       sx={{
         flex: 1,
         fontSize: "0.875rem",

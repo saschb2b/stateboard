@@ -63,6 +63,8 @@ export function AddScreenDialog({
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [adding, setAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const busy = adding || uploading;
   const [error, setError] = useState<string | null>(null);
 
   // Lazy-load the gallery the first time the Reuse tab is shown. The parent
@@ -156,7 +158,7 @@ export function AddScreenDialog({
   return (
     <Dialog
       open={open}
-      onClose={adding ? undefined : onClose}
+      onClose={busy ? undefined : onClose}
       maxWidth="md"
       fullWidth
     >
@@ -167,6 +169,7 @@ export function AddScreenDialog({
         <ToggleButtonGroup
           value={tab}
           exclusive
+          disabled={busy}
           size="small"
           onChange={(_, v: Tab | null) => v && setTab(v)}
           sx={{ mb: 2.5 }}
@@ -183,6 +186,7 @@ export function AddScreenDialog({
           <Box>
             <ScreenUploader
               boardId={boardId}
+              onPendingChange={setUploading}
               replaceScreenId={isReplace ? replaceScreenId : undefined}
               onUploaded={(s) => {
                 onResult([s]);
@@ -312,7 +316,7 @@ export function AddScreenDialog({
               : t("selectedCount", { count: selected.size })}
           </Typography>
           <Stack direction="row" spacing={1}>
-            <Button onClick={onClose} disabled={adding}>
+            <Button onClick={onClose} disabled={busy}>
               {t("cancel")}
             </Button>
             <Button
@@ -333,7 +337,13 @@ export function AddScreenDialog({
             </Button>
           </Stack>
         </DialogActions>
-      ) : null}
+      ) : (
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={onClose} disabled={busy}>
+            {t("cancel")}
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }
