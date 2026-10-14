@@ -5,6 +5,7 @@ description: Keyboard, status, disclosure, and responsive behavior for release r
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/review-clarity-research.md
   - resource: src/components/app/page-breadcrumbs.tsx
   - resource: src/components/board/board-editor.tsx
   - resource: src/components/release/release-location.ts
@@ -26,7 +27,7 @@ sources:
 
 # Behavior
 
-Views change the presentation of one assessment. The URL retains the selected view. Changing view clears stale check focus. Opening architecture from a capability retains that capability's scope.
+Overview, Checks, and Decision share one assessment. Screens and Architecture provide supporting context. Category choices, including operations, filter the same checks. The URL retains the selected view. Changing view clears stale check focus. Opening architecture from a capability retains that capability's scope.
 
 A navigation action updates view and focus in one history entry. Back, Forward, and reload restore the URL's view, check, category, capability, and component. Search, result, and needs-attention filters remain local to each view. Preserve this distinction when changing the [workspace](../patterns/review-workspace.md).
 
@@ -44,13 +45,19 @@ Async actions show pending state, reject duplicate submissions, and report error
 
 Check and evidence dialogs keep a labelled Close control above the scrolling form. Closing returns focus to the trigger. Disable Close, Escape, and backdrop dismissal while a save is pending.
 
+# Contextual entry
+
+Place **Add check** and **Record result** within the expanded release feature. Keep the feature identity visible and carry its known owner and environment into the form. The expected outcome can start the claim, but remains editable. Inherit the active check category, or operational in the Operations filter, so a newly created check remains in view. Secondary settings show their current values before expansion. Result entry asks what happened and what the reviewer observed. Source and time remain available in details. An automatically assigned manual review reference removes a field without removing attribution or retry identity.
+
+Link a supporting system or screen from its feature. The form inherits the feature rather than asking for it again. Existing record selectors remain available for reuse. Keep these shortcuts within the same permission, scope, revision, and evidence rules as the full forms. The [clarity study](../references/review-clarity-research.md) explains the distinction between reducing work and hiding required information.
+
 # Location and editing
 
 Use a labelled breadcrumb navigation landmark for the board hierarchy. Desktop shows the ancestor trail, with native links for parent destinations and plain text for the current page. At narrow widths, show the immediate parent with an arrow and a destination label. Keep the current identity in the page heading.
 
 Parent links work when the page opens directly, without prior browser history. Do not add a second Back action beside the trail.
 
-The product's section navigation remains available for sibling destinations. Screens, settings, and history identify their board parent. An assessment also links to its assessment list. Keep editing separate from breadcrumb navigation through a visible **Edit board** action. Follow the [board details contract](../patterns/supporting-surfaces.md#board-details-and-return-paths) for saving, discarding, errors, and draft retention.
+The product's section navigation remains available for sibling destinations. Screens, settings, and history identify their board parent. A release review also links to its review list. Keep editing separate from breadcrumb navigation through a visible **Edit board** action. Follow the [board details contract](../patterns/supporting-surfaces.md#board-details-and-return-paths) for saving, discarding, errors, and draft retention.
 
 In the visual editor, **More board options** keeps the actions that no longer fit in the header. Its menu retains labelled search, sharing, presentation, and checked visual-state filters. Keep the menu and screen-rail expansion reachable by keyboard. The board title remains a location cue. Use **Edit board** for name and description changes.
 

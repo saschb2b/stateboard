@@ -65,30 +65,37 @@ MUI receives the selected component locale. Sign-in screens owned by an external
 
 Use these terms consistently. Inflect nouns and adjectives for their sentence. Short view labels can omit “Release” where the surrounding assessment provides the context.
 
-| English                           | German                                   | Meaning                                                                                      |
-| --------------------------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Release readiness                 | Release-Bereitschaft                     | Result derived from applicable required checks.                                              |
-| Release assessment                | Release-Bewertung                        | Review of one candidate in a fixed context.                                                  |
-| Capability                        | Fähigkeit                                | A product outcome someone needs to achieve.                                                  |
-| Component                         | Komponente                               | A declared part of the product architecture.                                                 |
-| Dependency                        | Abhängigkeit                             | A declared relationship between required or supporting components.                           |
-| Evidence                          | Nachweis                                 | An observation relevant to a check revision and context.                                     |
-| Check                             | Prüfung                                  | A versioned claim with acceptance criteria.                                                  |
-| Acceptance check                  | Abnahmeprüfung                           | A check used to establish required behavior.                                                 |
-| Required / optional               | Erforderlich / optional                  | Whether a check gates readiness.                                                             |
-| Validation environment            | Prüfumgebung                             | Environment in which a check is evaluated.                                                   |
-| Target environment                | Zielumgebung                             | Environment the candidate is intended to reach.                                              |
-| Ready                             | Bereit                                   | Required applicable checks pass.                                                             |
-| Blocked                           | Blockiert                                | A required check has failed.                                                                 |
-| Needs evidence                    | Nachweise fehlen                         | Current evidence does not establish readiness.                                               |
-| Approved / held                   | Freigegeben / Freigabe zurückgestellt    | Recorded human release decision.                                                             |
-| Functional / integration / UX     | Funktional / Integration / Bedienbarkeit | Check categories; overview may use Funktionalität as its area label.                         |
-| Data / security / operations      | Daten / Sicherheit / Betrieb             | Remaining check categories.                                                                  |
-| Workspace owner / editor / viewer | Inhaber / Bearbeitung / Lesen            | Display names for unchanged authorization roles.                                             |
-| Edit board / Board settings       | Board bearbeiten / Board-Einstellungen   | Edit the existing board's name and description.                                              |
-| Discard changes                   | Änderungen verwerfen                     | Restore the last saved form values without a request.                                        |
-| History                           | Verlauf                                  | Recorded board changes, distinct from assessment and evidence history.                       |
-| Accountable owner                 | Verantwortliche Person                   | Assigned responsibility for a capability, component, or release; does not grant permissions. |
+| English                           | German                                   | Meaning                                                                                         |
+| --------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Release readiness                 | Release-Bereitschaft                     | Result derived from applicable required checks.                                                 |
+| Release review                    | Release-Prüfung                          | Human interface name for an assessment of one candidate in a fixed context.                     |
+| Feature                           | Funktion                                 | Human interface name for a capability: an observable product outcome, with or without a screen. |
+| Component                         | Komponente                               | A declared technical part of the optional architecture context.                                 |
+| Architecture                      | Architektur                              | Supporting components and their declared relationships.                                         |
+| Overview / Checks / Decision      | Übersicht / Prüfungen / Entscheidung     | Short primary navigation labels.                                                                |
+| Checks & results                  | Prüfungen & Ergebnisse                   | Requirements together with their applicable observations.                                       |
+| Decision                          | Entscheidung                             | An owner's recorded approval or hold.                                                           |
+| Record result                     | Ergebnis erfassen                        | Append an observation; does not execute or infer a test.                                        |
+| Dependency                        | Abhängigkeit                             | A declared relationship between required or supporting components.                              |
+| Evidence                          | Nachweis                                 | An observation relevant to a check revision and context.                                        |
+| Check                             | Prüfung                                  | A versioned claim with acceptance criteria.                                                     |
+| Acceptance check                  | Abnahmeprüfung                           | A check used to establish required behavior.                                                    |
+| Required / optional               | Erforderlich / optional                  | Whether a check gates readiness.                                                                |
+| Validation environment            | Prüfumgebung                             | Environment in which a check is evaluated.                                                      |
+| Target environment                | Zielumgebung                             | Environment the candidate is intended to reach.                                                 |
+| Ready                             | Bereit                                   | Required applicable checks pass.                                                                |
+| Blocked                           | Blockiert                                | A required check has failed.                                                                    |
+| Needs evidence                    | Nachweise fehlen                         | Current evidence does not establish readiness.                                                  |
+| Approved / held                   | Freigegeben / Freigabe zurückgestellt    | Recorded human release decision.                                                                |
+| Functional / integration / UX     | Funktional / Integration / Bedienbarkeit | Check categories; overview may use Funktionalität as its area label.                            |
+| Data / security / operations      | Daten / Sicherheit / Betrieb             | Remaining check categories.                                                                     |
+| Workspace owner / editor / viewer | Inhaber / Bearbeitung / Lesen            | Display names for unchanged authorization roles.                                                |
+| Edit board / Board settings       | Board bearbeiten / Board-Einstellungen   | Edit the existing board's name and description.                                                 |
+| Discard changes                   | Änderungen verwerfen                     | Restore the last saved form values without a request.                                           |
+| History                           | Verlauf                                  | Recorded board changes, distinct from assessment and evidence history.                          |
+| Accountable owner                 | Verantwortliche Person                   | Assigned responsibility for a capability, component, or release; does not grant permissions.    |
+
+Use **Release reviews / Release-Prüfungen** and **Features / Funktionen** for the main destinations. Internal `assessment` and `capability` names, routes, and REST/MCP contracts stay unchanged. Avoid translating a feature into a screen-only concept.
 
 “Bereit” does not mean deployed or approved. Visual production state remains distinct from candidate verification. Preserve that distinction from [release readiness](../product/readiness.md) in every language.
 

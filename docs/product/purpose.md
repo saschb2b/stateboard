@@ -5,8 +5,9 @@ description: Explain the release decision StateBoard supports and the limits of 
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:15:41Z
+  at: 2026-10-14
 sources:
+  - resource: docs/design-system/references/review-clarity-research.md
   - id: readme
     resource: "README.md"
   - id: mvp
@@ -18,6 +19,8 @@ sources:
 StateBoard helps a team judge whether a specific product candidate is ready for its intended users. It connects outcomes to implementation, checks, and evidence. Screenshots are an optional view of the same product. Backend outcomes need no screen.[^mvp]
 
 Product managers inspect scope and owners. Engineers inspect dependencies and affected outcomes. QA inspects claims and observations. Operations, security, and data specialists inspect their required checks. A release owner records the decision after reviewing unresolved claims. Each profession reads the same assessment through a different view.[^mvp]
+
+People can maintain a review without an AI connection. Start from the outcomes that should work, define their checks, record observations, and review the decision. The interface calls these outcomes features. Supporting architecture and screens remain optional. The [clarity study](../design-system/references/review-clarity-research.md) records the rationale and its research limits.
 
 The [product model](model.md) defines those records. [Readiness](readiness.md) explains the calculated conclusion and its limits. The [design system](../design-system/overview.md) defines how the review workspace presents them.
 

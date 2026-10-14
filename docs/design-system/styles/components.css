@@ -831,3 +831,54 @@ h2 .status::before {
     flex-direction: column;
   }
 }
+
+/* Manual result entry in the release-review specimen. */
+.specimen-result {
+  display: grid;
+  gap: var(--spacing-md);
+  max-width: 40rem;
+}
+.specimen-result label {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+.specimen-result select,
+.specimen-result textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--colors-dark-border);
+  background: var(--colors-dark-surface);
+  color: var(--colors-dark-text);
+  font: inherit;
+}
+.specimen-result button {
+  justify-self: start;
+}
+
+.workspace__supporting {
+  margin-top: var(--spacing-lg);
+}
+.workspace__supporting > .meta {
+  margin: 0;
+  padding: 0 var(--spacing-md);
+}
+@media (max-width: 1199px) {
+  .workspace__nav {
+    flex-wrap: wrap;
+  }
+  .workspace__supporting {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    margin-top: var(--spacing-xs);
+    overflow-x: auto;
+  }
+  .workspace__supporting > .meta {
+    flex-shrink: 0;
+  }
+  .workspace__supporting > div {
+    display: flex;
+  }
+}

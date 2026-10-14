@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>StateBoard product overview wireframe</title>
+    <title>StateBoard product-overview wireframe</title>
     <link rel="stylesheet" href="../styles/tokens.css" />
     <link rel="stylesheet" href="../styles/components.css" />
     <link rel="stylesheet" href="../styles/wireframe.css" />
@@ -36,8 +36,15 @@
       <nav class="workspace__nav" aria-label="Product views">
         <a href="#product" aria-current="page">Overview</a
         ><a href="#assessment-detail" data-open="assessment-detail"
-          >Assessments</a
-        ><a href="#capabilities">Capabilities</a><a href="#coverage">Checks</a>
+          >Release reviews</a
+        ><a href="#capabilities">Features</a>
+        <div class="workspace__supporting">
+          <p class="meta">Supporting context</p>
+          <div>
+            <a href="review-workspace.example.html#architecture">Architecture</a
+            ><a href="review-workspace.example.html#screens">Screens</a>
+          </div>
+        </div>
       </nav>
       <header class="workspace__header" id="product">
         <div class="product-overview-identity">
@@ -45,8 +52,8 @@
             <p class="meta">Illustrative StateBoard product · No live data</p>
             <h1>StateBoard</h1>
             <p class="muted">
-              Judge a release from capabilities, dependencies, checks, and
-              evidence.
+              See what should work, what was checked, and what still needs a
+              decision.
             </p>
           </div>
           <div
@@ -68,7 +75,7 @@
         >
           <div class="product-overview-assessment-heading">
             <div>
-              <p class="meta">Latest assessment · Example RC 1</p>
+              <p class="meta">Latest release review · Example RC 1</p>
               <h2 id="assessment-title">
                 <span
                   class="product-overview-state product-overview-state--missing"
@@ -80,7 +87,7 @@
               class="product-overview-review"
               href="#assessment-detail"
               data-open="assessment-detail"
-              >Review assessment →</a
+              >Open release review →</a
             >
           </div>
           <div class="product-overview-context">
@@ -110,8 +117,8 @@
         </section>
         <section id="capabilities" aria-labelledby="capability-title">
           <div class="product-overview-section-heading">
-            <h2 id="capability-title">Capabilities</h2>
-            <span class="meta">6 active · 4 in the latest assessment</span>
+            <h2 id="capability-title">Features</h2>
+            <span class="meta">6 active · 4 in the latest review</span>
           </div>
           <p class="meta">
             Own checks describe this candidate. Mappings describe the declared
@@ -119,13 +126,13 @@
           </p>
           <table class="product-overview-capabilities">
             <caption class="product-overview-visually-hidden">
-              Active capabilities, own-check results, and declared
-              implementation mappings
+              Product features, own-check results, and declared implementation
+              mappings
             </caption>
             <thead>
               <tr>
-                <th scope="col">Capability / owner</th>
-                <th scope="col">Latest assessment</th>
+                <th scope="col">Feature / owner</th>
+                <th scope="col">Latest release review</th>
                 <th scope="col">Declared mappings</th>
               </tr>
             </thead>
@@ -250,8 +257,8 @@
                   <details>
                     <summary>No declared mappings</summary>
                     <p class="meta">
-                      This capability was added after the latest assessment. It
-                      has no assessment result.
+                      This feature was added after the latest review. It has no
+                      review result.
                     </p>
                   </details>
                 </td>
@@ -262,7 +269,7 @@
         <section id="coverage" aria-labelledby="coverage-title">
           <div class="product-overview-section-heading">
             <h2 id="coverage-title">Verification coverage</h2>
-            <span class="meta">Latest assessment</span>
+            <span class="meta">Latest release review</span>
           </div>
           <p class="meta">
             Each area reflects its recorded acceptance checks. Missing coverage

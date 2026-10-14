@@ -5,7 +5,7 @@ description: Locate adopted scope, published releases, and the remaining pilot w
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T21:15:41Z
+  at: 2026-10-14
 sources:
   - id: roadmap
     resource: "src/content/docs/roadmap.mdx"
@@ -21,7 +21,7 @@ sources:
 
 The current repository describes `2026.8.0` as the published visual/team/agent baseline and the release-readiness MVP as implemented but unreleased. This is a repository statement, not an independently refreshed release-registry query.[^readme]
 
-The MVP includes [capabilities, dependencies, assessments, and evidence](model.md), six profession views, ordinary AI maintenance through REST/MCP, human decisions, and curated public reviews. The [readiness rules](readiness.md) remain the acceptance boundary.[^mvp]
+The MVP includes [capabilities, dependencies, assessments, and evidence](model.md), task-based review and role filters, ordinary AI maintenance through REST/MCP, human decisions, and curated public reviews. The [readiness rules](readiness.md) remain the acceptance boundary.[^mvp]
 
 The real team pilot and external GitHub milestone reconciliation remain follow-up work. The persona iteration journal records simulated roles and local product use. Those observations do not replace independent human research or production verification.[^journal]
 

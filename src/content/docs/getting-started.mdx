@@ -1,11 +1,11 @@
 ---
 title: Getting started
-description: Create a product board, start a release assessment, or use the visual screenshot workflow.
+description: Create a product board, start a release review, or use the visual screenshot workflow.
 ---
 
-Start by creating a product board. The current development build opens its readiness workspace, where capabilities connect outcomes, dependencies, and verification. The readiness MVP is unreleased; the latest published `2026.8.0` release supports the existing visual workflow.
+Start by creating a product board. The current development build opens its readiness workspace, where features describe what should work and checks record what was observed. The readiness MVP is unreleased; the latest published `2026.8.0` release supports the existing visual workflow.
 
-Use the [release readiness guide](/docs/release-readiness) for an assessment from candidate selection through evidence, decision, and curated sharing. The steps below also show how to add visual anchors and share a visual board.
+Use the [release readiness guide](/docs/release-readiness) to review a candidate, record check results, and make a release decision. AI, screenshots, and architecture records are optional. The steps below also show how to add visual anchors and share a visual board.
 
 Use the language button in the header to choose **English** or **Deutsch**. The development build saves this preference in your browser. Switching language preserves open forms and the current view. Names, evidence, and other entered content keep their original language; these guides and API diagnostics remain in English.
 
@@ -34,9 +34,9 @@ For a real deployment (your own Keycloak, via Docker Compose or Helm), see [Self
 
 ## 2. Create a board
 
-On `/boards`, click **New board**. Give it a name, usually a product or a quarter, e.g. `Acme Dashboard / Q2`. The description is optional.
+On `/boards`, click **New board**. Give it a name, usually a product or a quarter, e.g. `StateBoard`. The description is optional.
 
-The development build opens the product **Overview** after creation. Add capabilities and follow the [release workflow](/docs/release-readiness). **Assessments** holds candidate reviews. Choose **Screens** to open the visual editor. Existing boards need no conversion.
+The development build opens the product **Overview** after creation. Add features and follow the [release workflow](/docs/release-readiness). **Release reviews** holds candidate reviews. Choose **Screens** to open the visual editor. Existing boards need no conversion.
 
 Already have a visual board that's close to what you need? Click **Duplicate** on its card to deep-copy every screen and region into a new board, then swap only the screens that changed — faster than starting over.
 
@@ -46,7 +46,7 @@ Each board has an internal ID used in its workspace URLs. Public visual links us
 
 Choose **Edit board** beside the product name or on its row in the board list. Update the name and description under **Board settings**, then choose **Save changes**. **Discard changes** restores the last saved values. These actions require editing permission. Switching settings sections keeps the draft. Leaving settings closes the form, so save or discard first.
 
-Use the header breadcrumbs to return to a parent page. The named board returns to its product overview. **Assessments** returns from a candidate to that board's assessment list. On narrow screens, the header shows the immediate parent link. Product section tabs move between views within the board. Choose **History** beside **Edit board** in the product heading to see board activity.
+Use the header breadcrumbs to return to a parent page. The named board returns to its product overview. **Release reviews** returns from a candidate to that board's review list. On narrow screens, the header shows the immediate parent link. Product section tabs move between views within the board. Choose **History** beside **Edit board** in the product heading to see board activity.
 
 From the visual editor, open **More board options → Edit board**. The empty editor also has an **Edit board** action. The board title is a parent link, so clicking it returns to the overview.
 
@@ -81,11 +81,11 @@ Press **Esc** at any time to discard a draft region.
 
 On desktop, click **Share** in the editor header to copy the read-only URL. Its arrow opens **Open share view** and **Manage links**. On narrow screens, open **More board options → Copy share link**. The same menu contains **Open share view** and **Manage links**.
 
-This visual link shows every screen and region on the board. A release review needs capabilities and verification too; publish a [curated recorded decision](/docs/release-readiness#record-and-share-a-decision) when sharing release readiness.
+This visual link shows every screen and region on the board. A release review also needs features and check results; publish a [curated recorded decision](/docs/release-readiness#record-and-share-a-decision) when sharing release readiness.
 
 ## What's next
 
-- [Assess a release](/docs/release-readiness): capabilities, dependencies, evidence, six views, and a recorded decision.
+- [Review a release](/docs/release-readiness): features, checks, results, and an owner decision.
 - [Annotate like you mean it](/docs/annotating): when to use each state, label conventions, notes that actually help.
 - [Use Present mode](/docs/sharing-and-presenting): go fullscreen for a stakeholder review.
 - [Self-host on your cluster](/docs/self-hosting): Helm, Docker, airgap configurations.

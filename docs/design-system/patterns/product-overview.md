@@ -1,12 +1,14 @@
 ---
 type: Pattern
 title: Product overview
-description: One assessment summary followed by the active capability catalog and check coverage by discipline.
+description: One release review summary followed by product features and check coverage, with architecture as optional context.
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/review-clarity-research.md
   - resource: docs/design-system/references/ux-navigation-research.md
   - resource: src/components/release/product-workspace.tsx
+  - resource: src/components/capability/capability-manager.tsx
   - resource: src/components/app/page-breadcrumbs.tsx
   - resource: docs/design-system/references/product-overview-research.md
   - resource: docs/product/model.md
@@ -28,9 +30,9 @@ The product overview answers what the product contains, which candidate the chec
 | --------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Product heading       | Product name, short purpose, Edit board for editors, History and Refresh actions                                     | Below 900px, place the wrapping action row beneath the purpose. |
 | Navigation            | Existing 184px rail for product sections, with Overview selected                                                     | Below 1200px, show horizontal navigation beneath the heading.   |
-| Latest assessment     | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.                |
+| Latest release review | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.                |
 | Findings              | A labelled disclosure inside the assessment band                                                                     | Expand beneath the band without opening another column.         |
-| Active capabilities   | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.       |
+| Product features      | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.       |
 | Verification coverage | Six compact rows: functionality, integration, user experience, data, security, operations                            | Below 600px, stack the description beneath its discipline.      |
 | Product connections   | Quiet component, dependency, and mapped-screen counts below verification coverage                                    | Wrap links while retaining their full labels.                   |
 
@@ -44,19 +46,21 @@ Label per-capability results as own checks. They do not include every dependency
 
 Separate calculated readiness from an owner's decision. An assessment with missing evidence must retain that conclusion even when a decision exists. Label the assessment as latest, and expose its candidate, validation environment, and target. Finding disclosure states the unresolved claim and evidence condition. Its review route preserves the relevant assessment context.
 
-The six coverage rows describe the latest assessment's acceptance checks. Show no checks, optional-only coverage, unknown coverage, and required gaps explicitly. Category counts do not establish full domain coverage. A missing security check does not mean security passed. Category links open QA with `view=qa` and the matching `category` value.
+The six coverage rows describe the latest assessment's acceptance checks. Show no checks, optional-only coverage, unknown coverage, and required gaps explicitly. Category counts do not establish full domain coverage. A missing security check does not mean security passed. Category links open Checks & results with `view=qa` and the matching `category` value.
 
-QA keeps a visible category chip outside its collapsed filters. Clearing the chip or resetting filters also removes the category from the URL.
+Checks & results keeps a visible category chip outside its collapsed filters. Clearing the chip or resetting filters also removes the category from the URL.
 
 Keep **Edit board** beside the product identity as the single editing entry point for members with editing permission. Group **History** and Refresh beside **Edit board** in the heading. Keep the section navigation for product views. Viewers retain History and Refresh. Returning from either page uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
 
-Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. They correspond to Assessments, Capabilities, Components, and Connections.
+Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. The primary labels are **Overview**, **Release reviews**, and **Features**. **Architecture** combines components and their relationships as optional supporting context. Legacy `dependencies` and `connections` URLs remain valid.
 
 Section changes preserve unrelated query parameters and the fragment. Browser Back restores the previous section. Each selected tab controls a labelled, focusable tab panel.
 
 Expand a capability row to inspect its outcome, scope reason, and definition changes. Keep the candidate limitation beside its check result. Show archived capabilities when the assessment still includes them. Product connection counts describe declared architecture. Mark a truncated graph as partial instead of presenting its counts as complete.
 
-Use one route to the full assessment. Keep forms, revision history, and full dependency detail outside the default overview. Follow the [interaction rules](../behaviors/interaction.md) for focus, labels, and context retention.
+The **Features** section explains what users should be able to do. Each feature holds an expandable area for supporting systems and screen regions. Linking from that area fixes the feature context, so the reviewer selects only the related record and any needed explanation. Do not require a complete architecture map before starting a release review. The [clarity study](../references/review-clarity-research.md) explains this reduction in manual linking.
+
+Use one route to the full release review. Keep forms, revision history, and full dependency detail outside the default overview. Follow the [interaction rules](../behaviors/interaction.md) for focus, labels, and context retention.
 
 # Examples and checks
 

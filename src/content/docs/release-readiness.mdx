@@ -1,94 +1,88 @@
 ---
 title: Release readiness
-description: Assess capabilities, dependencies, and verification evidence, then record and share a human release decision.
+description: Define what should work, check it, record the result, and review the release decision.
 ---
 
-StateBoard connects the outcomes a product must support to their implementation and verification. A release assessment answers whether a particular candidate is ready for its intended users, what blocks it, and which evidence would resolve the gaps. Screenshots are one view of that assessment; capabilities such as processing a webhook or reconciling transactions can have no UI.
+A release review answers whether one version of your product is ready for its intended users. Start with **what should work**, define **how to check it**, record **what happened**, then let an owner make the **release decision**. You can do this without AI, screenshots, or an architecture map.
 
 <Callout>
-  This workflow is implemented in the current development build and is
-  unreleased. The latest published release, `2026.8.0`, provides the visual
-  board, team, and agent features. Upgrade to a release containing the readiness
-  workflow before expecting these controls on an existing deployment.
+  The current development build includes this unreleased workflow. The latest
+  published release, `2026.8.0`, provides the visual board, team, and agent
+  features. Upgrade to a release containing the readiness workflow before
+  expecting these controls on an existing deployment.
 </Callout>
 
-Explore the [example assessment](/share/demo/releases) to switch between all six views without creating sample data in your workspace.
+Explore the [example release review](/share/demo/releases) without creating sample data in your workspace.
 
-## Describe the product
+## Start with what should work
 
-Open a board to enter its product workspace. From the screen editor, choose **Release readiness**. **Overview** opens first, followed by **Assessments**, **Capabilities**, **Components**, and **Connections**. The URL retains the selected section. Browser Back returns to the previous section.
+Open a board to enter its product **Overview**. **Release reviews** holds candidate reviews. **Features** describes what users should be able to do. A feature can have no UI, such as processing a webhook. The API and technical records use capabilities for features and assessments for release reviews.
 
-The overview starts with the latest candidate, its readiness, validation environment, release target, and recorded decision. Expand unresolved items to see missing or failed claims. **Review assessment** opens that candidate's full review.
+Add a feature with a name, observable outcome, and accountable owner. For example, **Export an invoice** could mean that an authorized finance user can download a valid PDF. The outcome gives a reviewer something concrete to check.
 
-The capability list includes outcomes outside the latest assessment and marks newer definitions. Expand a row for its outcome, scope reason, and definition context. Check status describes the candidate's own capability checks. Component and screen counts describe declared mappings, which do not verify behavior or production availability.
+The overview starts with the latest candidate, its calculated readiness, validation environment, release target, and separate owner decision. Expand an unresolved item to see what is missing or failed. Open that release review to act on it.
 
-**Verification coverage** shows functionality, integration, user experience, data, security, and operations. Areas with no checks remain unassessed. Optional-only coverage remains distinct from required checks. Choose an area to open its checks in QA. **Assessments** holds the latest candidate and earlier assessments.
+The feature list includes outcomes outside the latest review and identifies newer definitions. Expand a row for its outcome and scope reason. Its check status covers that feature's own checks for the candidate. Supporting component and screen counts describe declared mappings. They do not prove working behavior.
 
-1. Add a capability with a name, observable outcome, and accountable owner. For example, **Export an invoice** could require an authorized finance user to download a valid PDF.
-2. Add the services, API operations, events, workers, data stores, or external dependencies that implement it. Components can be reused across boards in the workspace.
-3. Connect capabilities to components and components to their dependencies. Name the actual relationship, such as “calls POST /exports” or “consumes invoice.requested.”
-4. Link existing screen regions to capabilities where the visual interaction helps explain the outcome. Screens and regions remain optional.
+**Architecture** is optional supporting context. From a feature, link systems that implement it or existing screen regions that illustrate it. The form keeps this feature selected. Reuse components from the workspace when appropriate. You can also maintain components and dependency relationships together in Architecture. A declared dependency does not create a release requirement or prove that StateBoard observed runtime traffic.
 
-These relationships describe declared architecture and potential impact. A required dependency link does not automatically create a release gate or claim that StateBoard observed runtime traffic. Define the checks that verify the dependency's relevant behavior separately.
+## Start a release review
 
-## Define a release assessment
+Choose **New release review** after adding features. Give the candidate a readable name and a pinned reference, such as a commit SHA, image digest, or immutable version manifest. This identifies exactly what the results cover. Avoid mutable branches and `latest` tags.
 
-Choose **New assessment** after adding capabilities. Give the candidate a readable name and a pinned reference, such as a commit SHA, image digest, or immutable component version manifest. Avoid mutable branches and `latest` tags.
+Set the **validation environment**, where checks run, and the **target deployment environment**, where the release should run. Record the intended audience and a versioned configuration reference covering relevant feature flags and permissions. These details keep a passing result tied to its deployment context. Select the release owner and included features.
 
-Set the **validation environment**, where verification runs, and the **target deployment environment**, where the release is intended to run. Also record the intended audience, configuration reference, accountable release owner, and included capabilities. Use a versioned configuration reference that captures relevant feature flags and permission assumptions.
+When a previous review exists, its environments, audience, and configuration appear as editable defaults, with the source review named. Open the context details and confirm them for the new candidate. The candidate name and reference stay empty. StateBoard copies no checks or results. The first review shows all required context fields.
 
-The candidate reference, environments, audience, and configuration are fixed after creation. Create another assessment when any of them changes. Scope and checks can be edited, with each change recorded and the assessment revision advanced. Excluding a capability requires a reason and archives its checks. Including it again requires new checks.
+Creation fixes the candidate, environments, audience, and configuration. Start another review when any changes. Scope and checks remain editable, with each change recorded and the revision advanced. Excluding a feature requires a reason and archives its checks. Including it again requires new checks.
 
-The assessment keeps the capability outcome it started with. If the product outcome changes, **Edit scope** lets you explicitly adopt the latest definition. Adoption creates new check revisions so earlier evidence cannot verify the changed outcome. Review the claims and collect fresh evidence.
+A review preserves the feature outcome it started with. If the product outcome changes, **Edit scope** lets you explicitly adopt the latest definition. Adoption revises the affected checks so earlier results cannot verify the changed outcome. Review the claims and collect fresh observations.
 
-## Add checks and evidence
+## Add a check and record its result
 
-In **QA**, choose **Add check**. Every included capability needs at least one required check in the `functional` category. Express it as an observable claim, identify its owner and verification method, and set its environment and evidence lifetime. The default lifetime is 24 hours.
+In **Overview**, expand a feature to see its checks and results. Choose **Add check** there to keep that feature selected. Its outcome starts the claim. Edit it into the specific behavior you will verify. The form carries the known owner and validation environment forward. A filtered check list also supplies its active category. Describe how to verify the claim and whether it is required. Category, environment, and freshness settings remain available in the form's details.
 
-Add integration, UX, data, security, or operational checks as needed. A check can target a capability, a linked component, or the entire release. For example, rollback rehearsal can be a required operational check for the release. A check expects either the validation or target environment; a staging pass does not become a claim of production verification.
+Every included feature needs at least one required functional check. The default evidence lifetime is 24 hours. Additional integration, UX, data, security, or operational checks can target a feature, linked component, or the entire release. For example, a rollback rehearsal can be a required operational check for the release. A staging result is not production verification: the check must state which environment it expects.
 
-Choose **Record evidence** on a check to append a manual review. Record `pass`, `fail`, or `inconclusive`, describe the observation, and identify the source, run or review reference, and observation time. Optional supporting URLs remain links; StateBoard does not fetch their contents. CI and internal tools can append evidence through [REST](#submit-evidence-through-rest).
+Choose **Record result** beside a check. Select `pass`, `fail`, or `inconclusive`, then describe what you observed. A supporting URL is optional. Source and observation time remain available in the details. Correct the time if the observation happened earlier. StateBoard assigns a unique manual review reference, so you do not need to invent a run identifier. It records your observation but does not run the check or fetch linked content.
 
-Revising a check preserves its older definitions and results. Only evidence for the active check revision and exact candidate, environment, audience, and configuration can satisfy it.
+The result is evidence for that exact candidate, context, and check revision. Revising a check preserves its older definitions and results. Only a fresh matching observation for the active revision can satisfy it. CI and agents can append results through [REST](#submit-evidence-through-rest) or MCP.
 
-| Readiness        | Meaning                                                                                                                                              |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ready`          | Every included capability has a required functional check, and every required check has a fresh matching pass.                                       |
-| `blocked`        | A required check's selected matching result failed. Other evidence gaps remain visible.                                                              |
-| `needs_evidence` | Required verification is absent, inconclusive, expired, or inapplicable, or the scope lacks a required functional check. Empty scope is never ready. |
+| Readiness        | Meaning                                                                                                                                                        |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ready`          | Every included feature has a required functional check, and every required check has a fresh matching pass.                                                    |
+| `blocked`        | A required check's selected matching result failed. Other gaps remain visible.                                                                                 |
+| `needs_evidence` | Required verification is absent, inconclusive, expired, or inapplicable, or an included feature lacks a required functional check. Empty scope is never ready. |
 
-StateBoard selects the newest matching observation by verification time, with a deterministic tie break. A late-arriving older pass cannot clear a newer failure. A selected failure remains a blocker even after its evidence expires; optional failures remain warnings. The visual states `shipped`, `mock`, and `missing` keep their existing meanings and do not determine readiness.
+StateBoard selects the newest matching observation by verification time, with a deterministic tie break. A late-arriving older pass cannot clear a newer failure. A selected failure remains a blocker after expiry. Optional failures remain warnings. Visual `shipped`, `mock`, and `missing` states stay separate from readiness.
 
-## Choose a view
+## Find the view for your task
 
-All six views use the same assessment. The selected view is preserved in the URL so a colleague can open the same perspective.
+All destinations use the same release records. The URL retains the selected view and focused check, so colleagues can open the same context. Browser Back and Forward restore that location.
 
-The summary leads with the conclusion, followed by required findings and capability scope. Each finding shows its evidence state and accountable owner. Select a finding to inspect its exact check. Share the resulting `check` URL parameter to keep that focus. **Show all** reveals findings beyond the first three. Optional warnings have their own disclosure. Passing check badges describe verification, not deployment or production availability.
+| Destination  | Use it to                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Overview     | Read the conclusion, unresolved claims, and included features; expand a feature to maintain its checks and results.                              |
+| Checks       | Find checks across the release, inspect result history, or filter by category, result, owner, and needs attention.                               |
+| Decision     | Review the complete scope, failures, gaps, and optional warnings before an owner records approval or hold.                                       |
+| Screens      | Inspect optional visual context and linked features.                                                                                             |
+| Architecture | Inspect optional supporting systems and dependencies; select a feature or component to see relevant checks, including release-wide requirements. |
 
-In **Backend**, choosing a capability or component narrows the architecture and checks, retaining release-wide gates. Selecting a new architecture scope replaces any earlier exact-check focus. **QA** offers **Needs attention**, claim/owner search and result/category filters. These filters never change calculated readiness. **Operations / security / data** starts with those explicit categories; **Include functional checks** also shows outcome checks that may cover those concerns.
+**Checks** opens the **Checks & results** page. Operational, security, and data concerns are categories of the same checks. They do not require separate records or another workflow. The older Operations view URL remains supported. A category without checks remains unassessed. **More filters** contains **Include functional checks** in the Operations area. Search appears for larger check lists or while a query is active. Filters never change calculated readiness.
 
-A category link retains its selection in the URL and shows a **Category** chip above the check list. Select the chip's clear control or **Reset filters** to remove that category. Reloading the page restores the category from its URL. Clearing the category preserves an exact-check link and other URL context.
+The summary shows the first three required findings, with **Show all** for the rest. Optional warnings have their own disclosure. Select a finding to inspect its exact check. Share its `check` URL parameter to keep that focus. A category link also retains its selection in the URL and shows a clearable **Category** chip. **Reset filters** removes the category while preserving the exact-check link and other URL context.
 
-Component editing starts with this product's linked components. **Browse workspace catalog** exposes reusable components when needed. A component with no component-specific check can still support a verified capability; the two claims are shown separately.
+Component editing starts with this product's linked components. **Browse workspace catalog** exposes reusable components when needed. A component with no component-specific check can still support a verified feature. These remain separate claims.
 
-| View                         | What to inspect                                                                                                             |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Release / product            | Outcomes in scope, exclusions, accountable owners, blockers, and evidence gaps.                                             |
-| Visual / frontend            | Screens, region links, capability outcomes, and relevant verification.                                                      |
-| Backend                      | Operations, events, jobs, data dependencies, and capabilities potentially affected by a component.                          |
-| QA                           | Acceptance checks, selected results, evidence history, and check definition history.                                        |
-| Operations / security / data | Required migration, recovery, security, and data claims with their evidence. Categories without checks remain unconfigured. |
-| Decision                     | Reviewed scope, required failures and gaps, optional warnings, recorded decisions, retained media, and public links.        |
-
-View names describe interests, not permissions. An accountable owner label also does not grant access.
+View names describe tasks, not permissions. An accountable owner label does not grant access.
 
 | Workspace role | Permissions                                                                                                                  |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `viewer`       | Read internal product and release assessments throughout the workspace.                                                      |
-| `editor`       | Maintain capabilities, dependencies, scope, checks, and evidence.                                                            |
+| `viewer`       | Read internal product and release reviews throughout the workspace.                                                          |
+| `editor`       | Maintain features, dependencies, scope, checks, and results.                                                                 |
 | `owner`        | All editor permissions, plus record decisions and create or revoke public release links through a signed-in browser session. |
 
-API keys follow their effective role. Even an owner-scoped key cannot record a decision or publish or revoke a release review link. The existing visual board link and MCP tools retain their separate behavior.
+API keys follow their effective role. Even an owner-scoped key cannot record a decision or publish or revoke a release review link. Existing visual board links and MCP tools retain their separate behavior.
 
 ## Record and share a decision
 
@@ -96,16 +90,16 @@ A workspace owner opens **Decision** and chooses **Record decision**. Approval i
 
 Select the board screenshots and private supporting images to retain. StateBoard preserves independent image bytes and the reviewed scope, check definitions, evidence, dependencies, visual mappings, evaluation time, and rationale. Later edits, screenshot replacement, and member removal do not rewrite this record. If the assessment changes during review, reload it before recording the decision.
 
-For confidential supporting images, use **Supporting review images** in the **Decision** view. These PNG, JPEG, GIF, or WebP files are authenticated and can be up to 25 MB. Existing board screenshot URLs are publicly accessible when known; making a private retained copy does not undo that exposure.
+For confidential supporting images, use **Supporting review images** in the **Decision** view. These PNG, JPEG, GIF, or WebP files are authenticated and can be up to 25 MB. Existing board screenshot URLs are publicly accessible when known. Making a private retained copy does not undo that exposure.
 
 To share with customers or other people outside the workspace:
 
 1. Open a recorded decision and choose **Prepare public review link**.
 2. Write the public summary and review the public environment and audience labels. Select the outcomes to include and edit their public explanations.
 3. Explicitly choose retained images safe to disclose, then create the link. Internal architecture, checks, evidence URLs, run identifiers, member details, and private notes are excluded.
-4. Use **Revoke** under **Public review links** when access should end. Revocation blocks subsequent page and selected image reads; it cannot retract bytes someone already downloaded.
+4. Use **Revoke** under **Public review links** when access should end. Revocation blocks subsequent page and selected image reads. It cannot retract bytes someone already downloaded.
 
-Release review links show a preserved decision, not the mutable live assessment. Ordinary visual board links still show the full visual board and are managed separately. Boards with release history cannot be deleted through ordinary board deletion; archive reusable records when they are no longer needed.
+Release review links show a preserved decision, not the mutable live assessment. Ordinary visual board links still show the full visual board and are managed separately. Boards with release history cannot be deleted through ordinary board deletion. Archive reusable records when they are no longer needed.
 
 ## Submit evidence through REST
 
@@ -145,14 +139,14 @@ curl -X POST -H "Authorization: Bearer $STATEBOARD_API_KEY" \
   "$STATEBOARD_API_BASE/api/releases/RELEASE_ID/evidence"
 ```
 
-A successful submission returns the updated assessment workspace, including calculated readiness. Repeating the same event identity and payload with the same source and credential preserves the original evidence record, even when its submitted assessment revision is now older. Reusing that identity for different data returns `409`. For a new event, a stale assessment or check revision returns `409`; refresh and review the new definitions before retrying. A mismatched candidate, environment, audience, or configuration returns `400`, as does a malformed payload. Insufficient permissions return `403`.
+A successful submission returns the updated assessment workspace, including calculated readiness. Repeating the same event identity and payload with the same source and credential preserves the original evidence record, even when its submitted assessment revision is now older. Reusing that identity for different data returns `409`. For a new event, a stale assessment or check revision returns `409`. Refresh and review the new definitions before retrying. A mismatched candidate, environment, audience, or configuration returns `400`, as does a malformed payload. Insufficient permissions return `403`.
 
-Evidence is append-only and attributed to the member and credential that submitted it. StateBoard records the result supplied by the producer; it does not run the test or automatically trust that result as proof of other claims.
+Evidence is append-only and attributed to the member and credential that submitted it. StateBoard records the result supplied by the producer. It does not run the test or automatically trust that result as proof of other claims.
 
 ## Read freshness and history
 
-The live assessment recalculates evidence expiry as time passes. Use **Reload assessment** to see changes submitted by another person or tool. Updating a board or receiving an old result does not refresh its verification time.
+The live assessment recalculates evidence expiry as time passes. Use **Refresh release review** to see changes submitted by another person or tool. Updating a board or receiving an old result does not refresh its verification time.
 
-Recorded decisions remain historical assessments. Their reviewed date and evidence deadline distinguish the preserved result from current verification; a later passing result or expired check does not rewrite the earlier review. Public reviews make the same distinction. Remote evidence links can change or disappear, so retained summaries and selected media form the preserved baseline.
+Recorded decisions remain historical assessments. Their reviewed date and evidence deadline distinguish the preserved result from current verification. A later passing result or expired check does not rewrite the earlier review. Public reviews make the same distinction. Remote evidence links can change or disappear, so retained summaries and selected media form the preserved baseline.
 
 StateBoard assesses explicit claims. A contract pass verifies that contract, and declared dependencies explain potential impact. Neither automatically verifies an entire business outcome. Keep the required checks aligned with the release your team actually intends to approve.

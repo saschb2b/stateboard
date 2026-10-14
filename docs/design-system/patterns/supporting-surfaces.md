@@ -49,7 +49,7 @@ The editor's **More board options** menu exposes **Edit board** to members with 
 
 # Board details and return paths
 
-The board list and product heading expose **Edit board** to members with editing permission. The action opens the existing board settings. Use one editing entry point per screen. **History** sits with the board actions beside **Edit board** in the product heading. Keep the board name in the breadcrumb as a link to its product overview. Breadcrumbs on an assessment also expose its assessment list. The [wayfinding study](../references/ux-navigation-research.md) records the design rationale.
+The board list and product heading expose **Edit board** to members with editing permission. The action opens the existing board settings. Use one editing entry point per screen. **History** sits with the board actions beside **Edit board** in the product heading. Keep the board name in the breadcrumb as a link to its product overview. Breadcrumbs on a release review also expose **Release reviews**, its parent list. The [wayfinding study](../references/ux-navigation-research.md) records the design rationale.
 
 Settings group the board name and description in one form. Use explicit **Save changes** and **Discard changes** controls. Disable them while saving and when the form has no changes. Keep unsaved values when switching settings sections. A failed request retains the draft and shows the error beside the form. Confirm a successful save with an announced status, and update the board identity from the saved response.
 

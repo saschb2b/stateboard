@@ -17,10 +17,10 @@ okf_version: "0.2"
 
 ## Patterns
 
-- [Product overview](patterns/product-overview.md) - One assessment summary followed by the active capability catalog and check coverage by discipline.
+- [Product overview](patterns/product-overview.md) - One release review summary followed by product features and check coverage, with architecture as optional context.
 
 - [Product landing page](patterns/product-landing.md) - An editorial introduction, interactive assessment preview, role routes, and agent maintenance explanation.
-- [Release review workspace](patterns/review-workspace.md) - One candidate heading, a compact assessment summary, and scoped capability rows in one reading flow.
+- [Release review workspace](patterns/review-workspace.md) - A candidate review with features, contextual checks and results, and a separate owner decision.
 - [Supporting screen contracts](patterns/supporting-surfaces.md) - Layout and interaction requirements for boards, settings, sharing, and presentation.
 
 ## Behaviors
@@ -28,6 +28,8 @@ okf_version: "0.2"
 - [Review interactions](behaviors/interaction.md) - Keyboard, status, disclosure, and responsive behavior for release review.
 
 ## References
+
+- [Release review clarity research](references/review-clarity-research.md) - UX literature and simulated persona observations behind contextual features, checks, and results.
 
 - [Product overview research](references/product-overview-research.md) - Visual references and hierarchy guidance for a compact product state overview.
 

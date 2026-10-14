@@ -22,7 +22,7 @@
           <li><a href="product-overview.example.html">StateBoard</a></li>
           <li>
             <a href="product-overview.example.html#assessment-detail"
-              >Assessments</a
+              >Release reviews</a
             >
           </li>
           <li><span aria-current="page">StateBoard delivery</span></li>
@@ -30,21 +30,28 @@
         <a
           class="breadcrumbs__parent"
           href="product-overview.example.html#assessment-detail"
-          aria-label="Back to Assessments"
+          aria-label="Back to Release reviews"
         >
-          <span aria-hidden="true">←</span> Assessments
+          <span aria-hidden="true">←</span> Release reviews
         </a>
       </nav>
       <span class="app-bar__actions meta">Design specimen</span>
     </header>
     <div class="workspace">
-      <nav class="workspace__nav" aria-label="Assessment perspective">
-        <a href="#overview" aria-current="page">Overview</a
-        ><a href="#capabilities">Capabilities</a
-        ><a href="#attention">Checks needing attention</a>
+      <nav class="workspace__nav" aria-label="Release review">
+        <a href="#overview" aria-current="page">Overview</a>
+        <a href="#attention">Checks</a>
+        <a href="#decision">Decision</a>
+        <div class="workspace__supporting">
+          <p class="meta">Supporting context</p>
+          <div>
+            <a href="#screens">Screens</a
+            ><a href="#architecture">Architecture</a>
+          </div>
+        </div>
       </nav>
       <header class="workspace__header">
-        <span class="meta">Release assessment · Design specimen</span>
+        <span class="meta">Release review · Design specimen</span>
         <h1>StateBoard delivery</h1>
         <p class="meta">Target · self-hosted production · Illustrative data</p>
         <details>
@@ -62,7 +69,7 @@
         <section class="product-overview-assessment">
           <div class="product-overview-assessment-heading">
             <div>
-              <p class="meta">Candidate assessment</p>
+              <p class="meta">Candidate review</p>
               <h2>
                 <span
                   class="product-overview-state product-overview-state--missing"
@@ -113,7 +120,7 @@
           </details>
         </section>
         <section id="capabilities">
-          <h2>Capabilities in scope <span class="meta">3 shown</span></h2>
+          <h2>Features in scope <span class="meta">3 shown</span></h2>
           <div class="rows">
             <details class="row">
               <summary>
@@ -154,13 +161,94 @@
                   >Needs evidence · checks</span
                 >
               </summary>
-              <p class="row__detail">
-                The example has no independent human usability evidence.
-              </p>
+              <div class="row__detail">
+                <p>
+                  Readers can identify the candidate, unresolved checks, and
+                  next action.
+                </p>
+                <h3>Checks &amp; results</h3>
+                <p>
+                  <strong
+                    >An independent reviewer can explain release
+                    readiness.</strong
+                  >
+                </p>
+                <p class="meta">
+                  Required · UX · Product maintainer · Local development
+                </p>
+                <p>
+                  <span class="status status--missing">Inconclusive</span> The
+                  simulated review does not establish human understanding.
+                </p>
+                <details>
+                  <summary>Record result</summary>
+                  <p class="meta">
+                    For this feature and candidate. This form is an
+                    illustration; it does not save product records.
+                  </p>
+                  <form class="specimen-result">
+                    <label
+                      >Result
+                      <select name="result" required>
+                        <option value="">Choose a result</option>
+                        <option value="pass">Passed</option>
+                        <option value="fail">Failed</option>
+                        <option value="inconclusive">Inconclusive</option>
+                      </select>
+                    </label>
+                    <label
+                      >What did you observe?
+                      <textarea name="observation" required rows="3"></textarea>
+                    </label>
+                    <details>
+                      <summary>Source and time</summary>
+                      <p class="meta">
+                        In the product, review source and observation time here.
+                        A manual review reference is assigned automatically.
+                      </p>
+                    </details>
+                    <button type="submit">Preview result</button>
+                    <output aria-live="polite"></output>
+                  </form>
+                </details>
+              </div>
             </details>
           </div>
         </section>
+        <details id="architecture">
+          <summary>Supporting architecture</summary>
+          <p>
+            Review UI and Release API support these features. Select a feature
+            or component in the product to inspect its relationships and checks.
+          </p>
+        </details>
+        <details id="screens">
+          <summary>Supporting screens</summary>
+          <p>
+            Screens can illustrate a feature. They are optional and do not
+            establish a passing result.
+          </p>
+        </details>
       </main>
     </div>
+    <script>
+      const linkedDetail = document.getElementById(location.hash.slice(1));
+      if (linkedDetail instanceof HTMLDetailsElement) linkedDetail.open = true;
+      document.querySelectorAll('a[href^="#"]').forEach((link) => {
+        link.addEventListener("click", () => {
+          const target = document.querySelector(link.getAttribute("href"));
+          if (target instanceof HTMLDetailsElement) target.open = true;
+        });
+      });
+      document
+        .querySelector(".specimen-result")
+        .addEventListener("submit", (event) => {
+          event.preventDefault();
+          const form = event.currentTarget;
+          const result = new FormData(form).get("result");
+          form.querySelector("output").textContent =
+            "Preview: " + result + ". No product record was saved.";
+        });
+    </script>
   </body>
 </html>

@@ -5,7 +5,7 @@ description: Define capabilities, components, assessments, checks, evidence, and
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T22:24:04Z
+  at: 2026-10-14
 sources:
   - id: types
     resource: "src/lib/release-types.ts"
@@ -15,9 +15,12 @@ sources:
     resource: "src/lib/types.ts"
   - id: overview
     resource: "src/lib/product-overview.ts"
+  - resource: docs/design-system/references/review-clarity-research.md
   - id: navigation
     resource: "src/components/release/use-product-section.ts"
 ---
+
+The human interface calls an assessment a **release review** and a capability a **feature**. The stored records and REST/MCP names remain unchanged. A feature still means an observable outcome, including work with no screen. The [clarity study](../design-system/references/review-clarity-research.md) explains this presentation choice.
 
 A board is the product boundary. Capabilities belong to a board. Components belong to the workspace and can support capabilities on several boards.[^types]
 
@@ -64,7 +67,9 @@ The assessment preserves its original capability outcome. Explicitly adopting a 
 
 Visual regions retain `shipped`, `mock`, and `missing`. `shipped` means working in production for the intended users. Region geometry uses normalized `[0, 1]` coordinates. These states do not calculate release readiness.[^visual]
 
-The product workspace opens its overview at `/boards/:id/releases`. The `section` query selects release history, capabilities, components, or connections and persists through browser navigation. Assessment views remain at `/boards/:id/releases/:releaseId`.[^navigation]
+The ordinary review flow is: what should work, how to check it, what the reviewer observed, then the owner decision. A feature's release-review row holds its checks and results. Architecture and screen links add context when useful. Neither is a prerequisite for this flow.
+
+The product workspace opens its overview at `/boards/:id/releases`. The `section` query selects release reviews, features, or supporting architecture and persists through browser navigation. Existing capability, component, and connection identifiers remain valid. Assessment views remain at `/boards/:id/releases/:releaseId`.[^navigation]
 
 The [product overview](../design-system/patterns/product-overview.md) combines the current catalog with the latest assessment's retained scope. It distinguishes included outcomes, explicit exclusions, and capabilities never added to that assessment. Retained definitions remain visible when the catalog changes. The latest assessment describes one candidate, not the whole product's deployment state.[^overview]
 

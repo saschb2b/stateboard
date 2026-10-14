@@ -4,9 +4,10 @@ title: Interface research coverage
 description: Bounded source ledger for the StateBoard interface study.
 tags: [research, coverage, provenance]
 status: draft
-generated: { by: codex/unversioned, at: 2026-10-13T22:20:11Z }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 stale_after: 2027-01-13
 sources:
+  - resource: review-clarity-research.md
   - id: research
     resource: interface-research.md
     title: Project management interface research
@@ -22,6 +23,8 @@ The later [landing study](landing-research.md) has its own bounded page and imag
 The [product overview study](product-overview-research.md) records seven further Dribbble comparisons and two first-party UX articles. Its ledger separates visual observations from the proposed capability matrix and category coverage rows.
 
 The bound was 13 reference pages, plus their directly linked public images, at one link depth. Hosts were `dribbble.com`, `cdn.dribbble.com`, `linear.app`, `plane.so`, `docs.plane.so`, and `media.docs.plane.so`. Search pages served discovery only. Profiles, recommended shots, signup flows, and private workspaces were outside scope.
+
+The [clarity study](review-clarity-research.md) adds six first-party UX guidance pages on language, contextual help, disclosure, form effort, and task grouping. Its separate ledger distinguishes source principles, implementation inferences, and simulated role observations. It makes no human-validation claim.
 
 # Pages
 
