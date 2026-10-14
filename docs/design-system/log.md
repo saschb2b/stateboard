@@ -1,5 +1,7 @@
 ## 2026-10-14
 
+- **Update**: Moved History beside Edit board in the product heading and removed its separate navigation row. Board actions wrap beneath the purpose below 900px. Updated the specimens, contracts, and guide.
+
 - **Correction**: Removed the duplicate Board settings link from the product navigation. Edit board beside the title is the single editing entry point on that screen; History remains available. Updated the contracts, paired specimens, and getting-started guide.
 
 - **Verification**: Exercised board editing entry points, parent navigation, assessment history, architecture focus, and the visual editor on existing local boards in English and German at 390px and desktop widths. Form stories cover retained drafts, save errors, and short-dialog dismissal. The static export under `/stateboard` restores a focused check after Back, Forward, and reload. No board records were changed during these checks.

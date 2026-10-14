@@ -68,7 +68,7 @@ NN/g recommends breadcrumbs that reflect hierarchy and support nearby parent des
 
 GOV.UK distinguishes a journey's Back action from breadcrumbs and advises against displaying both together. A Back action should preserve the page's prior state. StateBoard uses named parent destinations for direct deep links. Browser Back and Forward separately restore the selected assessment view and finding.[^back][^application]
 
-Linear exposes project editing through overview properties and an Edit project action in lists. NN/g's recognition guidance favors visible functions over memorized gestures. StateBoard applies this through **Edit board** beside product identity and in board rows, with **History** in the product tools. Each product screen has one board editing entry point.[^linear][^recognition][^application]
+Linear exposes project editing through overview properties and an Edit project action in lists. NN/g's recognition guidance favors visible functions over memorized gestures. StateBoard applies this through **Edit board** beside product identity and in board rows, with **History** in the same heading action group. Each product screen has one board editing entry point.[^linear][^recognition][^application]
 
 Atlassian requires clear editing affordances and visible save/cancel controls. Its larger text fields remain open when focus moves, preventing accidental submission or dismissal. StateBoard uses explicit Save and Discard controls, retains settings drafts across section changes, and preserves the draft after a failed request.[^inline][^application]
 

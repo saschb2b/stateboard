@@ -812,3 +812,22 @@ h2 .status::before {
     transition: none;
   }
 }
+
+.product-overview-identity {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+}
+.product-overview-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: var(--spacing-md);
+}
+@media (max-width: 899px) {
+  .product-overview-identity {
+    flex-direction: column;
+  }
+}

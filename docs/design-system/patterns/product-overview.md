@@ -24,15 +24,15 @@ examples:
 
 The product overview answers what the product contains, which candidate the checks cover, and where its assessment still lacks proof. It uses one vertical reading flow.
 
-| Region                | Order and content                                                                                                    | Reflow                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Product heading       | Product name, short purpose, visible Edit board action for editors                                                   | Keep the heading first and wrap the purpose.                  |
-| Navigation            | Existing 184px rail with Overview selected and History as a tool                                                     | Below 1200px, show horizontal navigation beneath the heading. |
-| Latest assessment     | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.              |
-| Findings              | A labelled disclosure inside the assessment band                                                                     | Expand beneath the band without opening another column.       |
-| Active capabilities   | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.     |
-| Verification coverage | Six compact rows: functionality, integration, user experience, data, security, operations                            | Below 600px, stack the description beneath its discipline.    |
-| Product connections   | Quiet component, dependency, and mapped-screen counts below verification coverage                                    | Wrap links while retaining their full labels.                 |
+| Region                | Order and content                                                                                                    | Reflow                                                          |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Product heading       | Product name, short purpose, Edit board for editors, History and Refresh actions                                     | Below 900px, place the wrapping action row beneath the purpose. |
+| Navigation            | Existing 184px rail for product sections, with Overview selected                                                     | Below 1200px, show horizontal navigation beneath the heading.   |
+| Latest assessment     | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.                |
+| Findings              | A labelled disclosure inside the assessment band                                                                     | Expand beneath the band without opening another column.         |
+| Active capabilities   | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.       |
+| Verification coverage | Six compact rows: functionality, integration, user experience, data, security, operations                            | Below 600px, stack the description beneath its discipline.      |
+| Product connections   | Quiet component, dependency, and mapped-screen counts below verification coverage                                    | Wrap links while retaining their full labels.                   |
 
 Use [foundation tokens](../foundations/tokens.md) for the shell, surfaces, spacing, and typography. Leave 24px between sections. Repeated rows use quieter typography than the candidate conclusion. The [research study](../references/product-overview-research.md) explains the aligned-row direction and rejected dashboard patterns.
 
@@ -48,7 +48,7 @@ The six coverage rows describe the latest assessment's acceptance checks. Show n
 
 QA keeps a visible category chip outside its collapsed filters. Clearing the chip or resetting filters also removes the category from the URL.
 
-Keep **Edit board** beside the product identity for members with editing permission. It opens name and description settings. Use this single entry point for board editing on the product screen. Keep **History** in the product tools. Returning from either page uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
+Keep **Edit board** beside the product identity as the single editing entry point for members with editing permission. Group **History** and Refresh beside **Edit board** in the heading. Keep the section navigation for product views. Viewers retain History and Refresh. Returning from either page uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
 
 Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. They correspond to Assessments, Capabilities, Components, and Connections.
 

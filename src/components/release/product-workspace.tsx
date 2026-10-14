@@ -136,7 +136,7 @@ export function ProductWorkspace({
         breadcrumbs
         header={
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: "column", md: "row" }}
             justifyContent="space-between"
             gap={2}
           >
@@ -166,10 +166,13 @@ export function ProductWorkspace({
               )}
             </Stack>
             <Stack
+              role="group"
+              aria-label={common("boardTools")}
               direction="row"
               spacing={0.5}
-              alignItems="flex-start"
-              sx={{ flexShrink: 0 }}
+              useFlexGap
+              alignItems="center"
+              sx={{ flexShrink: 0, flexWrap: "wrap", alignSelf: "flex-start" }}
             >
               {editable && (
                 <Button
@@ -182,6 +185,15 @@ export function ProductWorkspace({
                   {common("editBoard")}
                 </Button>
               )}
+              <Button
+                component={Link}
+                href={`/boards/${product.board.id}/history`}
+                color="inherit"
+                size="small"
+                startIcon={<HistoryOutlinedIcon fontSize="small" />}
+              >
+                {common("history")}
+              </Button>
               <Tooltip title={t("refresh")}>
                 <IconButton
                   size="small"
@@ -197,64 +209,39 @@ export function ProductWorkspace({
           </Stack>
         }
         navigation={
-          <Stack spacing={2}>
-            <WorkspaceNavigation
-              label={t("sections")}
-              idPrefix="product"
-              value={tab}
-              onChange={setTab}
-              sections={[
-                {
-                  value: "overview",
-                  label: t("overview"),
-                  icon: <DashboardOutlinedIcon fontSize="small" />,
-                },
-                {
-                  value: "releases",
-                  label: t("assessments"),
-                  icon: <LayersOutlinedIcon fontSize="small" />,
-                },
-                {
-                  value: "capabilities",
-                  label: t("capabilities"),
-                  icon: <ViewQuiltOutlinedIcon fontSize="small" />,
-                },
-                {
-                  value: "dependencies",
-                  label: t("components"),
-                  icon: <WidgetsOutlinedIcon fontSize="small" />,
-                },
-                {
-                  value: "connections",
-                  label: t("connections"),
-                  icon: <AccountTreeOutlinedIcon fontSize="small" />,
-                },
-              ]}
-            />
-            <Stack
-              component="nav"
-              aria-label={common("boardTools")}
-              direction={{ xs: "row", lg: "column" }}
-              spacing={0.5}
-              sx={{
-                pt: 1.5,
-                borderTop: 1,
-                borderColor: "divider",
-                flexWrap: "wrap",
-              }}
-            >
-              <Button
-                component={Link}
-                href={`/boards/${product.board.id}/history`}
-                color="inherit"
-                size="small"
-                startIcon={<HistoryOutlinedIcon fontSize="small" />}
-                sx={{ justifyContent: "flex-start", px: 1.5 }}
-              >
-                {common("history")}
-              </Button>
-            </Stack>
-          </Stack>
+          <WorkspaceNavigation
+            label={t("sections")}
+            idPrefix="product"
+            value={tab}
+            onChange={setTab}
+            sections={[
+              {
+                value: "overview",
+                label: t("overview"),
+                icon: <DashboardOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "releases",
+                label: t("assessments"),
+                icon: <LayersOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "capabilities",
+                label: t("capabilities"),
+                icon: <ViewQuiltOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "dependencies",
+                label: t("components"),
+                icon: <WidgetsOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "connections",
+                label: t("connections"),
+                icon: <AccountTreeOutlinedIcon fontSize="small" />,
+              },
+            ]}
+          />
         }
       >
         <Stack

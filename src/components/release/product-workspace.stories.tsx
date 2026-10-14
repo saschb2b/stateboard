@@ -84,9 +84,7 @@ export const EditorBoardActions: Story = {
     await expect(
       canvas.getByRole("link", { name: "Edit board" }),
     ).toHaveAttribute("href", `/boards/${example.product.board.id}/settings`);
-    const tools = within(
-      canvas.getByRole("navigation", { name: "Board tools" }),
-    );
+    const tools = within(canvas.getByRole("group", { name: "Board tools" }));
     await expect(
       canvas.queryByRole("link", { name: "Board settings" }),
     ).not.toBeInTheDocument();

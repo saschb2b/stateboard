@@ -2,6 +2,8 @@
 
 ## 2026-10-14
 
+- **Update**: Moved History beside Edit board in the product heading and removed its separate navigation row. Board actions wrap beneath the purpose below 900px. Updated the specimens, contracts, and guide.
+
 - **Correction**: Removed the duplicate Board settings link from the product navigation. Edit board beside the title is the single editing entry point on that screen; History remains available. Updated the contracts, paired specimens, and getting-started guide.
 
 - **Update**: Clarified mobile editing, sharing, presentation, and screen expansion in user guides. Distinguished assessment URL restoration from local view filters.
