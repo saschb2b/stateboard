@@ -18,6 +18,12 @@ sources:
   - resource: src/components/release/use-check-focus.ts
   - resource: src/components/evidence/check-filters.tsx
   - resource: src/components/evidence/check-manager.tsx
+  - resource: src/components/evidence/verification-method.tsx
+  - resource: src/components/release/assessment-create-form.tsx
+  - resource: src/components/release/use-workspace-refresh.ts
+  - resource: src/components/release/mutation-form.tsx
+  - resource: src/components/release/decision-panel.tsx
+  - resource: src/components/evidence/evidence-history.tsx
   - resource: src/i18n/language-switcher.tsx
   - resource: src/i18n/provider.tsx
   - resource: src/components/release/product-overview.stories.tsx
@@ -39,15 +45,31 @@ A category deep link opens its checks and exposes the active category chip even 
 
 Every control has a visible keyboard focus ring. Status labels state Ready, Blocked, or Needs evidence and do not rely on hue alone. Keep label text visible at narrow widths. Wrap long names and references inside their container.
 
+Evidence history retains the full candidate, run, and configuration references. Wrap unbroken hashes at narrow widths rather than clipping or shortening their identities.
+
 Body, metadata, status, and primary-button text must reach a 4.5:1 contrast ratio. Token tests check these pairs in both palettes.
 
 Async actions show pending state, reject duplicate submissions, and report errors next to the action. A failed save must not appear successful. Dialogs retain focus management from MUI. Respect reduced motion through the shared theme.
 
 Check and evidence dialogs keep a labelled Close control above the scrolling form. Closing returns focus to the trigger. Disable Close, Escape, and backdrop dismissal while a save is pending.
 
+Release-review creation exposes **Cancel** beside its submit action. Dismissing the dialog returns focus to the action that opened it. Escape must not be the only discoverable exit.
+
+Check methods preserve authored text and line breaks. Render valid HTTP(S) URLs as native links that open separately with `noopener noreferrer`. Keep other schemes, invalid URLs, and credential-bearing URLs as text. Wrap long references within the container. A source link supplies context. Opening it does not verify the check.
+
+Authenticated product and release workspaces refresh when the visible window receives focus or becomes visible. While visible, they also check for updates every 30 seconds. Manual Refresh remains available. Demos and published snapshots do not use this polling behavior.
+
+Defer automatic and manual read refreshes while any registered form remains open, including before its first edit. Opening a form invalidates in-flight reads, even if the form closes before they return. Keep existing data and unsaved inputs visible. Refresh when the last form closes if the workspace is visible. Otherwise, wait until it becomes visible. A successful local write still updates its workspace.
+
+Keep save errors visible across read refreshes. Clear a transient refresh error after a successful read. Failed saves retain the form and its draft.
+
+Ignore superseded read results and errors. Suspend reads while local writes are pending, so an older response cannot replace a saved change. Revision checks reject obsolete submissions. A decision form retains its opening snapshot while editing, including when time changes evidence applicability. Submission still requires current server validation. The [real-product exercise](../references/review-clarity-research.md#real-product-use) records the external-write staleness that prompted this behavior.
+
 # Contextual entry
 
-Place **Add check** and **Record result** within the expanded release feature. Keep the feature identity visible and carry its known owner and environment into the form. The expected outcome can start the claim, but remains editable. Inherit the active check category, or operational in the Operations filter, so a newly created check remains in view. Secondary settings show their current values before expansion. Result entry asks what happened and what the reviewer observed. Source and time remain available in details. An automatically assigned manual review reference removes a field without removing attribution or retry identity.
+Place **Add check** and **Record result** within the expanded release feature. Keep the feature identity visible and carry its known owner and environment into the form. The expected outcome can start the claim, but remains editable. Inherit the active check category, or operational in the Operations filter, so a newly created check remains in view. Secondary settings show their current values before expansion.
+
+Result entry asks what happened and what the reviewer observed. Source and time remain available in details. An automatically assigned manual review reference removes a field without removing attribution or retry identity.
 
 Link a supporting system or screen from its feature. The form inherits the feature rather than asking for it again. Existing record selectors remain available for reuse. Keep these shortcuts within the same permission, scope, revision, and evidence rules as the full forms. The [clarity study](../references/review-clarity-research.md) explains the distinction between reducing work and hiding required information.
 

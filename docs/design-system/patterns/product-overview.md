@@ -17,6 +17,7 @@ sources:
   - resource: src/components/release/product-overview-capabilities.tsx
   - resource: src/components/release/product-overview-coverage.tsx
   - resource: src/components/release/use-product-section.ts
+  - resource: src/components/release/use-workspace-refresh.ts
 examples:
   - product-overview.example.html
   - product-overview.wireframe.html
@@ -55,6 +56,8 @@ Keep **Edit board** beside the product identity as the single editing entry poin
 Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. The primary labels are **Overview**, **Release reviews**, and **Features**. **Architecture** combines components and their relationships as optional supporting context. Legacy `dependencies` and `connections` URLs remain valid.
 
 Section changes preserve unrelated query parameters and the fragment. Browser Back restores the previous section. Each selected tab controls a labelled, focusable tab panel.
+
+Keep the overview current after external agents change its records. Use the [live-workspace refresh behavior](../behaviors/interaction.md#behavior), deferring read refreshes while forms remain open. Refresh the visible workspace after the last form closes, retaining the selected section. Retain manual Refresh beside the board actions.
 
 Expand a capability row to inspect its outcome, scope reason, and definition changes. Keep the candidate limitation beside its check result. Show archived capabilities when the assessment still includes them. Product connection counts describe declared architecture. Mark a truncated graph as partial instead of presenting its counts as complete.
 

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { expect, spyOn, userEvent, waitFor, within } from "storybook/test";
 import { getReleaseDemo } from "@/lib/release-demo";
+import { evaluateRelease } from "@/lib/readiness";
 import { ReleaseWorkspace } from "./release-workspace";
 
 const example = getReleaseDemo();
@@ -17,6 +18,60 @@ const meta = {
 } satisfies Meta<typeof ReleaseWorkspace>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+const owner = {
+  user: {
+    id: "example-owner",
+    email: "owner@example.test",
+    name: "Example owner",
+    image: null,
+  },
+  workspaceId: "default",
+  role: "owner" as const,
+};
+function externalUpdateWithConflict(excludedCapabilityId?: string) {
+  const changed = {
+    ...example.detail,
+    assessment: {
+      ...example.detail.assessment,
+      revision: example.detail.assessment.revision + 1,
+    },
+    scope: example.detail.scope.map((item) =>
+      item.capabilityId === excludedCapabilityId
+        ? {
+            ...item,
+            included: false,
+            scopeReason: "Scope changed in another session.",
+          }
+        : item,
+    ),
+    checks: [
+      ...example.detail.checks,
+      {
+        ...example.detail.checks[0]!,
+        id: "external-check",
+        claim: "An external agent added this check.",
+      },
+    ],
+  };
+  const writes: { expectedRevision: number; type?: string }[] = [];
+  const fetch = spyOn(window, "fetch").mockImplementation(
+    async (_url, options) => {
+      if (options?.method === "POST") {
+        writes.push(JSON.parse(String(options.body)));
+        return Response.json(
+          { error: "Assessment changed; refresh the reviewed revision" },
+          { status: 409 },
+        );
+      }
+      return Response.json({
+        ...changed,
+        product: example.product,
+        readiness: evaluateRelease(changed, example.now),
+      });
+    },
+  );
+  return { fetch, writes };
+}
 export const ProductPerspective: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -42,6 +97,200 @@ export const ProductPerspective: Story = {
   },
 };
 export const BackendPerspective: Story = { args: { initialView: "backend" } };
+
+export const ExternalChecksPreserveUnsavedClaim: Story = {
+  args: {
+    demo: false,
+    initialView: "qa",
+    viewer: owner,
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const { fetch, writes } = externalUpdateWithConflict();
+    const visibility = spyOn(document, "visibilityState", "get");
+    try {
+      await userEvent.click(canvas.getByRole("button", { name: "Add check" }));
+      const dialog = within(
+        within(canvasElement.ownerDocument.body).getByRole("dialog"),
+      );
+      await userEvent.type(
+        dialog.getByLabelText(/What must work/),
+        "Keep this unsaved acceptance claim.",
+      );
+      await userEvent.type(
+        dialog.getByLabelText(/How to verify/),
+        "Exercise the outcome in this candidate.",
+      );
+      visibility.mockReturnValue("hidden");
+      window.dispatchEvent(new Event("focus"));
+      await expect(fetch).not.toHaveBeenCalled();
+      visibility.mockReturnValue("visible");
+      document.dispatchEvent(new Event("visibilitychange"));
+      await expect(fetch).not.toHaveBeenCalled();
+      await expect(dialog.getByLabelText(/What must work/)).toHaveValue(
+        "Keep this unsaved acceptance claim.",
+      );
+      await userEvent.click(dialog.getByRole("button", { name: "Add check" }));
+      await waitFor(() => expect(writes).toHaveLength(1));
+      await expect(writes[0]).toMatchObject({
+        type: "check.create",
+        expectedRevision: example.detail.assessment.revision,
+      });
+      await expect(dialog.getByRole("alert")).toHaveTextContent(
+        "Assessment changed",
+      );
+      await expect(dialog.getByLabelText(/What must work/)).toHaveValue(
+        "Keep this unsaved acceptance claim.",
+      );
+      await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        expect(
+          canvas.getByText("An external agent added this check."),
+        ).toBeInTheDocument(),
+      );
+      await expect(fetch).toHaveBeenCalledWith(
+        `/api/releases/${example.detail.assessment.id}`,
+        { cache: "no-store" },
+      );
+    } finally {
+      visibility.mockRestore();
+      fetch.mockRestore();
+    }
+  },
+};
+
+export const ExternalUpdatePreservesDecisionSnapshot: Story = {
+  args: { demo: false, initialView: "decision", viewer: owner },
+  play: async ({ canvas, canvasElement }) => {
+    const { fetch, writes } = externalUpdateWithConflict();
+    try {
+      await userEvent.click(
+        canvas.getByRole("button", { name: "Record decision" }),
+      );
+      const dialog = within(
+        within(canvasElement.ownerDocument.body).getByRole("dialog"),
+      );
+      await userEvent.type(
+        dialog.getByLabelText(/Decision rationale/),
+        "Hold until the required checks pass.",
+      );
+      window.dispatchEvent(new Event("focus"));
+      await expect(fetch).not.toHaveBeenCalled();
+      await expect(
+        dialog.getByText("Review revision 1 · October release · RC 3"),
+      ).toBeVisible();
+      await expect(dialog.getByLabelText(/Decision rationale/)).toHaveValue(
+        "Hold until the required checks pass.",
+      );
+      await userEvent.click(
+        dialog.getByRole("button", { name: "Record reviewed snapshot" }),
+      );
+      await waitFor(() => expect(writes).toHaveLength(1));
+      await expect(writes[0]).toMatchObject({
+        expectedRevision: example.detail.assessment.revision,
+      });
+      await expect(
+        dialog.getByText("Assessment changed; refresh the reviewed revision"),
+      ).toBeVisible();
+      await expect(dialog.getByLabelText(/Decision rationale/)).toHaveValue(
+        "Hold until the required checks pass.",
+      );
+      await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        expect(canvas.getByText(/Target.*Revision 2/)).toBeInTheDocument(),
+      );
+    } finally {
+      fetch.mockRestore();
+    }
+  },
+};
+
+export const ExternalUpdatePreservesScopeDraft: Story = {
+  args: { demo: false, initialView: "release", viewer: owner },
+  play: async ({ canvas, canvasElement }) => {
+    const { fetch, writes } = externalUpdateWithConflict();
+    try {
+      await userEvent.click(
+        canvas.getByRole("button", { name: "Details for Export an invoice" }),
+      );
+      await userEvent.click(canvas.getByText("Scope and definition"));
+      await userEvent.click(canvas.getByRole("button", { name: "Edit scope" }));
+      const dialog = within(
+        within(canvasElement.ownerDocument.body).getByRole("dialog"),
+      );
+      const reason = dialog.getByRole("textbox", {
+        name: /Reason for including or excluding/,
+      });
+      await userEvent.clear(reason);
+      await userEvent.type(reason, "Keep the agreed invoice outcome in scope.");
+      window.dispatchEvent(new Event("focus"));
+      await expect(fetch).not.toHaveBeenCalled();
+      await expect(reason).toHaveValue(
+        "Keep the agreed invoice outcome in scope.",
+      );
+      await userEvent.click(dialog.getByRole("button", { name: "Save scope" }));
+      await waitFor(() => expect(writes).toHaveLength(1));
+      await expect(writes[0]).toMatchObject({
+        type: "scope.put",
+        expectedRevision: example.detail.assessment.revision,
+      });
+      await expect(dialog.getByRole("alert")).toHaveTextContent(
+        "Assessment changed",
+      );
+      await expect(reason).toHaveValue(
+        "Keep the agreed invoice outcome in scope.",
+      );
+      await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        expect(canvas.getByText(/Target.*Revision 2/)).toBeInTheDocument(),
+      );
+    } finally {
+      fetch.mockRestore();
+    }
+  },
+};
+
+export const ExternalExclusionKeepsInlineCheckDraft: Story = {
+  args: { demo: false, initialView: "release", viewer: owner },
+  play: async ({ canvas, canvasElement }) => {
+    const { fetch, writes } = externalUpdateWithConflict("cap-export");
+    try {
+      await userEvent.click(
+        canvas.getByRole("button", { name: "Details for Export an invoice" }),
+      );
+      await userEvent.click(canvas.getByRole("button", { name: "Add check" }));
+      const dialog = within(
+        within(canvasElement.ownerDocument.body).getByRole("dialog"),
+      );
+      const claim = dialog.getByLabelText(/What must work/);
+      await userEvent.clear(claim);
+      await userEvent.type(claim, "Retain this inline check draft.");
+      await userEvent.type(
+        dialog.getByLabelText(/How to verify/),
+        "Inspect an actual export.",
+      );
+      window.dispatchEvent(new Event("focus"));
+      await expect(fetch).not.toHaveBeenCalled();
+      await expect(claim).toBeVisible();
+      await expect(claim).toHaveValue("Retain this inline check draft.");
+      await userEvent.click(dialog.getByRole("button", { name: "Add check" }));
+      await waitFor(() => expect(writes).toHaveLength(1));
+      await expect(writes[0]).toMatchObject({
+        type: "check.create",
+        expectedRevision: example.detail.assessment.revision,
+      });
+      await expect(dialog.getByRole("alert")).toHaveTextContent(
+        "Assessment changed",
+      );
+      await expect(claim).toHaveValue("Retain this inline check draft.");
+      await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        expect(canvas.getByText(/Target.*Revision 2/)).toBeInTheDocument(),
+      );
+    } finally {
+      fetch.mockRestore();
+    }
+  },
+};
 export const CapabilityOverviewOpensItsArchitecture: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

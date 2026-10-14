@@ -2,7 +2,8 @@
 
 import { useTranslations } from "next-intl";
 
-import { useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
+import { WorkspaceDrafts } from "./workspace-drafts";
 import {
   Alert,
   Box,
@@ -55,6 +56,8 @@ export function MutationForm({
   onValuesChange?: (values: FormValues, field: string) => FormValues;
 }) {
   const t = useTranslations("Release");
+  const drafts = useContext(WorkspaceDrafts);
+  useEffect(() => drafts?.register(), [drafts]);
   const allFields = [...fields, ...(details?.fields ?? [])];
   const [values, setValues] = useState<FormValues>(() =>
     Object.fromEntries(

@@ -1,5 +1,11 @@
 ## 2026-10-14
 
+- **Correction**: Refined draft protection after implementation review found refresh-driven remounts. Automatic and manual read refreshes wait until registered forms close. In-flight reads lose authority when editing starts. Local write responses remain authoritative, obsolete revisions are rejected, and decision drafts retain their opening snapshot.
+
+- **Update**: Extended the real-product findings with clipped candidate hashes and a stale second-browser overview after an external evidence write. Required full-reference wrapping and visible-workspace refresh without draft loss. Linked the installed review and recorded actual worktree isolation, archive, and restore observations separately from unverified previews.
+
+- **Update**: Recorded actual ChatGPT desktop product maintenance in the existing clarity study, with separate installed and historical candidates. Documented the corrected empty state, visible release-review cancellation, and check-method source links. Kept queued previews, blank terminal output, unavailable native-app control, and untested history explicit.
+
 - **Verification**: Inspected updated product and review wireframes before their styled specimens at 390px and 1440px. Checked contextual result entry with keyboard submission and no page-wide overflow. The specimen explicitly reports that it saves no product records. These checks cover layout examples, not independent human usability.
 
 - **Update**: Added the six-source release-review clarity study and explicitly simulated role findings. Aligned Features and Release reviews terminology, contextual checks/results and supporting links, optional architecture/screens, and progressive form details across contracts, paired specimens, glossary, and guides. Preserved domain/API names and readiness boundaries.

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { getReleaseDemo } from "@/lib/release-demo";
 import { buildReleaseOverviewCoverage } from "@/lib/product-overview";
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, spyOn, userEvent, waitFor, within } from "storybook/test";
 import { ProductWorkspace } from "./product-workspace";
 const example = getReleaseDemo();
 /** In-memory navigation fixture. Mutations use the authenticated application workflow. */
@@ -92,6 +92,91 @@ export const EditorBoardActions: Story = {
       "href",
       `/boards/${example.product.board.id}/history`,
     );
+  },
+};
+
+export const CancelReleaseReview: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    await userEvent.click(canvas.getByRole("tab", { name: "Release reviews" }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "New release review" }),
+    );
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = within(
+      page.getByRole("dialog", { name: "New release review" }),
+    );
+    await userEvent.type(dialog.getByLabelText(/Candidate name/), "Draft");
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(
+        page.queryByRole("dialog", { name: "New release review" }),
+      ).not.toBeInTheDocument(),
+    );
+    await expect(
+      canvas.getByRole("button", { name: "New release review" }),
+    ).toHaveFocus();
+  },
+};
+
+export const ExternalUpdatePreservesReviewDraft: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const fetch = spyOn(window, "fetch").mockImplementation(async () =>
+      Response.json({
+        ...meta.args.initialProduct,
+        board: {
+          ...example.product.board,
+          description: "Product context updated by another agent.",
+        },
+        releases: [
+          {
+            ...example.detail.assessment,
+            id: "external-review",
+            candidateLabel: "Newer external candidate",
+          },
+          ...example.product.releases,
+        ],
+      }),
+    );
+    try {
+      await userEvent.click(
+        canvas.getByRole("tab", { name: "Release reviews" }),
+      );
+      await userEvent.click(
+        canvas.getByRole("button", { name: "New release review" }),
+      );
+      const dialog = within(
+        within(canvasElement.ownerDocument.body).getByRole("dialog", {
+          name: "New release review",
+        }),
+      );
+      await userEvent.type(
+        dialog.getByLabelText(/Candidate name/),
+        "Unsaved candidate",
+      );
+      window.dispatchEvent(new Event("focus"));
+      await expect(fetch).not.toHaveBeenCalled();
+      await expect(dialog.getByLabelText(/Candidate name/)).toHaveValue(
+        "Unsaved candidate",
+      );
+      await expect(
+        dialog.queryByText(/Context copied from Newer external candidate/),
+      ).not.toBeInTheDocument();
+      await expect(
+        dialog.getByText(/Context copied from October release/),
+      ).toBeInTheDocument();
+      await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+      await waitFor(() =>
+        expect(
+          canvas.getByText("Product context updated by another agent."),
+        ).toBeInTheDocument(),
+      );
+      await expect(fetch).toHaveBeenCalledWith(
+        `/api/boards/${example.product.board.id}/product`,
+        { cache: "no-store" },
+      );
+    } finally {
+      fetch.mockRestore();
+    }
   },
 };
 

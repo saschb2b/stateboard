@@ -1,7 +1,7 @@
 ---
 type: Reference
 title: Release review clarity research
-description: UX literature and simulated persona observations behind contextual features, checks, and results.
+description: UX literature, simulated role findings, and real-product use behind contextual release review.
 tags: [research, clarity, forms, progressive-disclosure]
 status: draft
 generated: { by: codex/gpt-6, at: 2026-10-14 }
@@ -29,6 +29,15 @@ sources:
     resource: Agent-simulated product manager and release owner walkthrough of the local StateBoard product and candidate on 2026-10-14; read-only browser observations, no independent human participants.
   - id: application
     resource: Agent-authored application of inspected literature and the user's request to reduce concept and manual-entry overhead, 2026-10-14.
+  - id: product-use
+    resource: Agent use of local StateBoard board koxCb-c26Umw for the installed ChatGPT desktop app on 2026-10-14; recorded browser interactions and app-tool responses, without independent human participants.
+  - id: release-notes
+    resource: https://learn.chatgpt.com/docs/changelog
+    title: ChatGPT and Codex changelog
+  - resource: src/components/release/assessment-create-form.tsx
+  - resource: src/components/evidence/verification-method.tsx
+  - resource: src/components/evidence/evidence-history.tsx
+  - resource: src/components/release/use-workspace-refresh.ts
   - resource: docs/product/model.md
   - resource: src/components/release/release-workspace.tsx
   - resource: src/components/release/product-workspace.tsx
@@ -62,6 +71,24 @@ Agents adopted the perspectives of a product manager, release owner, backend eng
 | Record a manual observation               | Source and run/reference fields preceded the value of recording a result and observation.                                                    | Generate the human review reference and disclose provenance controls when needed.                                                                        |
 | Start a review                            | Seven required metadata fields appeared without enough explanation for a nontechnical reviewer.                                              | Explain which version and context results apply to. Retain required truth constraints; show prior context as named, editable defaults for later reviews. |
 
+# Real-product use
+
+The next pass maintained [ChatGPT desktop app](http://localhost:3000/boards/koxCb-c26Umw/releases) as one product. Separate reviews described actual versions. This agent exercise used StateBoard's browser interface and existing app tools. It was not independent human usability research.[^product-use]
+
+| Observed friction                                                                                                                                                  | Correction                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| A new board said “No release release review yet.”                                                                                                                  | Correct the empty-state heading.                                                                               |
+| The release-review form had no visible way to cancel, although Escape worked.                                                                                      | Add **Cancel** and return focus to the opening action.                                                         |
+| Official source URLs in a check's method appeared as plain text.                                                                                                   | Make valid HTTP(S) references keyboard-accessible links while retaining the authored method.                   |
+| The actual candidate SHA clipped evidence history at 390px.                                                                                                        | Wrap the full reference within the evidence entry.                                                             |
+| Another browser retained seven gaps after an external evidence write. Switching sections did not refresh it. Manual Refresh showed six gaps and one passing check. | Refresh live workspaces on return and periodically while visible. Defer read refreshes until open forms close. |
+
+The [installed-candidate review](http://localhost:3000/boards/koxCb-c26Umw/releases/Jy_n1guUy2Hp) covered version `26.1007.21434`, build `13901`, on Linux. At the end of this exercise, it held ten observations: seven passing and three inconclusive. The [historical review](http://localhost:3000/boards/koxCb-c26Umw/releases/shW5cLhuNJH9) covered `26.410`, published on 2026-04-12.[^release-notes] Its four checks had no runtime observations. Current documentation and package metadata did not establish historical behavior.[^product-use]
+
+Project and chat reads succeeded through the app tools. An app-created worktree matched the pinned commit and isolated a temporary marker from the original checkout. Archive and restore succeeded. The restored checkout was clean and its README matched the pinned revision.[^product-use]
+
+File and review opening requests returned queued responses, which did not verify rendered previews. The terminal snapshot was blank, and native-app control was unavailable. These limits constrain the recorded claims. They do not establish that the product features failed.[^product-use]
+
 # Review criteria
 
 Retest the [review workflow](../../product/model.md) without an AI connection. A product manager should explain scope and the current blocker. An engineer should add a check to the selected feature without selecting that feature again. QA should record a result and identify the exact candidate it covers. Operations should find relevant checks without treating an empty category as passed. An owner should distinguish a calculated result from the final human decision.[^application]
@@ -83,3 +110,7 @@ Screens, architecture, and AI remain optional for this path. A new candidate sti
 [^review]: Simulated role review of board `jjy65JDG6oaF` and candidate `m8M3ZqKHMdvt`. The agents changed no product records.
 
 [^application]: Design choices and review criteria inferred for StateBoard.
+
+[^product-use]: Agent observations from creating and inspecting the real local product board on 2026-10-14. These observations cover the stated paths and candidate only.
+
+[^release-notes]: OpenAI's changelog identifies Codex app 26.410 and its publication date. Release notes describe intended changes, not a runtime test.

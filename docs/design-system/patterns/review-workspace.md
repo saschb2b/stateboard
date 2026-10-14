@@ -14,6 +14,7 @@ sources:
   - resource: src/components/release/release-workspace.tsx
   - resource: src/components/release/assessment-create-form.tsx
   - resource: src/components/evidence/check-editor.tsx
+  - resource: src/components/evidence/verification-method.tsx
   - resource: src/components/evidence/evidence-form.tsx
   - resource: docs/design-system/references/interface-research.md
   - resource: docs/design-system/references/product-overview-research.md
@@ -40,13 +41,19 @@ The verdict, validation context, target, and human decision precede feature scop
 
 Show each feature's name, owner, and own-check state in its collapsed row. Expansion reveals its retained outcome, scope reason, checks, and results. **Add check** keeps this feature selected and starts from its outcome. The claim remains editable. **Record result** stays beside the check. Supporting architecture and screens are available when they explain that feature. Attention rows state the claim, evidence state, and owner. Selecting one opens its evidence.
 
-The primary destinations are **Overview**, **Checks**, and **Decision**. **Screens** and **Architecture** form secondary supporting context. Operational, security, and data concerns filter the same checks instead of creating another maintenance task. Use **Checks & results** as the check page heading. On mobile, put the supporting-context label and its tabs in one row below the primary tabs. On desktop, place the label above its tabs. Keep legacy view URLs functional. The [clarity study](../references/review-clarity-research.md) records the rationale.
+The primary destinations are **Overview**, **Checks**, and **Decision**. **Screens** and **Architecture** form secondary supporting context. Operational, security, and data concerns filter the same checks instead of creating another maintenance task. Use **Checks & results** as the check page heading.
+
+On mobile, put the supporting-context label and its tabs in one row below the primary tabs. On desktop, place the label above its tabs. Keep legacy view URLs functional. The [clarity study](../references/review-clarity-research.md) records the rationale.
 
 Creating a check carries its known target, owner, and validation environment forward. Use the active category as its initial category, or operational in the Operations filter. Otherwise start with functional. Existing check revisions retain their category. Show the claim, verification method, and required/optional choice first. Disclose category, environment, and freshness settings with their current values visible.
 
+Keep source URLs in a check's method directly accessible through the [link behavior](../behaviors/interaction.md#behavior). A documented feature can define a check, but requires an applicable observation to establish readiness.
+
 Manual result entry starts with result and observation, with an optional supporting link. Source and observation time remain inspectable and editable. Generate a unique manual review reference on submission and retain the retry identity after an error. Never preselect a passing result.
 
-When creating another release review, reuse the latest review's environments, audience, and configuration as visible, editable defaults. Name that source review and summarize the values above the disclosure. Keep the new candidate name/reference empty and feature selection visible. For the first review, show all required context fields. Never copy checks or observations as proof for a new candidate.
+When creating another release review, reuse the latest review's environments, audience, and configuration as visible, editable defaults. Capture that source context when the dialog opens and retain it while editing. Name that source review and summarize the values above the disclosure. Keep the new candidate name/reference empty and feature selection visible. For the first review, show all required context fields. Never copy checks or observations as proof for a new candidate.
+
+Provide a visible **Cancel** action in the creation dialog and restore focus on dismissal. The [real-product exercise](../references/review-clarity-research.md#real-product-use) identified this exit and source-link friction during actual board maintenance.
 
 In Architecture, show scoped checks after the reviewer selects a feature or component. Keep release-wide requirements visible within that scope. Do not repeat all checks beneath the initial architecture catalog.
 

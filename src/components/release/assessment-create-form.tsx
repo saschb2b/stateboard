@@ -15,11 +15,13 @@ export function AssessmentCreateForm({
   ownerLabel,
   previous,
   onSubmit,
+  onCancel,
 }: {
   capabilities: Capability[];
   ownerLabel: string;
   previous?: ReleaseAssessment;
   onSubmit: (data: CreateAssessmentInput) => Promise<void>;
+  onCancel?: () => void;
 }) {
   const t = useTranslations("Release");
   const productT = useTranslations("Product");
@@ -115,6 +117,7 @@ export function AssessmentCreateForm({
             .map((item) => item.id),
         }}
         submitLabel={t("create.submit")}
+        onCancel={onCancel}
         onSubmit={(data) =>
           onSubmit({
             candidateLabel: String(data.candidateLabel),

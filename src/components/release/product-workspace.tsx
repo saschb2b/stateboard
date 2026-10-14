@@ -37,6 +37,8 @@ import { releaseRequest } from "./release-request";
 import { ProductReleaseList } from "./product-release-list";
 import { ProductOverview } from "./product-overview";
 import { useProductSection } from "./use-product-section";
+import { useWorkspaceRefresh } from "./use-workspace-refresh";
+import { WorkspaceDrafts } from "./workspace-drafts";
 import type {
   ProductContext,
   ProductMutation,
@@ -55,32 +57,43 @@ export function ProductWorkspace({
   const common = useTranslations("Common");
   const [product, setProduct] = useState(initialProduct);
   const [tab, setTab] = useProductSection();
-  const [reloading, setReloading] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState<ProductContext | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const router = useRouter();
   const editable = viewer.role !== "viewer";
   const navigationTab = tab === "connections" ? "dependencies" : tab;
+  const { refresh, refreshing, write, drafts } = useWorkspaceRefresh({
+    load: () =>
+      releaseRequest<ProductContext>(
+        `/api/boards/${product.board.id}/product`,
+        { cache: "no-store" },
+      ),
+    onReceive: (response) => {
+      setProduct(response);
+      setRefreshError(null);
+    },
+    onError: (cause) =>
+      setRefreshError(
+        cause instanceof Error ? cause.message : t("reloadError"),
+      ),
+  });
   async function reload() {
-    setReloading(true);
     setError(null);
+    setRefreshError(null);
     try {
-      setProduct(
-        await releaseRequest<ProductContext>(
-          `/api/boards/${product.board.id}/product`,
-        ),
-      );
+      await refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("reloadError"));
-    } finally {
-      setReloading(false);
+      setRefreshError(
+        cause instanceof Error ? cause.message : t("reloadError"),
+      );
     }
   }
   async function mutate(mutation: ProductMutation) {
     setError(null);
     try {
-      setProduct(
-        await releaseRequest<ProductContext>(
+      await write(() =>
+        releaseRequest<ProductContext>(
           `/api/boards/${product.board.id}/product`,
           {
             method: "POST",
@@ -95,7 +108,7 @@ export function ProductWorkspace({
     }
   }
   return (
-    <>
+    <WorkspaceDrafts value={drafts}>
       <AppHeader
         homeHref="/boards"
         breadcrumbs={[
@@ -200,7 +213,7 @@ export function ProductWorkspace({
                 <IconButton
                   size="small"
                   aria-label={t("refresh")}
-                  disabled={reloading}
+                  disabled={refreshing}
                   onClick={reload}
                   sx={{ alignSelf: "flex-start" }}
                 >
@@ -253,7 +266,7 @@ export function ProductWorkspace({
           aria-labelledby={`product-tab-${navigationTab}`}
           tabIndex={0}
         >
-          {error && (
+          {(error || refreshError) && (
             <Alert
               severity="error"
               action={
@@ -262,14 +275,14 @@ export function ProductWorkspace({
                 </Button>
               }
             >
-              {error}
+              {error ?? refreshError}
             </Alert>
           )}
           {tab === "overview" && (
             <ProductOverview
               product={product}
               editable={editable}
-              onCreate={() => setCreating(true)}
+              onCreate={() => setCreating(product)}
               onNavigate={setTab}
             />
           )}
@@ -277,7 +290,7 @@ export function ProductWorkspace({
             <ProductReleaseList
               product={product}
               editable={editable}
-              onCreate={() => setCreating(true)}
+              onCreate={() => setCreating(product)}
               onSetup={() => setTab("capabilities")}
             />
           )}
@@ -330,33 +343,36 @@ export function ProductWorkspace({
         </Stack>
       </WorkspaceFrame>
       <Dialog
-        open={creating}
-        onClose={() => setCreating(false)}
+        open={creating !== null}
+        onClose={() => setCreating(null)}
         maxWidth="sm"
         fullWidth
       >
         <DialogTitle>{t("newReleaseAssessment")}</DialogTitle>
         <DialogContent>
-          <AssessmentCreateForm
-            capabilities={product.capabilities}
-            previous={product.releases[0]}
-            ownerLabel={viewer.user.name ?? viewer.user.email}
-            onSubmit={async (data) => {
-              const release = await releaseRequest<ReleaseDetail>(
-                `/api/boards/${product.board.id}/releases`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(data),
-                },
-              );
-              router.push(
-                `/boards/${product.board.id}/releases/${release.assessment.id}`,
-              );
-            }}
-          />
+          {creating && (
+            <AssessmentCreateForm
+              capabilities={creating.capabilities}
+              previous={creating.releases[0]}
+              ownerLabel={viewer.user.name ?? viewer.user.email}
+              onCancel={() => setCreating(null)}
+              onSubmit={async (data) => {
+                const release = await releaseRequest<ReleaseDetail>(
+                  `/api/boards/${product.board.id}/releases`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                  },
+                );
+                router.push(
+                  `/boards/${product.board.id}/releases/${release.assessment.id}`,
+                );
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
-    </>
+    </WorkspaceDrafts>
   );
 }

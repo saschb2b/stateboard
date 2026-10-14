@@ -28,6 +28,8 @@ import { ReleasePerspectives } from "./release-perspectives";
 import { useReleaseNavigation } from "./use-release-navigation";
 import type { DependencySelection } from "@/components/dependency/dependency-view";
 import { useServerClock } from "./use-server-clock";
+import { useWorkspaceRefresh } from "./use-workspace-refresh";
+import { WorkspaceDrafts } from "./workspace-drafts";
 import type { PublicationValues } from "./publication-form";
 import type {
   DecisionInput,
@@ -145,7 +147,7 @@ export function ReleaseWorkspace({
   }
   const { now, advance, anchor } = useServerClock(serverNow, demo);
   const [error, setError] = useState<string | null>(null);
-  const [reloading, setReloading] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const editable = !demo && !!viewer && viewer.role !== "viewer";
   const canRecord = !demo && viewer?.role === "owner";
   const readiness = evaluateRelease(detail, now);
@@ -164,19 +166,33 @@ export function ReleaseWorkspace({
         releaseRequest<ReleaseCheck[]>(
           `/api/checks/${checkId}/revisions?releaseId=${detail.assessment.id}`,
         );
-  async function reload() {
-    const response = await releaseRequest<ReleaseResponse>(
+  function load() {
+    return releaseRequest<ReleaseResponse>(
       `/api/releases/${detail.assessment.id}`,
+      { cache: "no-store" },
     );
-    setDetail(response);
-    setProduct(response.product);
-    anchor(response.readiness.evaluatedAt);
   }
+  const { refresh, refreshing, write, drafts } = useWorkspaceRefresh({
+    load,
+    enabled: !demo,
+    onReceive: (response) => {
+      setDetail(response);
+      setProduct(response.product);
+      anchor(response.readiness.evaluatedAt);
+      setRefreshError(null);
+    },
+    onError: (cause) =>
+      setRefreshError(
+        cause instanceof Error ? cause.message : t("workspace.reloadFailed"),
+      ),
+  });
   async function action(url: string, options: RequestInit) {
     setError(null);
     try {
-      await releaseRequest(url, options);
-      await reload();
+      await write(async () => {
+        await releaseRequest(url, options);
+        return load();
+      });
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : t("workspace.saveFailed"),
@@ -213,7 +229,7 @@ export function ReleaseWorkspace({
   }
   const assessment = detail.assessment;
   return (
-    <>
+    <WorkspaceDrafts value={drafts}>
       <AppHeader
         homeHref={demo ? "/share/demo" : "/boards"}
         breadcrumbs={
@@ -289,20 +305,18 @@ export function ReleaseWorkspace({
                     aria-label={t("workspace.refresh")}
                     sx={{ alignSelf: "flex-start" }}
                     size="small"
-                    disabled={reloading}
+                    disabled={refreshing}
                     onClick={async () => {
-                      setReloading(true);
                       setError(null);
+                      setRefreshError(null);
                       try {
-                        await reload();
+                        await refresh();
                       } catch (cause) {
-                        setError(
+                        setRefreshError(
                           cause instanceof Error
                             ? cause.message
                             : t("workspace.reloadFailed"),
                         );
-                      } finally {
-                        setReloading(false);
                       }
                     }}
                   >
@@ -324,10 +338,10 @@ export function ReleaseWorkspace({
           tabIndex={0}
         >
           {view === "release" && <ReviewGuide />}
-          {error && (
+          {(error || refreshError) && (
             <Alert severity="error">
-              {error}
-              {t("workspace.conflictHelp")}
+              {error ?? refreshError}
+              {error && t("workspace.conflictHelp")}
             </Alert>
           )}
           {checkId && !focusedCheckId && (
@@ -403,6 +417,6 @@ export function ReleaseWorkspace({
           </Box>
         </Stack>
       </WorkspaceFrame>
-    </>
+    </WorkspaceDrafts>
   );
 }

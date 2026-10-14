@@ -29,7 +29,7 @@ okf_version: "0.2"
 
 ## References
 
-- [Release review clarity research](references/review-clarity-research.md) - UX literature and simulated persona observations behind contextual features, checks, and results.
+- [Release review clarity research](references/review-clarity-research.md) - UX literature, simulated role findings, and real-product use behind contextual release review.
 
 - [Product overview research](references/product-overview-research.md) - Visual references and hierarchy guidance for a compact product state overview.
 

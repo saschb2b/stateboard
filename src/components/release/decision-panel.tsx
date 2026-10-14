@@ -50,7 +50,11 @@ export function DecisionPanel({
 }) {
   const t = useTranslations("Release");
   const format = useFormatter();
-  const [recording, setRecording] = useState(false);
+  const [recording, setRecording] = useState<{
+    detail: ReleaseDetail;
+    product: ProductContext;
+    readiness: ReleaseEvaluation;
+  } | null>(null);
   const [publishing, setPublishing] = useState<ReleaseDecision | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -80,7 +84,10 @@ export function DecisionPanel({
           </Typography>
         </Box>
         {canRecord && (
-          <Button variant="contained" onClick={() => setRecording(true)}>
+          <Button
+            variant="contained"
+            onClick={() => setRecording({ detail, product, readiness })}
+          >
             {t("decision.record")}
           </Button>
         )}
@@ -159,20 +166,20 @@ export function DecisionPanel({
         </Box>
       </Stack>
       <Dialog
-        open={recording}
-        onClose={() => setRecording(false)}
+        open={recording !== null}
+        onClose={() => setRecording(null)}
         fullWidth
         maxWidth="sm"
       >
         <DialogTitle>{t("decision.recordRelease")}</DialogTitle>
         <DialogContent>
-          <DecisionReview
-            detail={detail}
-            product={product}
-            readiness={readiness}
-            record={record}
-            onCancel={() => setRecording(false)}
-          />
+          {recording && (
+            <DecisionReview
+              {...recording}
+              record={record}
+              onCancel={() => setRecording(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
       <Dialog
