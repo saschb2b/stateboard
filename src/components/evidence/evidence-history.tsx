@@ -68,7 +68,12 @@ export function EvidenceHistory({
               <Stack
                 key={item.id}
                 spacing={0.5}
-                sx={{ pb: 2, borderBottom: 1, borderColor: "divider" }}
+                sx={{
+                  pb: 2,
+                  borderBottom: 1,
+                  borderColor: "divider",
+                  overflowWrap: "anywhere",
+                }}
               >
                 <Stack direction="row" gap={1} flexWrap="wrap">
                   <Chip

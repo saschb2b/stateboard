@@ -186,7 +186,7 @@ export const NoAssessment: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("heading", { name: "No release release review yet" }),
+      canvas.getByRole("heading", { name: "No release review yet" }),
     ).toBeVisible();
     await expect(
       canvas.getByText("Not assessed", { exact: true }),
@@ -218,7 +218,7 @@ export const NoAssessmentViewer: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByRole("heading", { name: "No release release review yet" }),
+      canvas.getByRole("heading", { name: "No release review yet" }),
     ).toBeVisible();
     await expect(
       canvas.queryByRole("button", { name: "New release review" }),

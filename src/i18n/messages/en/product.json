@@ -70,7 +70,7 @@
   "unresolvedCount": "{count, plural, one {# unresolved item} other {# unresolved items}}",
   "noIncludedCapabilities": "No features included in this release review.",
   "missingAcceptanceNamed": "{name}: no required functional acceptance check.",
-  "noAssessment": "No release release review yet",
+  "noAssessment": "No release review yet",
   "catalogAssessmentHelp": "The catalog describes this product. Assess a candidate to see what is verified and what still needs evidence.",
   "startOutcomes": "Start with the outcomes this product should support, then assess a release candidate.",
   "productConnections": "Product connections",

@@ -21,6 +21,7 @@ import type {
 } from "@/lib/release-types";
 import { EvidenceHistory } from "./evidence-history";
 import { CheckRevisionHistory } from "./check-revision-history";
+import { VerificationMethod } from "./verification-method";
 
 export function CheckRow({
   check,
@@ -155,7 +156,7 @@ export function CheckRow({
             <Typography variant="caption" color="text.secondary">
               {t("check.verificationMethod")}
             </Typography>
-            <Typography variant="body2">{check.method}</Typography>
+            <VerificationMethod text={check.method} />
           </Box>
           <Typography variant="caption" color="text.secondary">
             {t("check.details", {
