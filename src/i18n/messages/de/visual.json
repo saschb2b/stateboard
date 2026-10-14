@@ -257,5 +257,16 @@
   "noLinkedFeatures": "Noch keine Funktion verknüpft.",
   "linkFeatureError": "Die Funktionsverknüpfung konnte nicht aktualisiert werden. Erneut versuchen.",
   "createFeatureHelp": "In der Produktübersicht eine Funktion anlegen, um sie hier zu verknüpfen.",
-  "annotationCanvas": "Screen-Markierungen"
+  "annotationCanvas": "Screen-Markierungen",
+  "screenEditor": "Ansicht bearbeiten",
+  "canvasDrawHint": "Auf dem Bild ziehen, um einen Bereich zu markieren",
+  "backToReleaseReview": "Zurück zur Release-Prüfung",
+  "find": "Suchen",
+  "filterRegions": "Filtern",
+  "shareScreens": "Ansichten teilen",
+  "openScreen": "Ansicht öffnen: {name}",
+  "regionOptions": "Bereichsoptionen",
+  "regionEditingHelp": "Hilfe zur Bereichsbearbeitung",
+  "automaticSaveHelp": "Änderungen werden automatisch gespeichert",
+  "featureLinkHelp": "Informationen zu Funktionsverknüpfungen"
 }

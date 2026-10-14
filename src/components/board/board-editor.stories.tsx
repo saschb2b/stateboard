@@ -43,6 +43,12 @@ export const BoardNavigation: Story = {
       location.getByRole("link", { name: args.board.name }),
     ).toHaveAttribute("href", `/boards/${args.board.id}/releases`);
     await expect(
+      location.getByRole("link", { name: "Screens" }),
+    ).toHaveAttribute(
+      "href",
+      `/boards/${args.board.id}/releases?section=screens`,
+    );
+    await expect(
       canvas.queryByRole("button", { name: `Rename ${args.board.name}` }),
     ).not.toBeInTheDocument();
     await userEvent.click(
@@ -61,6 +67,23 @@ export const BoardNavigation: Story = {
     ).toHaveFocus();
   },
 };
+export const KeyboardScreenSelection: Story = {
+  play: async ({ canvas }) => {
+    const screen = example.screens[1]!;
+    const thumbnail = canvas.getByRole("button", {
+      name: `Open screen: ${screen.label}`,
+    });
+    thumbnail.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(thumbnail).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      canvas.getByRole("heading", { level: 1, name: screen.label! }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("img", { name: screen.label! }),
+    ).toBeVisible();
+  },
+};
 export const EmptyBoard: Story = {
   args: { initialScreens: [] },
   play: async ({ canvas, args }) => {
@@ -70,6 +93,25 @@ export const EmptyBoard: Story = {
     await expect(
       canvas.getByRole("link", { name: "Edit board" }),
     ).toHaveAttribute("href", `/boards/${args.board.id}/settings`);
+  },
+};
+export const EmptyBoardRetainsReleaseReview: Story = {
+  args: {
+    initialScreens: [],
+    initialContext: {
+      review: {
+        label: "Installed app",
+        href: `/boards/${example.board.id}/releases/current?view=visual&capability=files`,
+      },
+    },
+  },
+  play: async ({ canvas, args }) => {
+    await expect(
+      canvas.getByRole("heading", { name: "No screens yet" }),
+    ).toBeVisible();
+    await expect(
+      canvas.getByRole("link", { name: "Back to release review" }),
+    ).toHaveAttribute("href", args.initialContext!.review!.href);
   },
 };
 export const ViewerNavigation: Story = {
@@ -118,11 +160,8 @@ export const ReturnToSelectedReview: Story = {
     },
   },
   play: async ({ canvas }) => {
-    const location = within(
-      canvas.getByRole("navigation", { name: "Page location" }),
-    );
     await expect(
-      location.getByRole("link", { name: "Installed app" }),
+      canvas.getByRole("link", { name: "Back to release review" }),
     ).toHaveAttribute(
       "href",
       `/boards/${example.board.id}/releases/current?view=visual&capability=files`,

@@ -8,6 +8,9 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import LinkIcon from "@mui/icons-material/Link";
 import LinkOffIcon from "@mui/icons-material/LinkOff";
 import type { Capability, RegionCapability } from "@/lib/release-types";
 
@@ -62,12 +65,25 @@ export function RegionFeatureLinks({
   }
   return (
     <Stack spacing={1} sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}>
-      <Typography variant="subtitle2">{t("linkedFeatures")}</Typography>
-      <Typography variant="caption" color="text.secondary">
-        {t("linkedFeaturesHelp")}
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="subtitle2">{t("linkedFeatures")}</Typography>
+        <Tooltip title={t("linkedFeaturesHelp")}>
+          <IconButton size="small" aria-label={t("featureLinkHelp")}>
+            <InfoOutlinedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
+      </Stack>
       {linked.map((feature) => (
-        <Stack key={feature.id} direction="row" alignItems="center" spacing={1}>
+        <Stack
+          key={feature.id}
+          direction="row"
+          alignItems="center"
+          spacing={1}
+          sx={{ px: 1, py: 0.5, bgcolor: "action.hover", borderRadius: 1 }}
+        >
+          <LinkIcon
+            sx={{ fontSize: 16, color: "text.secondary", flexShrink: 0 }}
+          />
           <Typography
             variant="body2"
             sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}

@@ -36,6 +36,24 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const DeleteUnderRegionOptions: Story = {
+  play: async ({ canvas, args }) => {
+    await expect(
+      canvas.queryByRole("button", { name: "Delete region" }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Region options" }),
+    );
+    await userEvent.click(
+      within(document.body).getByRole("menuitem", { name: "Delete region" }),
+    );
+    await waitFor(() =>
+      expect(args.deleteRegion).toHaveBeenCalledWith(region.id),
+    );
+    await expect(args.updateRegion).not.toHaveBeenCalled();
+  },
+};
+
 export const TextSaveBeforeStateChange: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);

@@ -72,12 +72,7 @@ export function RegionOverlay({
 }: RegionOverlayProps) {
   const t = useTranslations("Visual");
   const editable = Boolean(onRegionMouseDown);
-  // Read-only surfaces (share view, presenter, viewer-role editor) have no
-  // pointer affordance for keyboard users, so each region becomes a tab stop
-  // there: focusing it opens the same tooltip the mouse hover shows, and the
-  // aria-label carries the state + label + notes for screen readers. The
-  // editor handles selection itself; its regions stay mouse-driven here.
-  const focusable = interactive && !editable;
+  const selectable = interactive && Boolean(onSelect);
   return (
     <Box
       sx={{
@@ -118,7 +113,11 @@ export function RegionOverlay({
             }
             arrow
             placement="top"
-            disableHoverListener={!interactive && !r.label && !r.notes}
+            disableHoverListener={
+              selectable || (!interactive && !r.label && !r.notes)
+            }
+            disableFocusListener={selectable}
+            disableTouchListener={selectable}
             // On touch screens hover doesn't exist and the 700ms long-press
             // default is undiscoverable, so a plain tap opens the tooltip and
             // it lingers long enough to read.
@@ -126,26 +125,30 @@ export function RegionOverlay({
             leaveTouchDelay={4000}
           >
             <Box
-              tabIndex={focusable ? 0 : undefined}
+              component={selectable ? "button" : "div"}
+              type={selectable ? "button" : undefined}
+              tabIndex={interactive ? 0 : undefined}
+              aria-pressed={selectable ? isSelected : undefined}
               aria-label={
-                focusable
+                interactive
                   ? [
                       t(`states.${r.state}.label`),
                       r.label || t(`states.${r.state}.description`),
-                      r.notes,
+                      selectable ? undefined : r.notes,
                     ]
                       .filter(Boolean)
                       .join(". ")
                   : undefined
               }
               onClick={
-                interactive && onSelect && !editable
-                  ? () => onSelect(r.id)
-                  : undefined
+                interactive && onSelect ? () => onSelect(r.id) : undefined
               }
               onMouseDown={
                 editable && onRegionMouseDown
-                  ? (e) => onRegionMouseDown(r.id, e)
+                  ? (e: React.MouseEvent) => {
+                      e.preventDefault();
+                      onRegionMouseDown(r.id, e);
+                    }
                   : undefined
               }
               sx={{
@@ -154,8 +157,14 @@ export function RegionOverlay({
                 top: `${r.y * 100}%`,
                 width: `${r.w * 100}%`,
                 height: `${r.h * 100}%`,
-                border: `2px solid ${meta.color}`,
-                bgcolor: meta.fill,
+                p: 0,
+                textAlign: "left",
+                font: "inherit",
+                color: "inherit",
+                border: `${editable && !isSelected ? 1 : 2}px solid ${meta.color}`,
+                bgcolor: editable
+                  ? alpha(meta.color, isSelected ? 0.12 : 0.04)
+                  : meta.fill,
                 borderRadius: 0.5,
                 cursor: editable
                   ? isSelected
@@ -165,12 +174,15 @@ export function RegionOverlay({
                     ? "pointer"
                     : "default",
                 pointerEvents: interactive ? "auto" : "none",
-                outline: isSelected ? `2px solid ${meta.color}` : "none",
+                outline: (theme) =>
+                  isSelected
+                    ? `2px solid ${theme.palette.primary.main}`
+                    : "none",
                 outlineOffset: isSelected ? 2 : 0,
                 opacity: dimmed ? 0.18 : 1,
                 transition: "outline-offset 120ms ease, opacity 160ms ease",
                 "&:focus-visible": {
-                  outline: `2px solid ${meta.color}`,
+                  outline: (theme) => `2px solid ${theme.palette.primary.main}`,
                   outlineOffset: 2,
                 },
               }}
@@ -179,6 +191,7 @@ export function RegionOverlay({
                   Sits half-above the box so it reads as glued-on rather
                   than as a chip floating in space. */}
               <Box
+                component="span"
                 sx={{
                   position: "absolute",
                   top: 0,
@@ -203,7 +216,7 @@ export function RegionOverlay({
                       px: 0.75,
                       bgcolor: "background.paper",
                       color: "text.primary",
-                      fontSize: 11,
+                      fontSize: (theme) => theme.typography.caption.fontSize,
                       fontWeight: 600,
                       maxWidth: 200,
                       overflow: "hidden",
@@ -221,6 +234,7 @@ export function RegionOverlay({
                 ? RESIZE_CORNERS.map((corner) => (
                     <Box
                       key={corner}
+                      component="span"
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         onResizeStart(r.id, corner, e);

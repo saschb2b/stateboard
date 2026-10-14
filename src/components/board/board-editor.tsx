@@ -4,12 +4,8 @@ import { useTranslations, useFormatter } from "next-intl";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "@mui/material/Alert";
-import Badge from "@mui/material/Badge";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import ButtonBase from "@mui/material/ButtonBase";
-import ButtonGroup from "@mui/material/ButtonGroup";
-import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
@@ -19,12 +15,8 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
-import CheckIcon from "@mui/icons-material/Check";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import SlideshowIcon from "@mui/icons-material/Slideshow";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import SearchIcon from "@mui/icons-material/Search";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppHeader } from "@/components/app/app-header";
@@ -39,6 +31,7 @@ import type {
   RegionCapability,
 } from "@/lib/release-types";
 import type { ScreenEditorContext } from "@/lib/screen-editor-context";
+import { ScreenEditorToolbar } from "@/components/screen/screen-editor-toolbar";
 import { ScreenSidebar } from "@/components/screen/screen-sidebar";
 import { ScreenUploader } from "@/components/screen/screen-uploader";
 import { UserMenu } from "@/components/app/user-menu";
@@ -49,9 +42,7 @@ import type {
   ShareLink,
   UserRef,
 } from "@/lib/types";
-import { MONO_FONT } from "@/lib/theme";
-import { REGION_STATES, attributionName } from "@/lib/types";
-import { STATE_META } from "@/lib/state-meta";
+import { attributionName } from "@/lib/types";
 import type { CurrentMember } from "@/lib/auth";
 import { isInteractiveKeyEvent } from "@/lib/keyboard-shortcuts";
 import { clientRequest } from "@/lib/client-request";
@@ -90,8 +81,6 @@ export function BoardEditor({
   const common = useTranslations("Common");
   const theme = useTheme();
   const narrow = useMediaQuery(theme.breakpoints.down("sm"));
-  const compactSharing = useMediaQuery(theme.breakpoints.down("md"));
-  const compactToolbar = useMediaQuery(theme.breakpoints.down("lg"));
   const [enqueueMutation] = useState(createMutationQueue);
   const orderVersion = useRef(0);
   const savedScreenOrder = useRef(initialScreens.map((screen) => screen.id));
@@ -117,7 +106,6 @@ export function BoardEditor({
   const [addTab, setAddTab] = useState<"upload" | "reuse">("upload");
   const [addMode, setAddMode] = useState<"add" | "replace">("add");
   const [replaceScreenId, setReplaceScreenId] = useState<string | null>(null);
-  const [shareAnchorEl, setShareAnchorEl] = useState<HTMLElement | null>(null);
   const [moreAnchorEl, setMoreAnchorEl] = useState<HTMLElement | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   // One-shot request to select a region after jumping to its screen from the
@@ -130,9 +118,6 @@ export function BoardEditor({
       ? { screenId: initialContext.screenId, regionId: initialContext.regionId }
       : null,
   );
-  // "⌘" on Mac, "Ctrl" elsewhere — resolved after mount to avoid a hydration
-  // mismatch on the server-rendered header.
-  const [modKey, setModKey] = useState("Ctrl");
 
   const router = useRouter();
   const editable = canEdit(viewer.role);
@@ -376,15 +361,6 @@ export function BoardEditor({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useEffect(() => {
-    // One-shot, client-only: the server has no `navigator`, and reading it
-    // during render would hydration-mismatch. Runs once on mount, so it can't
-    // cascade — the set-state-in-effect rule is a false positive here.
-    const platform = typeof navigator !== "undefined" ? navigator.platform : "";
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (/Mac|iPhone|iPad|iPod/.test(platform)) setModKey("⌘");
-  }, []);
-
   // Jump handlers for the palette: switch to a screen, optionally requesting the
   // annotator to select a specific region once it mounts.
   const jumpScreen = (screenId: string) => setActiveId(screenId);
@@ -474,130 +450,23 @@ export function BoardEditor({
         breadcrumbs={[
           { label: common("boards"), href: "/boards" },
           { label: board.name, href: `/boards/${board.id}/releases` },
-          ...(initialContext.review
-            ? [
-                {
-                  label: initialContext.review.label,
-                  href: initialContext.review.href,
-                },
-              ]
-            : []),
-          { label: t("screens") },
+          {
+            label: t("screens"),
+            href: `/boards/${board.id}/releases?section=screens`,
+          },
+          { label: t("screenEditor") },
         ]}
         actions={
           <>
-            {screens.length > 0 ? (
-              <SearchPill mod={modKey} onClick={() => setPaletteOpen(true)} />
-            ) : null}
-            <HeaderStateFilter
-              totals={totals}
-              filterState={filterState}
-              onToggle={toggleFilter}
-            />
-            {totals.shipped + totals.mock + totals.missing > 0 ? (
-              <Divider
-                orientation="vertical"
-                flexItem
-                sx={{
-                  my: 1,
-                  borderColor: "divider",
-                  display: { xs: "none", lg: "block" },
-                }}
-              />
-            ) : null}
-            <Tooltip title={t("presentShortcut")}>
-              <Box
-                component="span"
-                sx={{ display: { xs: "none", sm: "inline-flex" } }}
-              >
-                <Button
-                  size="small"
-                  startIcon={<SlideshowIcon />}
-                  onClick={() => setPresenting(true)}
-                  variant="contained"
-                  color="primary"
-                  disabled={screens.length === 0}
-                >
-                  {t("present")}
-                </Button>
-              </Box>
-            </Tooltip>
-            {editable ? (
-              <>
-                <ButtonGroup
-                  variant="outlined"
-                  size="small"
-                  color="inherit"
-                  sx={{
-                    display: { xs: "none", md: "inline-flex" },
-                    "& .MuiButtonGroup-grouped": { borderColor: "divider" },
-                  }}
-                >
-                  <Button
-                    startIcon={<ContentCopyIcon />}
-                    onClick={copyShare}
-                    title={t("copyShareLink")}
-                  >
-                    {copied ? t("copied") : t("share")}
-                  </Button>
-                  <Button
-                    onClick={(e) => setShareAnchorEl(e.currentTarget)}
-                    aria-label={t("moreSharingOptions")}
-                    aria-haspopup="menu"
-                    aria-expanded={Boolean(shareAnchorEl)}
-                    sx={{ px: 0.5, minWidth: "auto" }}
-                  >
-                    <ArrowDropDownIcon fontSize="small" />
-                  </Button>
-                </ButtonGroup>
-                <Menu
-                  anchorEl={shareAnchorEl}
-                  open={Boolean(shareAnchorEl)}
-                  onClose={() => setShareAnchorEl(null)}
-                  anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                  transformOrigin={{ vertical: "top", horizontal: "right" }}
-                >
-                  {activeShareLink ? (
-                    <MenuItem
-                      component="a"
-                      href={`/share/${activeShareLink.token}`}
-                      target="_blank"
-                      rel="noopener"
-                      onClick={() => setShareAnchorEl(null)}
-                    >
-                      {t("openShareViewExternal")}
-                    </MenuItem>
-                  ) : null}
-                  <MenuItem
-                    component={Link}
-                    href={`/boards/${board.id}/settings?section=sharing`}
-                    onClick={() => setShareAnchorEl(null)}
-                  >
-                    {t("manageLinks")}
-                  </MenuItem>
-                </Menu>
-              </>
-            ) : null}
             <Tooltip title={t("moreBoardOptions")}>
               <IconButton
                 size="small"
-                onClick={(e) => setMoreAnchorEl(e.currentTarget)}
+                onClick={(event) => setMoreAnchorEl(event.currentTarget)}
                 aria-label={t("moreBoardOptions")}
                 aria-haspopup="menu"
                 aria-expanded={Boolean(moreAnchorEl)}
               >
-                <Badge
-                  color="primary"
-                  variant="dot"
-                  invisible={!filterState}
-                  sx={{
-                    "& .MuiBadge-badge": {
-                      display: { xs: "block", lg: "none" },
-                    },
-                  }}
-                >
-                  <MoreVertIcon fontSize="small" />
-                </Badge>
+                <MoreVertIcon fontSize="small" />
               </IconButton>
             </Tooltip>
             <Menu
@@ -607,88 +476,6 @@ export function BoardEditor({
               anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
               transformOrigin={{ vertical: "top", horizontal: "right" }}
             >
-              {compactToolbar && screens.length > 0 ? (
-                <MenuItem
-                  onClick={() => {
-                    setMoreAnchorEl(null);
-                    setPaletteOpen(true);
-                  }}
-                >
-                  {t("search")}
-                </MenuItem>
-              ) : null}
-              {narrow ? (
-                <MenuItem
-                  disabled={screens.length === 0}
-                  onClick={() => {
-                    setMoreAnchorEl(null);
-                    setPresenting(true);
-                  }}
-                >
-                  {t("present")}
-                </MenuItem>
-              ) : null}
-              {editable && compactSharing
-                ? [
-                    <MenuItem
-                      key="copy"
-                      onClick={() => {
-                        setMoreAnchorEl(null);
-                        void copyShare();
-                      }}
-                    >
-                      {copied ? t("copied") : t("copyShareLink")}
-                    </MenuItem>,
-                    activeShareLink ? (
-                      <MenuItem
-                        key="open-share"
-                        component="a"
-                        href={`/share/${activeShareLink.token}`}
-                        target="_blank"
-                        rel="noopener"
-                        onClick={() => setMoreAnchorEl(null)}
-                      >
-                        {t("openShareViewExternal")}
-                      </MenuItem>
-                    ) : null,
-                    <MenuItem
-                      key="manage-sharing"
-                      component={Link}
-                      href={`/boards/${board.id}/settings?section=sharing`}
-                      onClick={() => setMoreAnchorEl(null)}
-                    >
-                      {t("manageLinks")}
-                    </MenuItem>,
-                  ]
-                : null}
-              {compactToolbar &&
-              totals.shipped + totals.mock + totals.missing > 0
-                ? [
-                    <Divider key="filter-divider" />,
-                    ...REGION_STATES.map((state) => (
-                      <MenuItem
-                        key={state}
-                        role="menuitemcheckbox"
-                        aria-checked={filterState === state}
-                        onClick={() => toggleFilter(state)}
-                      >
-                        <Box
-                          component="span"
-                          sx={{ width: 24, height: 20, mr: 1 }}
-                        >
-                          {filterState === state ? (
-                            <CheckIcon fontSize="small" />
-                          ) : null}
-                        </Box>
-                        {t("filterByState", {
-                          state: t(`states.${state}.label`),
-                          count: totals[state],
-                        })}
-                      </MenuItem>
-                    )),
-                  ]
-                : null}
-              {compactToolbar ? <Divider /> : null}
               <MenuItem
                 component={Link}
                 href={`/boards/${board.id}/releases`}
@@ -717,6 +504,31 @@ export function BoardEditor({
           </>
         }
       />
+      {active ? (
+        <ScreenEditorToolbar
+          name={
+            active.label ||
+            t("screenNumber", {
+              number:
+                screens.findIndex((screen) => screen.id === active.id) + 1,
+            })
+          }
+          regionCount={active.regions.length}
+          readOnly={!editable}
+          totals={totals}
+          filterState={filterState}
+          onFilter={toggleFilter}
+          onSearch={() => setPaletteOpen(true)}
+          onPresent={() => setPresenting(true)}
+          onCopyShare={() => void copyShare()}
+          copied={copied}
+          shareHref={
+            activeShareLink ? `/share/${activeShareLink.token}` : undefined
+          }
+          sharingSettingsHref={`/boards/${board.id}/settings?section=sharing`}
+          reviewHref={initialContext.review?.href}
+        />
+      ) : null}
 
       {screens.length === 0 ? (
         <Box
@@ -731,6 +543,18 @@ export function BoardEditor({
         >
           <Box sx={{ width: "100%", maxWidth: 540, mt: { xs: 2, sm: 6 } }}>
             <Stack spacing={1.5}>
+              {initialContext.review ? (
+                <Button
+                  component={Link}
+                  href={initialContext.review.href}
+                  size="small"
+                  color="inherit"
+                  startIcon={<ArrowBackIcon />}
+                  sx={{ alignSelf: "flex-start" }}
+                >
+                  {t("backToReleaseReview")}
+                </Button>
+              ) : null}
               {editable ? (
                 <Stack
                   direction="row"
@@ -924,141 +748,6 @@ export function BoardEditor({
         actions={paletteActions}
       />
     </Box>
-  );
-}
-
-/**
- * Header trigger for the command palette: a compact search field that opens the
- * palette and advertises the Cmd/Ctrl+K shortcut. On narrow screens it collapses
- * to just the icon.
- */
-function SearchPill({ mod, onClick }: { mod: string; onClick: () => void }) {
-  const t = useTranslations("Visual");
-  return (
-    <ButtonBase
-      onClick={onClick}
-      aria-label={t("searchShortcut")}
-      sx={{
-        display: { xs: "none", lg: "flex" },
-        alignItems: "center",
-        gap: 1,
-        px: { xs: 0.75, sm: 1.25 },
-        py: 0.5,
-        border: 1,
-        borderColor: "divider",
-        borderRadius: 1.5,
-        color: "text.secondary",
-        width: { xl: 180 },
-        "&:hover": { borderColor: "text.primary", color: "text.primary" },
-      }}
-    >
-      <SearchIcon fontSize="small" />
-      <Typography
-        variant="body2"
-        sx={{
-          flex: 1,
-          textAlign: "left",
-          display: { xs: "none", xl: "block" },
-        }}
-      >
-        {t("search")}
-      </Typography>
-      <Box
-        component="span"
-        sx={{
-          display: { xs: "none", xl: "inline" },
-          fontFamily: MONO_FONT,
-          fontSize: 11,
-          px: 0.5,
-          py: 0.125,
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 0.5,
-        }}
-      >
-        {mod} K
-      </Box>
-    </ButtonBase>
-  );
-}
-
-/**
- * Board-wide state tally that doubles as a filter, in the header. Board-level
- * view control, so it lives with the board chrome — deliberately separate from
- * the per-region editor in the inspector. Clicking a segment isolates that
- * state across the canvas; clicking again clears. Compact (color dot + count)
- * to sit unobtrusively among the header actions; hidden until a region exists.
- */
-function HeaderStateFilter({
-  totals,
-  filterState,
-  onToggle,
-}: {
-  totals: Record<RegionState, number>;
-  filterState: RegionState | null;
-  onToggle: (s: RegionState) => void;
-}) {
-  const t = useTranslations("Visual");
-  const total = totals.shipped + totals.mock + totals.missing;
-  if (total === 0) return null;
-  return (
-    <Stack
-      direction="row"
-      spacing={0.5}
-      sx={{ mr: { sm: 0.5 }, display: { xs: "none", lg: "flex" } }}
-    >
-      {REGION_STATES.map((s) => {
-        const isActive = filterState === s;
-        const dimmed = filterState !== null && !isActive;
-        return (
-          <Tooltip
-            key={s}
-            title={
-              isActive
-                ? t("clearStateFilter", { state: t(`states.${s}.label`) })
-                : t("filterByState", {
-                    state: t(`states.${s}.label`),
-                    count: totals[s],
-                  })
-            }
-          >
-            <ButtonBase
-              onClick={() => onToggle(s)}
-              aria-pressed={isActive}
-              aria-label={t("stateCount", {
-                state: t(`states.${s}.label`),
-                count: totals[s],
-              })}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 0.625,
-                px: 0.875,
-                py: 0.375,
-                borderRadius: 1,
-                border: 1,
-                borderColor: isActive ? "primary.main" : "divider",
-                opacity: dimmed ? 0.5 : 1,
-                transition: "all 120ms ease",
-                "&:hover": { borderColor: "text.primary" },
-              }}
-            >
-              <Box
-                sx={{
-                  width: 9,
-                  height: 9,
-                  borderRadius: "50%",
-                  bgcolor: STATE_META[s].color,
-                }}
-              />
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                {totals[s]}
-              </Typography>
-            </ButtonBase>
-          </Tooltip>
-        );
-      })}
-    </Stack>
   );
 }
 

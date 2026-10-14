@@ -102,7 +102,9 @@ export const ViewerLinks: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText(feature.name)).toBeVisible();
     await expect(canvas.queryByRole("combobox")).not.toBeInTheDocument();
-    await expect(canvas.queryByRole("button")).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: `Unlink ${feature.name}` }),
+    ).not.toBeInTheDocument();
   },
 };
 export const GermanLinks: Story = {

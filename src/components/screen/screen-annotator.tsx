@@ -6,6 +6,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import Tooltip from "@mui/material/Tooltip";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
@@ -145,6 +150,9 @@ export function ScreenAnnotatorView({
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [regions, setRegions] = useState<Region[]>(screen.regions);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [regionMenuAnchor, setRegionMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
   const [draft, setDraft] = useState<DraftRect | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [interactionInspectorOpen, setInteractionInspectorOpen] = useState<
@@ -687,6 +695,7 @@ export function ScreenAnnotatorView({
           sx={{
             flex: { xs: "0 0 auto", md: 1 },
             minHeight: { xs: "auto", md: 0 },
+            containerType: { xs: "normal", md: "size" },
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -706,7 +715,7 @@ export function ScreenAnnotatorView({
               width: "100%",
               maxWidth: {
                 xs: "100%",
-                md: `calc((100dvh - 150px) * ${screen.width} / ${screen.height})`,
+                md: `calc(100cqh * ${screen.width} / ${screen.height})`,
               },
               aspectRatio: aspect,
               bgcolor: "background.paper",
@@ -747,6 +756,7 @@ export function ScreenAnnotatorView({
               onSelect={(id) => {
                 setDraft(null);
                 setSelectedId(id);
+                surfaceRef.current?.focus({ preventScroll: true });
               }}
               onRegionMouseDown={readOnly ? undefined : beginRegionDrag}
               onResizeStart={readOnly ? undefined : beginResize}
@@ -842,12 +852,12 @@ export function ScreenAnnotatorView({
                   {selected.label || t("untitled")}
                 </Typography>
               </Stack>
+              {renderRegionDetails?.(selected)}
               {selected.notes ? (
                 <Typography variant="body2" color="text.secondary">
                   {selected.notes}
                 </Typography>
               ) : null}
-              {renderRegionDetails?.(selected)}
               <RegionAttribution
                 region={selected}
                 authors={authors}
@@ -929,25 +939,39 @@ export function ScreenAnnotatorView({
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                   {t("region")}
                 </Typography>
-                <IconButton
-                  size="small"
-                  onClick={() => setSelectedId(null)}
-                  aria-label={t("close")}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
+                <Stack direction="row" spacing={0.25}>
+                  <Tooltip title={t("dragRegionHelp")}>
+                    <IconButton
+                      size="small"
+                      aria-label={t("regionEditingHelp")}
+                    >
+                      <InfoOutlinedIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                  <IconButton
+                    size="small"
+                    aria-label={t("regionOptions")}
+                    aria-haspopup="menu"
+                    aria-expanded={Boolean(regionMenuAnchor)}
+                    onClick={(event) =>
+                      setRegionMenuAnchor(event.currentTarget)
+                    }
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => setSelectedId(null)}
+                    aria-label={t("close")}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
               </Stack>
-              <Typography variant="caption" color="text.secondary">
-                {t("dragRegionHelp")}
-              </Typography>
-              <StateSelector
-                value={selected.state}
-                onChange={(state) => updateSelected({ state })}
-              />
               <TextField
                 size="small"
                 label={t("label")}
-                helperText={t("regionLabelHelp")}
+                helperText={t("automaticSaveHelp")}
                 value={draftLabel}
                 onChange={(e) => {
                   setDraftLabel(e.target.value);
@@ -955,6 +979,11 @@ export function ScreenAnnotatorView({
                 }}
                 onBlur={() => flushText()}
               />
+              <StateSelector
+                value={selected.state}
+                onChange={(state) => updateSelected({ state })}
+              />
+              {renderRegionDetails?.(selected)}
               <TextField
                 size="small"
                 label={t("notes")}
@@ -968,15 +997,22 @@ export function ScreenAnnotatorView({
                 }}
                 onBlur={() => flushText()}
               />
-              {renderRegionDetails?.(selected)}
-              <Button
-                color="error"
-                variant="outlined"
-                startIcon={<DeleteOutlineIcon />}
-                onClick={deleteSelected}
+              <Menu
+                anchorEl={regionMenuAnchor}
+                open={Boolean(regionMenuAnchor)}
+                onClose={() => setRegionMenuAnchor(null)}
               >
-                {t("deleteRegion")}
-              </Button>
+                <MenuItem
+                  onClick={() => {
+                    setRegionMenuAnchor(null);
+                    void deleteSelected();
+                  }}
+                  sx={{ color: "error.main", gap: 1 }}
+                >
+                  <DeleteOutlineIcon fontSize="small" />
+                  {t("deleteRegion")}
+                </MenuItem>
+              </Menu>
               <RegionAttribution
                 region={selected}
                 authors={authors}

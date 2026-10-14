@@ -257,5 +257,16 @@
   "noLinkedFeatures": "No feature linked yet.",
   "linkFeatureError": "Could not update the feature link. Try again.",
   "createFeatureHelp": "Add a feature in the product overview to link it here.",
-  "annotationCanvas": "Screen annotations"
+  "annotationCanvas": "Screen annotations",
+  "screenEditor": "Screen editor",
+  "canvasDrawHint": "Drag on the image to mark a region",
+  "backToReleaseReview": "Back to release review",
+  "find": "Find",
+  "filterRegions": "Filter",
+  "shareScreens": "Share screens",
+  "openScreen": "Open screen: {name}",
+  "regionOptions": "Region options",
+  "regionEditingHelp": "How to edit a region",
+  "automaticSaveHelp": "Changes save automatically",
+  "featureLinkHelp": "About feature links"
 }

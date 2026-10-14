@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import ButtonBase from "@mui/material/ButtonBase";
 import IconButton from "@mui/material/IconButton";
 import InputBase from "@mui/material/InputBase";
 import Menu from "@mui/material/Menu";
@@ -156,8 +157,8 @@ export function ScreenSidebar({
             <Button
               fullWidth
               size="small"
-              variant="outlined"
-              color="inherit"
+              variant="contained"
+              color="primary"
               startIcon={<AddPhotoAlternateOutlinedIcon />}
               onClick={onAdd}
               sx={{ borderColor: "divider", justifyContent: "flex-start" }}
@@ -225,7 +226,9 @@ export function ScreenSidebar({
                   "&:hover": {
                     bgcolor: isActive ? "action.selected" : "action.hover",
                   },
-                  "&:hover .screen-kebab": { opacity: 1 },
+                  "&:hover .screen-kebab, &:focus-within .screen-kebab": {
+                    opacity: 1,
+                  },
                   transition: "background-color 120ms ease, opacity 120ms ease",
                 }}
               >
@@ -245,68 +248,91 @@ export function ScreenSidebar({
                 ) : null}
 
                 <Tooltip
-                  title={collapsed ? name : ""}
+                  title={name}
                   placement="right"
                   disableHoverListener={!collapsed}
                 >
-                  <Box>
-                    <ScreenThumb screen={s} />
-                  </Box>
-                </Tooltip>
-
-                {collapsed ? null : (
-                  <Stack
-                    direction="row"
-                    alignItems="center"
-                    spacing={0.5}
-                    sx={{ mt: 0.75 }}
+                  <ButtonBase
+                    onClick={() => onSelect(s.id)}
+                    onDoubleClick={
+                      editable ? () => setRenamingId(s.id) : undefined
+                    }
+                    aria-label={t("openScreen", { name })}
+                    aria-pressed={isActive}
+                    sx={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      borderRadius: 0.75,
+                      "&:focus-visible": {
+                        outline: "2px solid",
+                        outlineColor: "primary.main",
+                        outlineOffset: 3,
+                      },
+                    }}
                   >
-                    {isRenaming ? (
-                      <RenameField
-                        initial={s.label ?? ""}
-                        placeholder={t("screenNumber", { number: i + 1 })}
-                        onCommit={(next) => {
-                          setRenamingId(null);
-                          onRename(s.id, next);
-                        }}
-                        onCancel={() => setRenamingId(null)}
-                      />
-                    ) : (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          flex: 1,
-                          minWidth: 0,
-                          fontWeight: isActive ? 600 : 500,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          color: s.label ? "text.primary" : "text.secondary",
-                        }}
-                      >
-                        {name}
-                      </Typography>
-                    )}
-                    {editable && !isRenaming ? (
-                      <IconButton
-                        className="screen-kebab"
-                        size="small"
-                        aria-label={t("screenActions", { name })}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenu({ el: e.currentTarget, id: s.id });
-                        }}
-                        sx={{
-                          p: 0.25,
-                          opacity: isActive ? 0.8 : 0,
-                          transition: "opacity 120ms ease",
-                        }}
-                      >
-                        <MoreVertIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
+                    <ScreenThumb screen={s} />
+                    {!collapsed && !isRenaming ? (
+                      <Box sx={{ pt: 1, pr: editable ? 3 : 0 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: isActive ? 600 : 500,
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 2,
+                            overflow: "hidden",
+                            overflowWrap: "anywhere",
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {name}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: "block", mt: 0.25 }}
+                        >
+                          {t("regionCount", { count: s.regions.length })}
+                        </Typography>
+                      </Box>
                     ) : null}
-                  </Stack>
-                )}
+                  </ButtonBase>
+                </Tooltip>
+                {!collapsed && isRenaming ? (
+                  <Box sx={{ pt: 1 }}>
+                    <RenameField
+                      initial={s.label ?? ""}
+                      placeholder={t("screenNumber", { number: i + 1 })}
+                      onCommit={(next) => {
+                        setRenamingId(null);
+                        onRename(s.id, next);
+                      }}
+                      onCancel={() => setRenamingId(null)}
+                    />
+                  </Box>
+                ) : null}
+                {!collapsed && editable && !isRenaming ? (
+                  <IconButton
+                    className="screen-kebab"
+                    size="small"
+                    aria-label={t("screenActions", { name })}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setMenu({ el: event.currentTarget, id: s.id });
+                    }}
+                    sx={{
+                      position: "absolute",
+                      right: 8,
+                      bottom: 12,
+                      p: 0.25,
+                      opacity: isActive ? 0.8 : 0,
+                      transition: "opacity 120ms ease",
+                    }}
+                  >
+                    <MoreVertIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                ) : null}
               </Box>
             );
           })}

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import Box from "@mui/material/Box";
-import { expect, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import { RegionOverlay } from "./region-overlay";
 import type { Region, RegionState } from "@/lib/types";
 
@@ -82,6 +82,29 @@ export const ShareView: Story = {
 /** Interactive with a selection, as the editor's viewer mode renders it. */
 export const InteractiveSelected: Story = {
   args: { regions: REGIONS, interactive: true, selectedId: "r2" },
+};
+
+export const KeyboardRegionSelection: Story = {
+  args: {
+    regions: REGIONS,
+    interactive: true,
+    selectedId: "r2",
+    onSelect: fn(),
+    onRegionMouseDown: fn(),
+  },
+  play: async ({ canvas, args }) => {
+    const chart = canvas.getByRole("button", { name: /Revenue chart/ });
+    const feed = canvas.getByRole("button", { name: /Activity feed/ });
+    await expect(feed).toHaveAttribute("aria-pressed", "true");
+    await expect(chart).toHaveAttribute("aria-pressed", "false");
+    chart.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSelect).toHaveBeenLastCalledWith("r1");
+    feed.focus();
+    await userEvent.keyboard(" ");
+    await expect(args.onSelect).toHaveBeenLastCalledWith("r2");
+    await expect(args.onRegionMouseDown).not.toHaveBeenCalled();
+  },
 };
 
 /** State filter active: everything that isn't `shipped` dims away. */
