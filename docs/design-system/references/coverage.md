@@ -22,6 +22,8 @@ The later [landing study](landing-research.md) has its own bounded page and imag
 
 The [product overview study](product-overview-research.md) records seven further Dribbble comparisons and two first-party UX articles. Its ledger separates visual observations from the proposed capability matrix and category coverage rows.
 
+Its later [screen navigation pass](product-overview-research.md#screens-as-a-product-destination) inspected three editor-related Dribbble images and four Figma/Linear documentation pages on 2026-10-14. That pass informed direct product access, preview hierarchy, and editor panels. Source-product interactions and usability remain unverified.
+
 The bound was 13 reference pages, plus their directly linked public images, at one link depth. Hosts were `dribbble.com`, `cdn.dribbble.com`, `linear.app`, `plane.so`, `docs.plane.so`, and `media.docs.plane.so`. Search pages served discovery only. Profiles, recommended shots, signup flows, and private workspaces were outside scope.
 
 The [clarity study](review-clarity-research.md) adds six first-party UX guidance pages on language, contextual help, disclosure, form effort, and task grouping. Its separate ledger distinguishes source principles, implementation inferences, and simulated role observations. It makes no human-validation claim.

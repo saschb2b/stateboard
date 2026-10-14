@@ -74,3 +74,17 @@ h2 .status::before,
 .product-overview-detail {
   outline: 1px dashed gray;
 }
+
+.product-screen-preview,
+.product-screen-preview__image,
+.product-screen-preview__rail,
+.product-screen-preview__content > span {
+  background: white;
+  color: black;
+  border-color: gray;
+  border-radius: 0;
+  box-shadow: none;
+}
+.product-screen-preview__details {
+  outline: 1px dashed gray;
+}

@@ -5,6 +5,9 @@ description: Layout and interaction requirements for boards, screen annotations,
 status: draft
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/product-overview-research.md
+  - resource: src/components/screen/screen-editor-toolbar.tsx
+  - resource: src/components/release/product-screens.tsx
   - resource: docs/design-system/references/review-clarity-research.md
   - resource: docs/design-system/references/ux-navigation-research.md
   - resource: src/components/app/page-breadcrumbs.tsx
@@ -48,17 +51,21 @@ Supporting screens use the [shared tokens](../foundations/tokens.md), [controls]
 
 On compact screenshots, hide region titles while retaining the state chip. A tap or keyboard focus reveals the full label and notes. Use an opaque theme surface for labels so screenshot colors cannot reduce their contrast.
 
+In the editor, use 4% state-color fill for unselected regions and 12% for the selected region. Selection and keyboard focus use the theme's primary outline. Labels use caption typography. Selectable regions are buttons with selected state and Enter/Space activation. Return focus to the canvas for arrow-key editing. Public and read-only overlays retain their existing fill behavior.
+
 # Visual editor
 
-Keep desktop search in the header's normal layout so it cannot overlap the board identity or actions. As the header narrows, move search, visual-state filters, sharing, and Present into **More board options**. Preserve their labels and selected filter state. The screen rail starts collapsed below 600px. **Expand screens** reveals its names and controls. Change that choice only through an explicit rail action while the editor stays open.
+The screen toolbar wraps its named controls at narrow widths. Find opens search. Filter retains the selected visual states. Keep these tools separate from the global board menu. The screen rail starts collapsed below 600px. **Expand screens** reveals its names and controls. Change that choice only through an explicit rail action while the editor stays open.
 
 The editor's **More board options** menu exposes **Edit board** to members with editing permission. The empty state also exposes this action. Both open name and description settings. The board breadcrumb links to the overview and does not rename the board.
 
-Opening the editor from a release preserves the release, selected feature, and requested image. Keep a visible return to that release's Screens view. The release workspace retains **Manage screens** with existing images and exposes **Edit screen** for each image.
+Screens is a primary product destination. Its gallery uses the existing screen records and opens each image in the editor. The editor breadcrumb follows Product → Screens → Screen editor. When opened from a release, a separate **Back to release review** action retains that review and selected feature. A release is contextual history, not the screen's parent. The release workspace retains **Manage screens** with existing images and exposes **Edit screen** for each image.
 
-The selected region exposes **Features shown here**, existing links, and controls to link or unlink a feature. Put the originating feature first when it remains available. Keep linking inside the inspector and show pending or failed saves there. Viewers can read the mappings. Editing requires the existing product permissions.
+Give the canvas a header with the full selected screen name, region count, and short annotation hint. Keep Find, Filter, Present, and Share screens together in this toolbar. The global header retains board options and user/language controls. The rail shows accessible thumbnail buttons, names over up to two lines, and region counts. Keep the active screen visible through the shared selected treatment. Retain the existing charcoal surfaces and orange action color.
 
-Limit the notes field to six visible rows with internal scrolling, so long source text does not bury feature links.
+The inspector orders region name, visual state, linked features, then notes. The selected region exposes **Features shown here**, existing links, and controls to link or unlink a feature. Put the originating feature first when it remains available. Keep linking inside the inspector and show pending or failed saves there. Viewers can read the mappings. Editing requires the existing product permissions.
+
+Limit the notes field to six visible rows with internal scrolling, so long source text does not bury feature links. Keep **Delete region** under the region's options, separate from ordinary edits.
 
 At narrow widths, stack the image above the inspector in normal flow. Preserve the image's natural aspect ratio and prevent tall details from shrinking its canvas to zero height. Keep the side-by-side inspector on desktop.
 

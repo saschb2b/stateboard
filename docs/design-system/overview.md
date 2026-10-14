@@ -21,7 +21,7 @@ StateBoard helps a reviewer judge a candidate, find uncertainty, and inspect the
 
 Read the [workspace pattern](patterns/review-workspace.md), then the [tokens](foundations/tokens.md) and [interaction rules](behaviors/interaction.md). The [example](patterns/review-workspace.example.html) composes the system. Its [wireframe](patterns/review-workspace.wireframe.html) uses the same markup to expose structure.
 
-The [product overview](patterns/product-overview.md) uses one reading flow: latest release review, active features, and check coverage. Its [example](patterns/product-overview.example.html) and [wireframe](patterns/product-overview.wireframe.html) include excluded scope and missing coverage. The [overview study](references/product-overview-research.md) records seven inspected Dribbble compositions and supporting hierarchy guidance.
+The [product overview](patterns/product-overview.md) uses one reading flow: latest release review, screen previews, active features, and check coverage. Its [example](patterns/product-overview.example.html) and [wireframe](patterns/product-overview.wireframe.html) include excluded scope and missing coverage. Screens has a primary product navigation entry and shares its records with release views. The [overview study](references/product-overview-research.md) records inspected Dribbble compositions and first-party navigation and editor guidance.
 
 The [landing pattern](patterns/product-landing.md) introduces the product through an illustrative assessment, role routes, and agent maintenance. Its [example](patterns/product-landing.example.html) and [wireframe](patterns/product-landing.wireframe.html) share one body. The [landing study](references/landing-research.md) records seven inspected Dribbble concepts and two first-party page references.
 
@@ -31,7 +31,7 @@ The [wayfinding study](references/ux-navigation-research.md) informs linked boar
 
 # Apply it
 
-Use **Release reviews** and **Features** in the human interface. The [clarity study](references/review-clarity-research.md) supports contextual creation and a shorter path from outcome to check, result, and owner decision. Keep architecture/screens as supporting context, with operational categories filtering the same checks. Do not require AI or a complete architecture catalog to start reviewing.
+Use **Release reviews** and **Features** in the human interface. The [clarity study](references/review-clarity-research.md) supports contextual creation and a shorter path from outcome to check, result, and owner decision. Screens is directly accessible from the product. Within a release review, screens and architecture explain its features, while operational categories filter the same checks. Do not require AI or a complete architecture catalog to start reviewing.
 
 Use one heading per page, stable view navigation, and aligned rows. Expand outcomes, evidence history, and candidate context when needed. Use labels alongside status colors. Keep production availability distinct from candidate verification.
 

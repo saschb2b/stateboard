@@ -1,10 +1,11 @@
 ---
 type: Pattern
 title: Product overview
-description: One release review summary followed by product features and check coverage, with architecture as optional context.
+description: One release review summary followed by product screens, features, and check coverage, with architecture as optional context.
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: src/components/release/product-screens.tsx
   - resource: docs/design-system/references/review-clarity-research.md
   - resource: docs/design-system/references/ux-navigation-research.md
   - resource: src/components/release/product-workspace.tsx
@@ -33,6 +34,7 @@ The product overview answers what the product contains, which candidate the chec
 | Navigation            | Existing 184px rail for product sections, with Overview selected                                                     | Below 1200px, show horizontal navigation beneath the heading.   |
 | Latest release review | Candidate, derived conclusion, validation environment and release target, separate human decision, one review action | Stack properties in their desktop reading order.                |
 | Findings              | A labelled disclosure inside the assessment band                                                                     | Expand beneath the band without opening another column.         |
+| Product screens       | Up to three image previews with names, region counts, and a link to all screens                                      | Stack previews at narrow widths without shrinking their labels. |
 | Product features      | Full-width aligned rows: capability and owner, own-check state, declared mappings                                    | Below 900px, stack the fields within each expandable row.       |
 | Verification coverage | Six compact rows: functionality, integration, user experience, data, security, operations                            | Below 600px, stack the description beneath its discipline.      |
 | Product connections   | Quiet component, dependency, and mapped-screen counts below verification coverage                                    | Wrap links while retaining their full labels.                   |
@@ -53,7 +55,11 @@ Checks & results keeps a visible category chip outside its collapsed filters. Cl
 
 Keep **Edit board** beside the product identity as the single editing entry point for members with editing permission. Group **History** and Refresh beside **Edit board** in the heading. Keep the section navigation for product views. Viewers retain History and Refresh. Returning from either page uses the board's named parent link. The [wayfinding study](../references/ux-navigation-research.md) supports visible editing and a linked hierarchy without adding another dashboard region.
 
-Product sections use stable URLs. Overview is the default. The other `section` values are `releases`, `capabilities`, `dependencies`, and `connections`. The primary labels are **Overview**, **Release reviews**, and **Features**. **Architecture** combines components and their relationships as optional supporting context. Legacy `dependencies` and `connections` URLs remain valid.
+Product sections use stable URLs. Overview is the default. The other `section` values are `screens`, `releases`, `capabilities`, `dependencies`, and `connections`. The primary labels are **Overview**, **Screens**, **Features**, and **Release reviews**, in that order. **Architecture** combines components and their relationships as optional supporting context. Legacy `dependencies` and `connections` URLs remain valid. Do not duplicate Screens as a utility action in the app header.
+
+Screens belongs to the product and works without a release review. The overview shows up to three existing screen previews after the latest review. Each opens that image for inspection or editing. **View all screens** opens the product gallery, which uses the same screen records and preserves their order. Keep image names, annotation counts, and linked-feature counts visible. Compact previews scroll within their own row below 900px, leaving the following feature list within reach. Do not add readiness metrics or another manual screen catalog.
+
+The gallery exposes screen creation for editors and direct inspection for readers. An empty gallery explains how to add the first screen. Screens remain optional for readiness, while their primary navigation entry makes existing visual context easy to find. The [editor and navigation research](../references/product-overview-research.md#screens-as-a-product-destination) records this design choice.
 
 Section changes preserve unrelated query parameters and the fragment. Browser Back restores the previous section. Each selected tab controls a labelled, focusable tab panel.
 
@@ -67,8 +73,8 @@ Use one route to the full release review. Keep forms, revision history, and full
 
 # Examples and checks
 
-The [example](product-overview.example.html) contains six illustrative StateBoard capabilities and two evidence gaps: a restore drill and independent human review. It includes one excluded capability and one unassessed definition. The values are a design specimen, not the live product's current assessment.
+The [example](product-overview.example.html) contains three illustrative screen previews, six StateBoard capabilities, and two evidence gaps: a restore drill and independent human review. It includes one excluded capability and one unassessed definition. The values are a design specimen, not the live product's current assessment.
 
 The [wireframe](product-overview.wireframe.html) has the same body and structural CSS. Review it before the styled example at 390px, 900px, and 1440px. Check keyboard expansion, category links, visible filter reset, long names, and the distinction between check status and the human decision. Test the implementation with empty and populated assessments, expired evidence, URL reload, and browser Back.
 
-The specimen shows overview content and disclosure. The running product owns full section navigation and filtered assessment views. Specimen management links open the [supporting screen contract](supporting-surfaces.md#board-details-and-return-paths). They do not edit product records.
+The specimen shows overview content, compact screen previews, and disclosure. The specimen labels its screen thumbnails as illustrations. They provide no observed product evidence. The running product owns full section navigation and filtered assessment views. Specimen management links open the [supporting screen contract](supporting-surfaces.md#board-details-and-return-paths). They do not edit product records.

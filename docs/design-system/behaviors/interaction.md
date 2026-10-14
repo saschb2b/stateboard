@@ -5,6 +5,9 @@ description: Keyboard, status, disclosure, screen linking, and return paths for 
 status: stable
 generated: { by: codex/gpt-6, at: 2026-10-14 }
 sources:
+  - resource: docs/design-system/references/product-overview-research.md
+  - resource: src/components/screen/screen-editor-toolbar.tsx
+  - resource: src/components/release/product-screens.tsx
   - resource: docs/design-system/references/review-clarity-research.md
   - resource: src/components/app/page-breadcrumbs.tsx
   - resource: src/components/board/board-editor.tsx
@@ -94,9 +97,13 @@ Parent links work when the page opens directly, without prior browser history. D
 
 The product's section navigation remains available for sibling destinations. Screens, settings, and history identify their board parent. A release review also links to its review list. Keep editing separate from breadcrumb navigation through a visible **Edit board** action. Follow the [board details contract](../patterns/supporting-surfaces.md#board-details-and-return-paths) for saving, discarding, errors, and draft retention.
 
-In the visual editor, **More board options** keeps the actions that no longer fit in the header. Its menu retains labelled search, sharing, presentation, and checked visual-state filters. Keep the menu and screen-rail expansion reachable by keyboard. The board title remains a location cue. Use **Edit board** for name and description changes.
+In the visual editor, **More board options** contains product navigation, board history, and permitted board editing. Keep Find, Filter, Present, and Share screens in the screen toolbar at all widths. The toolbar wraps without covering the selected screen name. Its controls and screen-rail expansion remain reachable by keyboard. Use **Edit board** for name and description changes.
 
-Release screen actions carry `release` and the selected `capability` into the editor URL. **Edit screen** also carries `screen`. A valid `region` selects an annotation within that image. Resolve all identities against the current board, including the release and the region's parent screen. The editor keeps a breadcrumb return to the release's Screens view and selected feature. The mobile trail exposes that immediate parent.
+Product navigation orders **Overview**, **Screens**, **Features**, and **Release reviews**. Screens opens the product gallery through `section=screens`, independent of release selection. Use one navigation entry rather than a second utility action in the header. Overview previews open existing screen records.
+
+Release screen actions carry `release` and the selected `capability` into the editor URL. **Edit screen** also carries `screen`. A valid `region` selects an annotation within that image. Resolve all identities against the current board, including the release and the region's parent screen.
+
+The editor breadcrumb follows the product, its Screens gallery, and Screen editor. The mobile parent returns to the gallery. A separate **Back to release review** action retains the originating release and feature. Keep the full screen name beside the canvas and preserve accessible names on thumbnail buttons.
 
 Screen Actions → Rename transfers focus after the menu closes, so menu focus restoration cannot dismiss the input. Freeze the inspector's current visibility at every gesture start, including when it shows an unsaved draft. Keep that layout through drawing, moving, and resizing, then update after pointer release. A canvas action must not collapse the screen rail. Upload and reuse dialogs retain a visible **Cancel** action, with dismissal and tab changes disabled during saving.
 

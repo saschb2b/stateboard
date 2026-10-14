@@ -34,9 +34,9 @@ For a real deployment (your own Keycloak, via Docker Compose or Helm), see [Self
 
 ## 2. Create a board
 
-On `/boards`, click **New board**. Give it a name, usually a product or a quarter, e.g. `StateBoard`. The description is optional.
+On `/boards`, click **New board**. Give it the product's name, for example `StateBoard`. The description is optional.
 
-The development build opens the product **Overview** after creation. Add features and follow the [release workflow](/docs/release-readiness). **Release reviews** holds candidate reviews. Choose **Screens** to open the visual editor. Existing boards need no conversion.
+The development build opens the product **Overview** after creation. Add features and follow the [release workflow](/docs/release-readiness). **Release reviews** holds candidate reviews. Choose **Screens** to open the product gallery, then select an image to inspect or annotate it. Existing boards need no conversion.
 
 Already have a visual board that's close to what you need? Click **Duplicate** on its card to deep-copy every screen and region into a new board, then swap only the screens that changed — faster than starting over.
 
@@ -46,19 +46,19 @@ Each board has an internal ID used in its workspace URLs. Public visual links us
 
 Choose **Edit board** beside the product name or on its row in the board list. Update the name and description under **Board settings**, then choose **Save changes**. **Discard changes** restores the last saved values. These actions require editing permission. Switching settings sections keeps the draft. Leaving settings closes the form, so save or discard first.
 
-Use the header breadcrumbs to return to a parent page. The named board returns to its product overview. **Release reviews** returns from a candidate to that board's review list. On narrow screens, the header shows the immediate parent link. Product section tabs move between views within the board. Choose **History** beside **Edit board** in the product heading to see board activity.
+Use the header breadcrumbs to return to a parent page. The named board returns to its product overview. **Release reviews** returns from a candidate to that board's review list. On narrow screens, the header shows the immediate parent link. Product section tabs move between **Overview**, **Screens**, **Features**, and **Release reviews**. Choose **History** beside **Edit board** in the product heading to see board activity.
 
-From the visual editor, open **More board options → Edit board**. The empty editor also has an **Edit board** action. The board title is a parent link, so clicking it returns to the overview.
+From the visual editor, open **More board options → Edit board**. The empty editor also has an **Edit board** action. The board title returns to the overview. The editor's **Screens** breadcrumb returns to the gallery. When editing from a review, **Back to release review** restores that review and its selected feature.
 
 Browser Back and Forward restore assessment views, selected checks, categories, capabilities, and components. Search, result, and needs-attention filters stay local to each view. The board ID and existing share links stay the same after a rename.
 
 ## 3. Upload a screen
 
-Choose **Screens** in the product workspace, then drop a screenshot onto the upload area or click to browse. Allowed formats: PNG, JPEG, WebP, GIF. Max 25 MB per file.
+Choose **Screens → Add screen** in the product workspace. Drop a screenshot onto the upload area or click to browse. You can also reuse an existing workspace image. Allowed formats: PNG, JPEG, WebP, GIF. Max 25 MB per file.
 
 Upload additional screens as needed. They appear in the screen sidebar. Use its screen actions to reorder them. This order carries through to the share view and Present mode.
 
-On narrow screens, choose **Expand screens** to open the collapsed screen rail. When header space is limited, **More board options** holds the remaining actions. These include search, visual-state filters, sharing, and Present.
+On narrow screens, choose **Expand screens** to open the collapsed screen rail. The screen toolbar keeps **Find**, **Filter**, **Present**, and **Share screens** beside the full screen name. These controls wrap when space is limited.
 
 <Callout type="warn">
   Don't upload anything you can't show stakeholders. Share links are public by
@@ -67,7 +67,7 @@ On narrow screens, choose **Expand screens** to open the collapsed screen rail. 
 
 ## 4. Mark your first region
 
-With a screen open, **click and drag** anywhere on the image to draw a rectangle. When you release, a side panel slides in. Pick a state, give the region a label, optionally add notes.
+With a screen open, **click and drag** anywhere on the image to draw a rectangle. When you release, the region details open. Name the region, set its visual state, and link existing features under **Features shown here**. Add notes or source context when useful. A feature link describes what the region shows. It does not verify a release check.
 
 Three states only, by design:
 
@@ -75,11 +75,11 @@ Three states only, by design:
 - **Mock** · UI is in place but data is hardcoded or fake.
 - **Missing** · not built yet.
 
-Press **Esc** at any time to discard a draft region.
+With the canvas focused, press **Esc** to discard a draft region.
 
 ## 5. Share it
 
-On desktop, click **Share** in the editor header to copy the read-only URL. Its arrow opens **Open share view** and **Manage links**. On narrow screens, open **More board options → Copy share link**. The same menu contains **Open share view** and **Manage links**.
+Choose **Share screens → Copy share link** in the screen toolbar. The same menu offers **Open share view** and **Manage links**. It stays in the toolbar at narrow widths.
 
 This visual link shows every screen and region on the board. A release review also needs features and check results; publish a [curated recorded decision](/docs/release-readiness#record-and-share-a-decision) when sharing release readiness.
 

@@ -1,10 +1,10 @@
 ---
 type: Reference
 title: Product overview research
-description: Visual references and hierarchy guidance for a compact product state overview.
-tags: [research, product-overview, hierarchy, release-readiness]
+description: Visual references and hierarchy guidance for product overview, screen navigation, and contextual editing.
+tags: [research, product-overview, hierarchy, release-readiness, screen-editor]
 status: draft
-generated: { by: codex/unversioned, at: 2026-10-13T22:20:11Z }
+generated: { by: codex/gpt-6, at: 2026-10-14 }
 stale_after: 2027-01-14
 sources:
   - id: nkemka
@@ -40,11 +40,34 @@ sources:
     resource: docs/design-system/patterns/review-workspace.md
   - id: purpose
     resource: docs/product/purpose.md
+  - id: notchnote
+    resource: https://dribbble.com/shots/27184994-NotchNote-QA-A-Design-QA-Tool
+    title: NotchNote QA by Shakira Yanti
+  - id: annotation-editor
+    resource: https://dribbble.com/shots/26186305-Research-Annotation-Tool
+    title: Research Annotation Tool by Sergey Yani
+  - id: inkwise
+    resource: https://dribbble.com/shots/27222028-UI-UX-Design-Document-Editor-Dashboard-Inkwise
+    title: Inkwise by Phenomenon Studio
+  - id: figma-panels
+    resource: https://help.figma.com/hc/en-us/articles/360039832014-Design-prototype-and-explore-layer-properties-in-the-right-sidebar
+    title: Figma properties panel
+  - id: figma-annotations
+    resource: https://www.figma.com/blog/properties-panel-and-annotations-now-in-figma-make/
+    title: A properties panel and annotations, now in Figma Make
+  - id: linear-projects
+    resource: https://linear.app/docs/projects
+    title: Linear projects
+  - id: linear-pages
+    resource: https://linear.app/docs/default-team-pages
+    title: Linear team pages
+  - id: screen-direction
+    resource: User feedback that Screens felt hidden beneath releases or in a header utility action, followed by an agent review of the real editor and accepted design direction on 2026-10-14.
 ---
 
 # Product state in one reading flow
 
-The research question is how one product overview can expose readiness, coverage, and uncertainty without making every fact compete for attention. The proposed order is product identity, candidate conclusion, product coverage, then supporting detail.[^proposal]
+The research question is how one product overview can expose readiness, coverage, and uncertainty without making every fact compete for attention. The order is product identity, candidate conclusion, screen previews, product coverage, then supporting detail.[^proposal][^screen-direction]
 
 Use one aligned capability list as the main reading surface. Qualify the candidate result as each capability's own checks. Show declared component and screen mappings without implying production availability. Keep unresolved claims in the assessment band, with links to their affected capabilities. Expose represented disciplines and missing coverage without converting counts into a readiness score.[^proposal]
 
@@ -74,9 +97,26 @@ NN/g's disclosure guidance keeps frequently needed information visible. It requi
 
 Expose unresolved claims and coverage gaps in the overview. Evidence history, full topology, and record forms can follow an explicit link. A reviewer should not open every capability to discover whether required checks exist.[^proposal]
 
+# Screens as a product destination
+
+The user found Screens difficult to reach outside a release review. The inspected editor also lacked a full screen title near the canvas. Its notes preceded feature links, and the release appeared as a screen ancestor. These observations prompted a bounded navigation and editor pass.[^screen-direction]
+
+| Inspected source                                                | Observed structure or documented behavior                                                                              | StateBoard application                                                                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| NotchNote QA[^notchnote]                                        | Screen navigation, central annotation canvas, and contextual notes occupy three stable panels.                         | Retain those distinct areas. Omit gradients and promotional cards.                                                               |
+| Research Annotation Tool[^annotation-editor]                    | A document title and viewing controls sit directly above the content, beside stable navigation and contextual details. | Give the selected screen a nearby title and quiet inspection tools.                                                              |
+| Inkwise[^inkwise]                                               | Recent document previews sit above a collection, with a separate activity column and storage metric.                   | Use at most three existing screen previews. Omit greetings, activity cards, and storage metrics.                                 |
+| Figma panels[^figma-panels]                                     | Navigation, tools, and properties have separate locations. Selection determines the applicable properties.             | Keep screen selection, canvas tools, and region editing distinct. Put region name, state, and feature links before source notes. |
+| Figma annotations[^figma-annotations]                           | A named annotation action marks targets directly in the working content.                                               | Make the annotation task understandable near the image and retain precise region context.                                        |
+| Linear projects and team pages[^linear-projects][^linear-pages] | Project views and team resources have direct destinations within their parent context.                                 | Make Screens a primary product section and use the gallery as the editor's parent.                                               |
+
+The accepted product order is Overview, Screens, Features, and Release reviews. Screens shares the product's records across release views. An overview preview follows the latest review and opens the selected image. The editor returns to the gallery through its breadcrumb. A separate action returns to an originating release review.[^screen-direction]
+
+These applications are design inferences. The pass inspected three Dribbble pages and their displayed images, plus four first-party documentation pages. It did not exercise the source products or establish StateBoard usability. Existing [tokens](../foundations/tokens.md) retain the charcoal surfaces and orange actions. The [screen contract](../patterns/supporting-surfaces.md#visual-editor) owns the adopted layout and interaction rules.
+
 # Bounded evidence ledger
 
-Inspected on 2026-10-14 in Europe/Berlin. Scope covered seven Dribbble pages, their displayed media, and two NN/g articles. Search results served discovery only. The research agent closed its `overview-reference-study` browser session. Browser captures remain in ignored `.agents/browser/`.
+Inspected on 2026-10-14 in Europe/Berlin. The initial overview scope covered seven Dribbble pages, their displayed media, and two NN/g articles. The Screens extension above records its additional sources separately. Search results served discovery only. The research agent closed its `overview-reference-study` browser session. Browser captures remain in ignored `.agents/browser/`.
 
 | Source                    | Media inspected                                                                                                                                                                                                                                                                           | Limit                                                                                               |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -116,3 +156,19 @@ This is a comparative study, not a source-site export. Source typography, contra
 [^existing-pattern]: Workspace pattern read before implementation. Its side-by-side overview is the layout under review.
 
 [^purpose]: StateBoard's product purpose defines capabilities, dependencies, checks, evidence, and role-specific review. Task tracking remains outside scope.
+
+[^notchnote]: Published Dribbble page and displayed annotation workspace, inspected on 2026-10-14.
+
+[^annotation-editor]: Published Dribbble page and displayed document workspace, inspected on 2026-10-14.
+
+[^inkwise]: Published Dribbble page and displayed document overview, inspected on 2026-10-14.
+
+[^figma-panels]: Figma's first-party documentation describes panel responsibilities and selection-dependent properties.
+
+[^figma-annotations]: Figma's July 30, 2026 product article describes its properties and annotation workflow.
+
+[^linear-projects]: Linear's project documentation describes direct project views and the contextual details sidebar.
+
+[^linear-pages]: Linear's team-page documentation describes accessible resources and sibling destinations.
+
+[^screen-direction]: User feedback and the accepted StateBoard design direction, 2026-10-14. This is not a human usability study.

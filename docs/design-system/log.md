@@ -1,5 +1,13 @@
 ## 2026-10-14
 
+- **Verification**: Inspected the updated product-overview wireframe before its styled example at 390px and 1440px. Both retained viewport-wide page bounds. Keyboard navigation scrolled the compact preview row to each thumbnail, and Enter opened its documented destination. These specimen checks do not establish human usability or candidate evidence.
+
+- **Update**: Made Screens a primary product destination, with up to three existing previews after the latest review. Defined the shared gallery, screen counts, product breadcrumb, separate return to a release review, and mobile preview strip. Updated the paired examples, indexes, and published guides.
+
+- **Update**: Refined the existing editor contract around the full screen title, local tools, accessible thumbnail buttons, and region details before bounded notes. Kept deletion in region options and documented restrained editor overlays and keyboard activation. Preserved gesture stability and the mobile image/inspector flow.
+
+- **Research**: Extended the product-overview study with three inspected Dribbble images and four first-party Figma/Linear pages. Recorded accepted layout inferences and their limits. The study adds no source-product interaction or human validation claim.
+
 - **Verification**: Retested the real editor at 390 × 844 in English and German. The image ended at 310.75px. The region heading began at 387.75px and 405.75px respectively, without overlap or horizontal overflow. Restoring 1440px desktop width also produced no horizontal overflow.
 
 - **Correction**: Added the observed 390px image/inspector overlap and required a natural-aspect image above normal-flow details on narrow screens. Preserved the desktop side panel and documented the canvas focus group and picker shortcut isolation.

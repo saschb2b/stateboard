@@ -16,15 +16,21 @@ Explore the [example release review](/share/demo/releases) without creating samp
 
 ## Start with what should work
 
-Open a board to enter its product **Overview**. **Release reviews** holds candidate reviews. **Features** describes what users should be able to do. A feature can have no UI, such as processing a webhook. The API and technical records use capabilities for features and assessments for release reviews.
+Open a board to enter its product **Overview**. Use **Screens** to inspect its images and annotations.
+
+Use **Features** to describe user outcomes. **Release reviews** holds candidate reviews.
+
+A feature can have no UI, such as processing a webhook. The API and technical records use capabilities for features and assessments for release reviews.
 
 Add a feature with a name, observable outcome, and accountable owner. For example, **Export an invoice** could mean that an authorized finance user can download a valid PDF. The outcome gives a reviewer something concrete to check.
 
-The overview starts with the latest candidate, its calculated readiness, validation environment, release target, and separate owner decision. Expand an unresolved item to see what is missing or failed. Open that release review to act on it.
+The overview starts with the latest candidate, its calculated readiness, validation environment, release target, and separate owner decision. Expand an unresolved item to see what is missing or failed. Open that release review to act on it. Up to three existing screen previews follow the review summary. Choose a preview to open its editor, or **View all screens** for the gallery.
 
 The feature list includes outcomes outside the latest review and identifies newer definitions. Expand a row for its outcome and scope reason. Its check status covers that feature's own checks for the candidate. Supporting component and screen counts describe declared mappings. They do not prove working behavior.
 
 **Architecture** is optional supporting context. From a feature, link systems that implement it or existing screen regions that illustrate it. The form keeps this feature selected. Reuse components from the workspace when appropriate. You can also maintain components and dependency relationships together in Architecture. A declared dependency does not create a release requirement or prove that StateBoard observed runtime traffic.
+
+The product **Screens** gallery works without a release review. Add or reuse an image, then select it to draw regions and link existing features. Screens and their mappings belong to the product. Release views show that shared context with the selected review's feature scope. In the editor, the **Screens** breadcrumb returns to the gallery. **Back to release review** restores the review and feature you came from.
 
 ## Start a release review
 
@@ -65,7 +71,7 @@ All destinations use the same release records. The URL retains the selected view
 | Overview     | Read the conclusion, unresolved claims, and included features; expand a feature to maintain its checks and results.                              |
 | Checks       | Find checks across the release, inspect result history, or filter by category, result, owner, and needs attention.                               |
 | Decision     | Review the complete scope, failures, gaps, and optional warnings before an owner records approval or hold.                                       |
-| Screens      | Inspect optional visual context and linked features.                                                                                             |
+| Screens      | Inspect the product's shared screen context and linked features in this review's scope.                                                          |
 | Architecture | Inspect optional supporting systems and dependencies; select a feature or component to see relevant checks, including release-wide requirements. |
 
 **Checks** opens the **Checks & results** page. Operational, security, and data concerns are categories of the same checks. They do not require separate records or another workflow. The older Operations view URL remains supported. A category without checks remains unassessed. **More filters** contains **Include functional checks** in the Operations area. Search appears for larger check lists or while a query is active. Filters never change calculated readiness.
