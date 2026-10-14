@@ -3,7 +3,7 @@ title: FAQ
 description: The questions that come up most.
 ---
 
-The readiness MVP is implemented in the development build and unreleased. The latest published release remains `2026.8.0`.
+StateBoard 2026.10.0 includes release readiness and agent maintenance through REST and MCP. See [Upgrading](/docs/self-hosting#upgrading) when moving from an earlier release.
 
 ## Why only three visual states? I want one for "in review."
 
@@ -45,7 +45,7 @@ StateBoard assesses whether a candidate supports its required outcomes and prese
 
 ## Can agents, scripts, or CI update boards?
 
-Yes. Members mint API keys (they expire after 90 days by default and are fully audited) that unlock role-scoped REST editing and evidence ingestion plus a built-in visual-board MCP server at `/api/mcp` — so a coding agent can read a board, flip region states after verifying what shipped, and hand back the share link. Release decisions and release publication/revocation require a current human owner browser session. There's also an installable agent skill for the visual workflow. See [Agents & API](/docs/agents).
+Yes. Members create API keys that expire after 90 days by default and attribute writes to their owner. REST and MCP at `/api/mcp` support product context, features, dependencies, release scope, versioned checks, and evidence. Agents can maintain those records and visual regions within their key's role. The installable agent skill explains reconciliation and exact-candidate verification. A current human owner records release decisions and publishes or revokes release links in the browser. See [Agents & API](/docs/agents).
 
 ## Can I integrate Jira / Linear / Slack?
 

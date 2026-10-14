@@ -3,9 +3,9 @@ title: Release readiness MVP implementation plan
 description: Implementation contract, readiness rules, role views, and acceptance criteria for StateBoard's release-readiness MVP.
 ---
 
-StateBoard's next stage evaluates whether intended users can complete the critical capabilities in a named release candidate. Screenshots show the visual implementation; dependencies explain the wiring; evidence supports specific acceptance claims. Everyone reads the same assessment through the view relevant to their work.
+StateBoard evaluates whether intended users can complete the critical capabilities in a named release candidate. Screenshots show the visual implementation; dependencies explain the wiring; evidence supports specific acceptance claims. Everyone reads the same assessment through the view relevant to their work.
 
-**Status: RR1–RR6 implementation is present in this working tree and unreleased.** The latest published release remains `2026.8.0`. Migrations `0008`–`0010`, product and assessment editors, review tasks and supporting views, evidence ingestion, decisions, retained media, public sharing, and the in-memory demo implement the original contract. The adopted RR7 completion adds AI maintenance through MCP and the packaged agent skill. See the [usage guide](./release-readiness). A real team pilot and external GitHub milestone reconciliation remain follow-up work.
+**Status: RR1–RR7 ship in 2026.10.0.** The release includes migrations `0008`–`0010`, product and assessment editors, review views, evidence, decisions, retained media, public sharing, and the in-memory example. RR7 provides ordinary AI maintenance through MCP and the packaged agent skill. See the [usage guide](./release-readiness). A real team pilot and external GitHub milestone reconciliation remain follow-up work.
 
 ## MVP outcome and boundaries
 
@@ -196,7 +196,7 @@ The implementation follows these slices. RR1–RR6 product features are present 
 | RR6 Public sharing and pilot         | Add publication preview/allowlist, token-scoped media and revocation, in-memory readiness demo, docs/Pages updates, full regression checks and real-release pilot.      | Public responses expose only the chosen projection; every role can use the example and real assessment without duplicate reporting.                                      |
 | RR7 AI maintenance                   | Add MCP parity for ordinary readiness reads/writes, structured results/errors, shared credential/revision guards, and repository-to-assessment agent guidance.          | An editor agent can establish and reconcile a candidate assessment, append actual evidence, handle conflicts/retries, and report gaps without manual data transcription. |
 
-The complete workflow uses RR1–RR7 together. The permanent example is in-memory at `/share/demo/releases`; it does not populate user databases. The latest published `2026.8.0` release does not contain these additions yet.
+The complete workflow in `2026.10.0` uses RR1–RR7 together. The permanent example is in-memory at `/share/demo/releases`; it does not populate user databases.
 
 ## Verification and acceptance cases
 

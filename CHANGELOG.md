@@ -4,20 +4,73 @@ All notable changes to StateBoard are documented here.
 
 Versions follow [CalVer](https://calver.org/): `YYYY.M.PATCH`. A new minor cuts whenever a release ships; patches fix issues against a released minor.
 
-## Unreleased
+## 2026.10.0
 
-### Release readiness MVP
+2026-10-14
 
-- Product capabilities and owners, optional visual anchors, workspace components and declared dependencies, immutable candidate/context assessments, and versioned acceptance checks.
-- Manual and API-submitted append-only evidence, with context matching, freshness, provenance, idempotency, and explainable readiness. Six views share the same assessment.
-- Human owner decisions with frozen definitions, selected evidence, visual wiring, and retained media. Private image uploads and curated revocable public decision links have separate authorization from legacy board sharing.
-- A permanent in-memory readiness example, usage guide, Postgres integration coverage, and component interaction tests. Board cards now open readiness, with a Screens shortcut for the visual editor.
-- **Three new migrations (`0008`–`0010`) — run `pnpm migrate` on upgrade.** Back up the private `release-assets` directory with Postgres and existing uploads. Ordinary board deletion now returns a conflict when release history exists.
+StateBoard now helps teams judge release readiness across a whole product. Describe what should work, connect supporting systems and screens, and review the evidence for a specific version. Existing visual boards remain usable.
 
-### Breaking: OIDC redirect URI changed
+The screenshots show our real ChatGPT desktop app review. Embedded app images are source-labeled OpenAI references.
 
-- **Better Auth 1.7** serves generic OAuth providers through its core social endpoints, so the Keycloak callback moved from `/api/auth/oauth2/callback/keycloak` to **`/api/auth/callback/keycloak`**. On upgrade, update the client's **Valid redirect URIs** in Keycloak (or your OIDC provider) to the new path, or sign-in fails with a redirect-URI error. The bundled realm import, Helm values, env examples, and the self-hosting guide already use the new path.
-- **Dependency refresh.** Next.js 16.3.5, Storybook 10.6, nanoid 6, fumadocs-mdx 15.4, and the usual patch bumps.
+### One product, a clear overview
+
+A board represents a product across releases. Its overview brings together the latest release conclusion, unresolved claims, screen previews, features, and check coverage.
+
+Use **Overview**, **Screens**, **Features**, and **Release reviews** to open each part.
+
+Features describe user outcomes, including backend work with no interface. Optional architecture records connect them to services, APIs, workers, data stores, and dependencies. Each feature can have an accountable owner and linked screen regions.
+
+![Product overview with release readiness, screen previews, and features](./public/releases/2026.10.0/product-overview.png)
+
+### Review a release with evidence
+
+- **Review an exact candidate.** Pin the version, validation environment, release target, audience, and configuration. Select its features and define the checks they must satisfy.
+- **Record what happened.** Add checks and results directly from a feature. Keep functional, integration, UX, data, security, and operational checks in one workflow, with filters for each review task.
+- **See what prevents release.** Readiness distinguishes **Ready**, **Blocked**, and **Needs evidence**. Required failures block release. Missing, expired, inconclusive, or mismatched evidence cannot establish readiness. Check and result history explain the conclusion.
+- **Preserve the decision.** A signed-in workspace owner can approve a ready candidate or record a hold. Each decision requires a rationale. Each decision retains its reviewed definitions, evidence, and selected images. Curated, revocable public links share the chosen outcomes and images while keeping internal details private.
+
+![Release review with its candidate, evidence gaps, and included features](./public/releases/2026.10.0/release-review.png)
+
+Screenshots remain optional. Their existing **Shipped**, **Mock**, and **Missing** labels describe visual regions separately from release readiness.
+
+### Let agents maintain the records
+
+REST and MCP now cover product features, components, dependencies, release reviews, scope, checks, and evidence. A connected coding agent can inspect existing records, reconcile changes, submit actual verification results, and report unresolved claims. The updated installable StateBoard skill explains this workflow.
+
+Agent writes use the same permissions and validation as the interface, including revision checks, retry handling, and credential attribution. Upkeep runs in the connected agent or CI. Human owner sessions retain release decisions and public release-link control.
+
+Open product and release workspaces refresh after external updates. Refresh waits while a form is open, so incoming agent changes do not discard drafts.
+
+### Screens stay connected to product work
+
+Screens now has its own product gallery, independent of release reviews. The overview previews up to three images. Each opens the selected screen, with annotations and linked-feature counts available in the gallery.
+
+The editor puts the full screen name above the canvas and groups **Find**, **Filter**, **Present**, and **Share screens** nearby. Select a region to name it, set its state, and link features before adding notes. Subtle overlays keep the image readable. Keyboard selection, stable drawing geometry, and stacked mobile details make annotations easier to inspect and edit.
+
+![Screen editor with image navigation, annotation tools, and linked product features](./public/releases/2026.10.0/screen-editor.png)
+
+### English, German, and clearer navigation
+
+- Choose **English** or **Deutsch** throughout the interface, including public reviews. Dates and numbers follow the selected language. Authored names and notes keep their original language, and switching preserves open forms. Published guides remain in English.
+- Edit a board's name and description through **Edit board**, with explicit save, discard, and error feedback. Breadcrumbs return to the product, review list, or screen gallery. Editing from a release also provides **Back to release review**.
+- The homepage, board list, settings, and review pages share a more compact layout. The interactive release example shows the workflow without adding sample records to a workspace.
+- Failed or concurrent saves now retain usable state and report errors. Screen renaming keeps focus, uploads offer Cancel, and keyboard controls avoid changing annotations while a form control is active.
+
+### Upgrading from 2026.8.0
+
+1. Back up Postgres and the complete `STATEBOARD_DATA_DIR`, including `uploads/` and `release-assets/`.
+2. **Update the OIDC callback URL.** Better Auth 1.7 changes the path from `/api/auth/oauth2/callback/keycloak` to `/api/auth/callback/keycloak`. Update the client's allowed redirect URIs at your identity provider before using the new build.
+3. Apply migrations **0008 through 0010** before starting the new application. Source installs use `pnpm migrate`. The supplied deployment Compose service and enabled Helm migration hook run the same migration script.
+
+| Migration                      | Purpose                                                                                                                      |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `0008_release_readiness.sql`   | Adds product features, architecture relationships, release reviews, checks, evidence, decisions, and retained media records. |
+| `0009_evidence_credential.sql` | Preserves the submitting API credential's identity with evidence.                                                            |
+| `0010_release_invariants.sql`  | Enforces immutable review context, check identity, evidence matching, and retained history boundaries.                       |
+
+Existing boards and visual share links keep their behavior. Boards with release history reject ordinary deletion. Existing board images retain their public access model. Confidential review images and retained decision copies use the separate private `release-assets/` directory.
+
+Deployment builds now exclude local environment files, uploaded media, and agent inputs from the application artifact. Supply runtime secrets and persistent storage through your deployment configuration. See the [self-hosting guide](./src/content/docs/self-hosting.mdx) for deployment and backup details.
 
 ## 2026.8.0
 

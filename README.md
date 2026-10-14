@@ -6,21 +6,21 @@
 [![Pages](https://github.com/saschb2b/stateboard/actions/workflows/pages.yml/badge.svg?branch=main)](https://saschb2b.github.io/stateboard/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-📦 **Current release:** [`2026.8.0` (team-ready)](https://github.com/saschb2b/stateboard/releases/latest). See the [changelog](./CHANGELOG.md) for what shipped and what's intentionally not here yet.
+📦 **Current release:** [`2026.10.0` (release readiness)](https://github.com/saschb2b/stateboard/releases/latest). See the [changelog](./CHANGELOG.md) for what shipped and what's intentionally not here yet.
 
-🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)**. The published demo follows the current release. This working tree also includes a permanent readiness example at `/share/demo/releases`; deploy it to explore all six views. Editing needs the self-hosted version.
+🟢 **[Live read-only demo →](https://saschb2b.github.io/stateboard/)**. Explore the [release review example](https://saschb2b.github.io/stateboard/share/demo/releases/) and visual board. Editing needs the self-hosted version.
 
 > Show what works, what it depends on, and why it is ready to release — with a view for everyone involved.
 
-**Know what’s ready to release.** Describe product capabilities, connect their dependencies, and assess a named candidate using matching verification evidence. Product, frontend, backend, QA, operations, and release owners inspect the same assessment through six views. Annotated screenshots remain the visual delivery view.
+**Know what’s ready to release.** Describe product capabilities, connect their dependencies, and assess a named candidate using matching verification evidence. Product, frontend, backend, QA, operations, and release owners inspect the same records through focused views. A product gallery connects annotated screenshots to features and checks.
 
 Open source. Self-hosted. Airgap-ready (except for your own SSO). MIT.
 
 ---
 
-## v1 (team-ready)
+## Visual boards and team access
 
-This is `v1`, the cut you can deploy in a company.
+The existing visual workflow remains available alongside release reviews.
 
 - Manual screenshot upload (PNG / JPEG / WebP / GIF, up to 25 MB)
 - Region tagging on the image (click + drag)
@@ -35,9 +35,9 @@ This is `v1`, the cut you can deploy in a company.
 
 What's not here yet (by design, see [the build plan](#roadmap)): headless capture, Jira sync, scheduled re-capture, diffs, journeys.
 
-## Release readiness MVP (implemented, unreleased)
+## Release readiness
 
-This working tree implements the full MVP; the latest published release remains `2026.8.0`.
+Released in `2026.10.0`. Each board represents one product, with reusable features and screens across release reviews.
 
 - Reusable capabilities and owners, including outcomes with no UI; optional links to screenshot regions
 - Workspace components, declared dependencies, focused navigation, and affected capabilities
@@ -45,14 +45,14 @@ This working tree implements the full MVP; the latest published release remains 
 - Manual, REST, and MCP-submitted evidence with context, provenance, idempotency, history, and freshness
 - AI-maintained capabilities, dependencies, scope, and checks through REST/MCP and the packaged agent skill
 - Explainable `ready` / `blocked` / `needs_evidence` calculation, with mandatory failures and unknowns kept visible
-- Six views over one assessment, with a URL that preserves the selected view
+- Focused review tasks and role filters, with URLs that preserve the selected context
 - Human owner approvals/holds with frozen definitions, evidence, wiring, rationale, and selected retained media
 - Private image uploads and curated public decision summaries with selected safe media and revocable tokens
 - An in-memory example at `/share/demo/releases`, without seeded workspace data
 
-Product rows open the readiness workspace; **Screens** opens the existing visual editor. Required functional acceptance checks determine readiness, while `shipped` / `mock` / `missing` retain their existing visual meanings. Approval records a decision and does not deploy a release.
+Product rows open the overview. **Screens** opens the product gallery, where each preview opens its editor. Required functional acceptance checks determine readiness, while `shipped` / `mock` / `missing` retain their existing visual meanings. Approval records a decision and does not deploy a release.
 
-**Upgrade:** run `pnpm migrate` to apply `0008`–`0010`. Keep `STATEBOARD_DATA_DIR` persistent and backed up alongside Postgres, including both `uploads` and `release-assets`. Existing board images remain public/cached; confidential release images use the separate private directory. Boards with release history cannot be deleted through ordinary deletion.
+**Upgrade:** update the OIDC redirect URI to `/api/auth/callback/keycloak`, then run `pnpm migrate` to apply `0008`–`0010`. Keep `STATEBOARD_DATA_DIR` persistent and backed up alongside Postgres, including both `uploads` and `release-assets`. Existing board images remain public/cached; confidential release images use the separate private directory. Boards with release history cannot be deleted through ordinary deletion.
 
 Read the [usage guide](./src/content/docs/release-readiness.mdx) and [implementation contract](./src/content/docs/release-readiness-mvp.mdx). The real team pilot and external GitHub milestone reconciliation are follow-up work.
 
@@ -69,7 +69,7 @@ The interface uses `next-intl`, typed message catalogs, ICU plurals, and locale-
 Agents, scripts, and CI can't complete an OIDC sign-in — they authenticate with **API keys** instead (avatar menu → **API keys**). Keys are hash-only server-side, role-capped, expire after 90 days by default, and every edit they make lands in the audit log. Owners can inventory and revoke every key in the workspace. A key unlocks two surfaces:
 
 - **REST** — board editing and release definitions/evidence accept `Authorization: Bearer sbk_…` with the same role rules as the editor. Recording release decisions and publishing/revoking release links require a current owner browser session; API keys cannot perform them. Key management also requires a session.
-- **MCP** — a built-in, zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp`. The development build adds product context, capabilities, dependencies, assessments, scope, versioned checks, evidence submission, history, and calculated readiness to the existing visual tools. No SDK, extra process, or server-side LLM is needed.
+- **MCP** — a built-in, zero-dependency [MCP server](https://modelcontextprotocol.io) at `/api/mcp`. Version `2026.10.0` adds product context, capabilities, dependencies, assessments, scope, versioned checks, evidence submission, history, and calculated readiness to the existing visual tools. No SDK, extra process, or server-side LLM is needed.
 
 ```bash
 # Connect Claude Code to your instance
@@ -83,7 +83,7 @@ npx skills@latest add saschb2b/stateboard
 
 After a member creates a key, an agent can inspect the project, reuse or create the relevant capabilities and components, connect their dependencies, define a candidate and checks, run verification, and submit the results. On later changes it reconciles those same records rather than asking people to enter the data again. CI can push new observations through REST. The agent returns the release conclusion, unresolved claims, and an assessment link for human review.
 
-Source-derived wiring is declared context; only actual observations support checks. The server calculates readiness, and a human owner records the release decision and controls publication. Maintenance runs in the connected agent or CI; StateBoard does not run a background AI service or fetch evidence URLs. The latest published `2026.8.0` build still exposes only the visual MCP tools; the expanded surface is unreleased.
+Source-derived wiring is declared context; only actual observations support checks. The server calculates readiness, and a human owner records the release decision and controls publication. Maintenance runs in the connected agent or CI; StateBoard does not run a background AI service or fetch evidence URLs.
 
 Full guide: [Agents & API](./src/content/docs/agents.mdx). The installable workflow lives in [`skills/stateboard/SKILL.md`](./skills/stateboard/SKILL.md).
 
@@ -122,20 +122,9 @@ Terminate TLS at your reverse proxy (Caddy, nginx, Traefik, a cloud LB) so `STAT
 
 ## Production: Helm
 
-```bash
-helm dependency build deploy/helm/stateboard
-helm install stateboard ./deploy/helm/stateboard \
-  --namespace stateboard --create-namespace \
-  --set auth.baseUrl=https://stateboard.example.com \
-  --set auth.secret="$(openssl rand -base64 32)" \
-  --set auth.keycloak.issuer=https://keycloak.example.com/realms/acme \
-  --set auth.keycloak.clientSecret=... \
-  --set postgresql.auth.password="$(openssl rand -hex 32)"
-```
+Chart `1.1.0` defaults to the `2026.10.0` image. Configure OIDC, persistent storage, and either bundled or external Postgres. Follow the [Helm installation guide](./deploy/helm/stateboard/README.md) for the two-step first installation and migration hook.
 
-The chart bundles a Bitnami Postgres sub-chart by default. Disable with `--set postgresql.enabled=false` and provide `--set externalDatabaseUrl=...` (or read it from a Secret via `externalDatabaseUrlExistingSecret`). See [`deploy/helm/stateboard/values.yaml`](./deploy/helm/stateboard/values.yaml) for the full reference.
-
-A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up. Disable with `--set migrate.enabled=false` if you'd rather run schema changes out-of-band.
+Existing installations run migrations through the pre-upgrade Job. Register `<STATEBOARD_BASE_URL>/api/auth/callback/keycloak` in the identity provider before upgrading. Back up Postgres and the media volume first.
 
 ## Architecture
 
@@ -193,8 +182,8 @@ Everything that touches the DB lives in `src/lib/db.ts`. Auth wiring is in `src/
 ## Roadmap
 
 - **v0 (the wedge)** ✅: manual upload, region tagging, three states, share link, single user
-- **v1 (team-ready)** ✅: multi-user, OIDC, audit log, Postgres; audit UI shipped in `2026.7.0`, API keys + MCP in the current release `2026.8.0`
-- **v2 (release-readiness MVP)** — implemented in this working tree, unreleased: candidate-specific assessments, reusable capabilities, dependencies and owners, applicable evidence, explainable readiness, human decision snapshots, role view presets, and a curated public share view
+- **v1 (team-ready)** ✅: multi-user, OIDC, audit log, Postgres; audit UI shipped in `2026.7.0`, API keys + visual MCP tools in `2026.8.0`
+- **v2 (release-readiness MVP)** — shipped in `2026.10.0`: candidate-specific assessments, reusable capabilities, dependencies and owners, applicable evidence, explainable readiness, human decision snapshots, role view presets, and a curated public share view
 - **v2.x (keep evidence current)** — planned after the pilot: push evidence integrations, catalog imports, freshness/context comparison, and capability flow views
 - **v3 (broader impact and overview)** — planned later: architecture impact navigation, portfolio assessments, and reusable templates
 

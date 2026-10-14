@@ -18,7 +18,7 @@ claude mcp add --transport http stateboard "$STATEBOARD_URL/api/mcp" \
   --header "Authorization: Bearer $STATEBOARD_API_KEY"
 ```
 
-Use tool discovery for the installed version's input schemas. The published `2026.8.0` version only has visual tools; release tools require the release-readiness build. Read `list_boards`, then `get_product(board_id)` and the relevant `get_release(release_id)` before writing. Product context includes reusable capabilities/components, relationships, optional regions, and existing assessments. A release workspace includes its immutable context, revision, scope, checks, evidence, decisions, and calculated readiness. `get_release_readiness` refreshes the evaluation; `get_check_history` retrieves prior definitions and observations.
+Use tool discovery for the installed version's input schemas. Release-readiness tools are available in `2026.10.0`; older `2026.8.0` installations expose only visual tools. Read `list_boards`, then `get_product(board_id)` and the relevant `get_release(release_id)` before writing. Product context includes reusable capabilities/components, relationships, optional regions, and existing assessments. A release workspace includes its immutable context, revision, scope, checks, evidence, decisions, and calculated readiness. `get_release_readiness` refreshes the evaluation; `get_check_history` retrieves prior definitions and observations.
 
 REST uses the same bearer credential and authorization. Read `/api/boards/BOARD_ID/product` and `/api/releases/RELEASE_ID`. File uploads use REST; ordinary readiness maintenance is available through either surface.
 

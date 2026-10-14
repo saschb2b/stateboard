@@ -2,6 +2,8 @@
 
 ## 2026-10-14
 
+- **Update**: Aligned product scope, published guides, and the packaged StateBoard skill with release 2026.10.0. Recorded expanded REST/MCP maintenance, migrations 0008–0010, the OIDC callback change, and retained media backups. Kept the real team pilot and external roadmap reconciliation pending.
+
 - **Correction**: Aligned MCP board creation, the published agent guide, and the packaged skill with one persistent product board. Release reviews stay inside that board, preserving product context and review history across candidates.
 
 - **Update**: Added the six-source release-review clarity study and explicitly simulated role findings. Aligned Features and Release reviews terminology, contextual checks/results and supporting links, optional architecture/screens, and progressive form details across contracts, paired specimens, glossary, and guides. Preserved domain/API names and readiness boundaries.

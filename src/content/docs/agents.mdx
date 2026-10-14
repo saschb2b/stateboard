@@ -7,7 +7,7 @@ Keep one board per product, named after the product. Create each candidate's rel
 
 Connect the coding agent already working on your project. It reads the repository and existing board, maps capabilities to their implementation, defines checks, and submits results from real verification. People review the release conclusion, gaps, and decisions instead of entering every record by hand.
 
-Both **REST** and the built-in **MCP server** at `/api/mcp` expose ordinary release maintenance. The expanded MCP tools are in the **unreleased development build**; the latest published `2026.8.0` build supports visual boards and regions only. A current human owner still records release decisions and controls curated release publication.
+StateBoard **2026.10.0** exposes ordinary release maintenance through **REST** and the built-in **MCP server** at `/api/mcp`. The tools cover product context, capabilities, dependencies, release scope, versioned checks, and evidence, alongside the existing visual board tools. A current human owner records release decisions and controls curated release publication.
 
 StateBoard does not host an LLM, execute tests, poll repositories, or fetch evidence URLs. The connected agent or CI does that work within its own environment and permissions, then pushes records to your instance. Both StateBoard surfaces work without a third-party service or new runtime network access; an external agent's own hosting requirements are separate.
 
@@ -34,7 +34,7 @@ claude mcp add --transport http stateboard "$STATEBOARD_URL/api/mcp" \
 npx skills@latest add saschb2b/stateboard
 ```
 
-The packaged [StateBoard skill](https://github.com/saschb2b/stateboard/blob/main/skills/stateboard/SKILL.md) teaches repository reconciliation, exact-candidate evidence, revision conflicts, and visual status semantics. Install the skill from the same source revision as an unreleased deployment. MCP also describes its available tools and fields at connection time.
+The packaged [StateBoard skill](https://github.com/saschb2b/stateboard/blob/main/skills/stateboard/SKILL.md) teaches repository reconciliation, exact-candidate evidence, revision conflicts, and visual status semantics. Use the skill from your deployed version when pinning a release. MCP describes its available tools and fields at connection time.
 
 A useful initial request is:
 

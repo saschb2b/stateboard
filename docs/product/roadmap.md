@@ -17,9 +17,9 @@ sources:
     resource: "src/content/docs/persona-iteration.mdx"
 ---
 
-`src/content/docs/roadmap.mdx` owns adopted product scope. `src/content/docs/release-readiness-mvp.mdx` owns the MVP contract and acceptance criteria. `README.md` distinguishes the published baseline from unreleased work. Update those files when delivery state changes.[^roadmap]
+`src/content/docs/roadmap.mdx` owns adopted product scope. `src/content/docs/release-readiness-mvp.mdx` owns the MVP contract and acceptance criteria. `README.md` identifies the release and its upgrade requirements. Update those files when delivery state changes.[^roadmap]
 
-The current repository describes `2026.8.0` as the published visual/team/agent baseline and the release-readiness MVP as implemented but unreleased. This is a repository statement, not an independently refreshed release-registry query.[^readme]
+The `2026.10.0` release includes the release-readiness MVP and expanded REST/MCP maintenance. Earlier visual boards remain valid after migrations `0008`–`0010`. The upgrade also changes the OIDC callback and requires backups of private release media alongside Postgres and public uploads.[^readme]
 
 The MVP includes [capabilities, dependencies, assessments, and evidence](model.md), task-based review and role filters, ordinary AI maintenance through REST/MCP, human decisions, and curated public reviews. The [readiness rules](readiness.md) remain the acceptance boundary.[^mvp]
 
@@ -31,7 +31,7 @@ Later roadmap work covers additional evidence producers, catalog imports, freshn
 
 [^roadmap]: Adopted roadmap and its explicit external-reconciliation limit.
 
-[^readme]: Published-versus-unreleased distinction in README.
+[^readme]: Release contents and upgrade requirements in README.
 
 [^mvp]: MVP implementation contract.
 

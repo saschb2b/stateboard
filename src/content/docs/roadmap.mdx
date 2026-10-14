@@ -5,7 +5,7 @@ description: From visual status reporting to evidence-backed release readiness f
 
 StateBoard is evolving from visual status reporting into a shared assessment of **what works, what it depends on, and why a team believes it is ready to release**. Screenshots remain the visual view; reusable capabilities connect that view to backend dependencies, acceptance criteria, and verification evidence.
 
-This page records the adopted product direction. **The latest published release remains `2026.8.0`. The release-readiness MVP is implemented in this working tree and unreleased.** The [usage guide](./release-readiness) explains the workflow; the [MVP implementation plan](./release-readiness-mvp) records its contract and acceptance criteria.
+This page records the adopted product direction. **2026.10.0 ships the release-readiness MVP, including ordinary agent maintenance through REST and MCP.** The [usage guide](./release-readiness) explains the workflow; the [MVP implementation plan](./release-readiness-mvp) records its contract and acceptance criteria.
 
 [GitHub milestones](https://github.com/saschb2b/stateboard/milestones) and the [project board](https://github.com/users/saschb2b/projects/1) still contain the previous roadmap scope. Reconciliation of their stages and issues is pending; they have not been synchronized with this direction.
 
@@ -41,7 +41,7 @@ These additions are already available on top of the v1 foundation:
 
 The unshipped capture, custom-state, and integration work from the former v1.x scope remains in the [reprioritized backlog](#reprioritized-backlog).
 
-## v2: release-readiness MVP · implemented, unreleased
+## v2: release-readiness MVP · shipped (2026.10.0)
 
 The MVP is designed to let a product manager, backend developer, QA specialist, and release owner independently explain whether the same candidate is ready, what blocks it, who owns the resolution, and which evidence would unblock it.
 
@@ -55,7 +55,9 @@ The MVP is designed to let a product manager, backend developer, QA specialist, 
 - **A direct human review path.** Release reviews and Features provide the human-facing vocabulary. Overview, Checks, and Decision are the primary tasks; Screens and Architecture supply optional context. Feature rows hold their checks/results and contextual supporting links. Operational concerns filter the same checks. Known form context is reused, and manual observations receive a review reference automatically. No AI connection or architecture catalog is required; existing API names and role-view URLs remain compatible.
 - **A curated public projection.** Explicitly select public-safe outcome summaries and visual media, retain the media needed by a published decision, and enforce an allowlist on the server. Raw internal dependencies, evidence references, and identities stay authenticated.
 
-The original six implementation slices are present, including private media, retained decisions, curated publication, and a permanent example at `/share/demo/releases`. The adopted AI completion adds full ordinary readiness maintenance through MCP and the updated agent skill (RR7). Upgrade with migrations `0008`–`0010`. The [implementation plan](./release-readiness-mvp) covers the schema, API, readiness rules, and acceptance criteria. Pilot one real release with roughly 5–10 critical capabilities before broadening the model; team usability validation remains pending.
+The release includes all seven implementation slices, from product context to retained decisions, private media, public reviews, and ordinary readiness maintenance through MCP. English and German interfaces share the same records. Product Screens has its own gallery, with feature links and a direct return to a release review. Explore the permanent example at `/share/demo/releases`.
+
+Upgrade with migrations `0008`–`0010` and the [OIDC callback change](./self-hosting#upgrading). The [implementation plan](./release-readiness-mvp) covers the schema, API, readiness rules, and acceptance criteria. Pilot one real release with roughly 5–10 critical capabilities before broadening the model; team usability validation remains pending.
 
 The current clarity refinement also applies published UX guidance on familiar terms, recognition, progressive disclosure, and reduced form effort. Simulated product, engineering, and QA reviews identified repeated target selection, machine-oriented observation fields, and role tabs that obscured the next action. Independent human validation remains pending.
 

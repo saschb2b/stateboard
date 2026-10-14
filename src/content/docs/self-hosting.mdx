@@ -3,7 +3,7 @@ title: Self-hosting
 description: Docker Compose, Helm, Keycloak setup, airgap-friendly deployment.
 ---
 
-StateBoard v1 is designed to deploy inside a company's own perimeter. One container + Postgres + your existing IdP. No outbound calls except to your IdP at runtime.
+StateBoard runs inside your network with one application container, Postgres, and your existing identity provider. Runtime outbound calls go only to that provider.
 
 ## Local dev (Docker Compose)
 
@@ -17,7 +17,7 @@ pnpm migrate
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), click **Continue with Keycloak**, sign in as `alice`. The first sign-in becomes the workspace owner.
+Open [http://localhost:3000](http://localhost:3000), choose **Open workspace**, then **Continue with company account**, and sign in as `alice`. The first sign-in becomes the workspace owner.
 
 ## Production: Docker Compose (bring your own Keycloak)
 
@@ -76,18 +76,28 @@ Run `docker run --rm -e DATABASE_URL=... ghcr.io/saschb2b/stateboard:latest node
 
 ## Production: Helm
 
+Chart `1.1.0` defaults to StateBoard `2026.10.0` and bundled Postgres. Copy the relevant [chart settings](https://github.com/saschb2b/stateboard/blob/main/deploy/helm/stateboard/values.yaml) into a private `stateboard-values.yaml`. Set the base URL, OIDC client, session secret, and database password. Keep this file out of Git.
+
+For a first installation, create the database and service account before running the migration hook. Disable application replicas and migrations during this bootstrap:
+
 ```bash
 helm dependency build deploy/helm/stateboard
 helm install stateboard ./deploy/helm/stateboard \
   --namespace stateboard --create-namespace \
-  --set auth.baseUrl=https://stateboard.example.com \
-  --set auth.secret="$(openssl rand -base64 32)" \
-  --set auth.keycloak.issuer=https://keycloak.example.com/realms/acme \
-  --set auth.keycloak.clientSecret=$KC_SECRET \
-  --set postgresql.auth.password="$(openssl rand -hex 32)"
+  --values stateboard-values.yaml \
+  --set replicaCount=0 --set migrate.enabled=false --wait
 ```
 
-The chart bundles a Bitnami Postgres sub-chart by default. A pre-install / pre-upgrade Job runs `pnpm migrate` before any pods come up.
+Confirm that Postgres accepts connections, then run migrations and start the application:
+
+```bash
+helm upgrade stateboard ./deploy/helm/stateboard \
+  --namespace stateboard \
+  --values stateboard-values.yaml \
+  --set replicaCount=1 --set migrate.enabled=true --wait
+```
+
+Use this sequence for both bundled and external databases on a new installation. The [chart guide](https://github.com/saschb2b/stateboard/blob/main/deploy/helm/stateboard/README.md) covers settings, storage, and upgrades.
 
 <Callout type="warn">
   Use a **URL-safe** password for the bundled Postgres (`openssl rand -hex 32`).
@@ -206,12 +216,14 @@ helm upgrade stateboard ./deploy/helm/stateboard \
   --set image.tag=NEW_VERSION
 ```
 
-The unreleased readiness MVP adds migrations `0008`–`0010`. Run them before serving the new application. Boards with release history reject ordinary deletion; historical evidence is preserved. `pnpm cleanup:release-assets` previews unreferenced private images older than 24 hours, and `--delete` removes only those orphaned files.
+Release `2026.10.0` adds migrations `0008`–`0010`. Run them before serving the new application. Existing boards and visual regions need no conversion. Boards with release history reject ordinary deletion to preserve historical evidence.
+
+Better Auth 1.7 changes the OIDC callback from `/api/auth/oauth2/callback/keycloak` to `/api/auth/callback/keycloak`. Update the client's allowed redirect URI to `{STATEBOARD_BASE_URL}/api/auth/callback/keycloak` before upgrading. Keep the previous URI allowed during the transition if an older deployment still uses it.
+
+Back up Postgres and both `uploads/` and `release-assets/` before upgrading. `pnpm cleanup:release-assets` previews unreferenced private images older than 24 hours. Its `--delete` option removes only those orphaned files.
 
 The migrate Job runs automatically before the new pods come up. If you disabled it (`migrate.enabled=false`), run `pnpm migrate` against the database manually first.
 
-## What we'll add later
+## Planned deployment work
 
-- v1.x: headless capture from URL, Jira issue linking.
-- v2: scheduled re-capture, time-travel / diff view, Slack notifications, Notion / Confluence embed.
-- v3: auto region-detection from the DOM, journey views, portfolio rollup, audit-log UI.
+An S3-compatible media adapter remains deferred. See the [roadmap](/docs/roadmap) for planned integrations, capture automation, and portfolio reviews.

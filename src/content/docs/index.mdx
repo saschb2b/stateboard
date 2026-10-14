@@ -61,7 +61,7 @@ The visual editor remains available: mark screen regions as `shipped`, `mock`, o
   <Card
     title="Release-readiness MVP plan"
     href="/docs/release-readiness-mvp"
-    description="The data model, readiness rules, and delivery contract behind the development implementation."
+    description="The data model, readiness rules, and delivery contract behind the release-readiness workflow."
   />
   <Card
     title="Changelog"
@@ -72,15 +72,15 @@ The visual editor remains available: mark screen regions as `shipped`, `mock`, o
 
 ## The current release
 
-The latest published release is **2026.8.0: team-ready**. Its full feature list lives in the [changelog](/docs/changelog). Highlights:
+**2026.10.0: release readiness** connects the product's features, screens, dependencies, and verification results. See the [changelog](/docs/changelog) for the full release notes.
 
-- Manual screenshot upload, region tagging, three states (`shipped` / `mock` / `missing`)
-- Read-only public share links: revocable, multiple per board
-- Multi-user via Keycloak / OIDC, with `owner` / `editor` / `viewer` roles
-- API keys and a built-in MCP server, so [agents can read and update boards](/docs/agents)
-- Postgres-backed, multi-replica safe, append-only audit log
+- Product workspaces with a screen gallery, reusable features, and candidate-specific release reviews.
+- Versioned checks and append-only results, with calculated readiness and preserved human decisions.
+- [Agent maintenance through REST and MCP](/docs/agents), including product context, dependencies, checks, and evidence.
+- English and German interfaces, with saved language preference and unchanged authored content.
+- OIDC roles, audit history, annotated visual sharing, and curated public release reviews.
 
-The **current development build** implements the release readiness workflow, including capabilities, dependencies, manual and REST evidence, six views, human decisions, retained media, and curated public reviews. This work is unreleased and is not part of `2026.8.0`. Follow the [release readiness guide](/docs/release-readiness) or explore the [example assessment](/share/demo/releases). The [roadmap](/docs/roadmap) describes the sequence and remaining backlog.
+Follow the [release readiness guide](/docs/release-readiness) or explore the [example review](/share/demo/releases). Existing deployments must apply migrations `0008`–`0010` and update the OIDC callback before using this release. See [Upgrading](/docs/self-hosting#upgrading). The [roadmap](/docs/roadmap) retains the planned team pilot and remaining backlog.
 
 ## License
 
