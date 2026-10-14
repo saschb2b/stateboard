@@ -46,14 +46,15 @@ export const VISUAL_MCP_TOOLS: McpToolDef[] = [
   {
     name: "create_board",
     description:
-      "Create a new board. Most teams keep one board per product or per quarterly review. A share link is minted automatically.",
+      "Create one board for a product. Reuse it across releases and create candidate reviews with create_release. A visual share link is minted automatically.",
     requiredRole: "editor",
     inputSchema: {
       type: "object",
       properties: {
         name: {
           type: "string",
-          description: "e.g. 'Acme Dashboard / Q3 2026'",
+          description:
+            "Stable product name, without a release version or review date.",
         },
         description: {
           type: "string",

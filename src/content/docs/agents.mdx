@@ -3,7 +3,9 @@ title: Agents & API
 description: Let coding agents and CI maintain product capabilities, dependencies, release checks, and verification evidence through REST and MCP.
 ---
 
-StateBoard can be maintained by the coding agent already working on your project. After you connect it, the agent reads the repository and the existing board, maps meaningful capabilities to their implementation, defines checks, and submits results from real verification. People review the release conclusion, gaps, and decisions instead of entering every record by hand.
+Keep one board per product, named after the product. Create each candidate's release review inside that board. This keeps features, supporting systems, and review history together.
+
+Connect the coding agent already working on your project. It reads the repository and existing board, maps capabilities to their implementation, defines checks, and submits results from real verification. People review the release conclusion, gaps, and decisions instead of entering every record by hand.
 
 Both **REST** and the built-in **MCP server** at `/api/mcp` expose ordinary release maintenance. The expanded MCP tools are in the **unreleased development build**; the latest published `2026.8.0` build supports visual boards and regions only. A current human owner still records release decisions and controls curated release publication.
 

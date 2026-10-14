@@ -1,11 +1,11 @@
 ---
 type: API workflow
 title: AI maintenance through REST and MCP
-description: Reconcile product records and submit real evidence through the shared REST and MCP boundaries.
+description: Reuse each product board across release reviews and reconcile its records through REST and MCP.
 status: stable
 generated:
   by: codex/gpt-6
-  at: 2026-10-13T22:24:04Z
+  at: 2026-10-14
 sources:
   - id: mcp
     resource: "src/lib/mcp.ts"
@@ -13,6 +13,8 @@ sources:
     resource: "src/lib/mcp-release-catalog.ts"
   - id: product-catalog
     resource: "src/lib/mcp-product-catalog.ts"
+  - id: board-catalog
+    resource: "src/lib/mcp-visual-catalog.ts"
   - id: executor
     resource: "src/lib/mcp-release-tools.ts"
   - id: api
@@ -30,6 +32,8 @@ sources:
 ---
 
 External coding agents and CI can maintain product context and release evidence. The server validates records and calculates readiness. The agent runs authorized verification in its own environment. A human owner records the release decision.[^skill]
+
+Keep one board per [product](../product/model.md), with a stable product name. Reuse that board across releases. `create_release` adds each candidate's review to the same board.[^board-catalog]
 
 The installable `skills/stateboard/SKILL.md` teaches agents working on other products. Repository skills under `.agents/skills/` guide development of StateBoard itself. `.mcp.json` configures development tools, not credentials for a StateBoard instance.[^guide]
 
@@ -67,6 +71,8 @@ Screenshots and private supporting images use bounded multipart REST uploads. Tr
 [^catalog]: Release tool schemas.
 
 [^product-catalog]: Product maintenance tool schemas.
+
+[^board-catalog]: Board creation guidance and stable product naming.
 
 [^executor]: MCP adapters into shared persistence.
 

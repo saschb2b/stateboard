@@ -5,7 +5,7 @@ description: Maintain a team's self-hosted StateBoard product and release assess
 
 # StateBoard
 
-Keep a useful assessment current while doing the engineering work. A board represents a product; capabilities describe outcomes, components and dependencies explain their implementation, and versioned checks plus evidence establish release readiness. Screenshots and regions are optional visual anchors. People should review the conclusion and unresolved judgments, not transcribe the repository into forms.
+Keep one board per product, using its stable product name. Reuse that board across releases and create each candidate's assessment inside it. Capabilities describe outcomes, components and dependencies explain their implementation, and versioned checks plus evidence establish release readiness. Screenshots and regions are optional visual anchors. People review the conclusion and unresolved judgments while the agent maintains the records.
 
 ## Connect and inspect
 

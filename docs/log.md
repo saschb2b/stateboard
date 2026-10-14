@@ -2,6 +2,8 @@
 
 ## 2026-10-14
 
+- **Correction**: Aligned MCP board creation, the published agent guide, and the packaged skill with one persistent product board. Release reviews stay inside that board, preserving product context and review history across candidates.
+
 - **Update**: Added the six-source release-review clarity study and explicitly simulated role findings. Aligned Features and Release reviews terminology, contextual checks/results and supporting links, optional architecture/screens, and progressive form details across contracts, paired specimens, glossary, and guides. Preserved domain/API names and readiness boundaries.
 
 - **Update**: Moved History beside Edit board in the product heading and removed its separate navigation row. Board actions wrap beneath the purpose below 900px. Updated the specimens, contracts, and guide.
