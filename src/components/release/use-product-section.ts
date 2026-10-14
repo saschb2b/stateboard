@@ -4,9 +4,15 @@ import { useState, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export type ProductSection =
-  "overview" | "releases" | "capabilities" | "dependencies" | "connections";
+  | "overview"
+  | "screens"
+  | "releases"
+  | "capabilities"
+  | "dependencies"
+  | "connections";
 const sections: ProductSection[] = [
   "overview",
+  "screens",
   "releases",
   "capabilities",
   "dependencies",

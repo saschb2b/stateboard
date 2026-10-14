@@ -1,5 +1,10 @@
 {
   "screens": "Ansichten",
+  "screensHelp": "Das Produkt visuell erkunden. Öffne eine Ansicht, um Markierungen und verknüpfte Funktionen zu prüfen. Ansichten werden in allen Release-Prüfungen verwendet.",
+  "screensEmptyHelp": "Füge einen Screenshot hinzu, um einen Teil des Produkts zu zeigen und mit seinen Funktionen zu verknüpfen.",
+  "viewAllScreens": "Alle Ansichten ansehen",
+  "openScreen": "Ansicht öffnen: {name}",
+  "screenConnections": "{regions, plural, one {# Markierung} other {# Markierungen}} · {features, plural, one {# verknüpfte Funktion} other {# verknüpfte Funktionen}}",
   "workspace": "Produktbereich",
   "refresh": "Produkt aktualisieren",
   "sections": "Produktbereiche",

@@ -118,7 +118,13 @@ export function WorkspaceNavigation<T extends string>({
     );
   }
   return (
-    <Box sx={{ display: "grid", gap: { xs: 1, lg: 3 } }}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gap: { xs: 1, lg: 3 },
+      }}
+    >
       {group(label, sections)}
       {secondary && group(secondary.label, secondary.sections)}
     </Box>

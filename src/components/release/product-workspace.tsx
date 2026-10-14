@@ -27,6 +27,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ViewQuiltOutlinedIcon from "@mui/icons-material/ViewQuiltOutlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import { UserMenu } from "@/components/app/user-menu";
 import { CapabilityManager } from "@/components/capability/capability-manager";
@@ -36,6 +37,7 @@ import { AssessmentCreateForm } from "./assessment-create-form";
 import { releaseRequest } from "./release-request";
 import { ProductReleaseList } from "./product-release-list";
 import { ProductOverview } from "./product-overview";
+import { ProductScreens } from "./product-screens";
 import { useProductSection } from "./use-product-section";
 import { useWorkspaceRefresh } from "./use-workspace-refresh";
 import { WorkspaceDrafts } from "./workspace-drafts";
@@ -45,6 +47,7 @@ import type {
   ReleaseDetail,
 } from "@/lib/release-types";
 import type { CurrentMember } from "@/lib/auth";
+import type { ScreenWithRegions } from "@/lib/types";
 
 export function ProductWorkspace({
   initialProduct,
@@ -107,6 +110,29 @@ export function ProductWorkspace({
       throw cause;
     }
   }
+  function screensAdded(screens: ScreenWithRegions[]) {
+    setProduct((current) => ({
+      ...current,
+      screens: [
+        ...current.screens,
+        ...screens.filter(
+          (screen) =>
+            !current.screens.some((existing) => existing.id === screen.id),
+        ),
+      ],
+    }));
+    // An upload has already committed. Invalidate reads started before it.
+    void write(() =>
+      releaseRequest<ProductContext>(
+        `/api/boards/${product.board.id}/product`,
+        { cache: "no-store" },
+      ),
+    ).catch((cause: unknown) =>
+      setRefreshError(
+        cause instanceof Error ? cause.message : t("reloadError"),
+      ),
+    );
+  }
   return (
     <WorkspaceDrafts value={drafts}>
       <AppHeader
@@ -133,19 +159,7 @@ export function ProductWorkspace({
                 },
               ]),
         ]}
-        actions={
-          <>
-            <Button
-              component={Link}
-              href={`/boards/${product.board.id}`}
-              color="inherit"
-              size="small"
-            >
-              {t("screens")}
-            </Button>
-            <UserMenu user={viewer.user} role={viewer.role} />
-          </>
-        }
+        actions={<UserMenu user={viewer.user} role={viewer.role} />}
       />
       <WorkspaceFrame
         breadcrumbs
@@ -236,14 +250,19 @@ export function ProductWorkspace({
                 icon: <DashboardOutlinedIcon fontSize="small" />,
               },
               {
-                value: "releases",
-                label: t("assessments"),
-                icon: <LayersOutlinedIcon fontSize="small" />,
+                value: "screens",
+                label: t("screens"),
+                icon: <ImageOutlinedIcon fontSize="small" />,
               },
               {
                 value: "capabilities",
                 label: t("capabilities"),
                 icon: <ViewQuiltOutlinedIcon fontSize="small" />,
+              },
+              {
+                value: "releases",
+                label: t("assessments"),
+                icon: <LayersOutlinedIcon fontSize="small" />,
               },
             ]}
             secondary={{
@@ -292,6 +311,13 @@ export function ProductWorkspace({
               editable={editable}
               onCreate={() => setCreating(product)}
               onSetup={() => setTab("capabilities")}
+            />
+          )}
+          {tab === "screens" && (
+            <ProductScreens
+              product={product}
+              editable={editable}
+              onScreensAdded={screensAdded}
             />
           )}
           {tab === "capabilities" && (

@@ -11,6 +11,7 @@ import type { ProductContext } from "@/lib/release-types";
 import { ReadinessChip } from "./readiness-summary";
 import { ProductOverviewCapabilities } from "./product-overview-capabilities";
 import { ProductOverviewCoverage } from "./product-overview-coverage";
+import { ProductScreenPreview } from "./product-screens";
 import { ReviewGuide } from "./review-guide";
 import { useServerClock } from "./use-server-clock";
 import type { ProductSection } from "./use-product-section";
@@ -242,6 +243,10 @@ export function ProductOverview({
           </Stack>
         )}
       </Box>
+      <ProductScreenPreview
+        product={product}
+        onViewAll={() => onNavigate("screens")}
+      />
       <ProductOverviewCapabilities
         capabilities={model.capabilities}
         hasAssessment={!!latest}
@@ -274,19 +279,6 @@ export function ProductOverview({
             onClick={() => onNavigate("connections")}
           >
             {t("dependencyCount", { count: model.counts.dependencies })}
-          </Button>
-          <Button
-            color="inherit"
-            size="small"
-            component={Link}
-            href={`/boards/${product.board.id}`}
-          >
-            {model.counts.screens === 0
-              ? t("noScreensAdded")
-              : t("mappedScreens", {
-                  mapped: model.counts.mappedScreens,
-                  count: model.counts.screens,
-                })}
           </Button>
         </Stack>
       </Box>

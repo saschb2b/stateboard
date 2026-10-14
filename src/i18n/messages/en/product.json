@@ -1,5 +1,10 @@
 {
   "screens": "Screens",
+  "screensHelp": "Explore the product visually. Open a screen to inspect annotations and linked features. Screens are shared across release reviews.",
+  "screensEmptyHelp": "Add a screenshot to show part of the product and connect it to its features.",
+  "viewAllScreens": "View all screens",
+  "openScreen": "Open screen: {name}",
+  "screenConnections": "{regions, plural, one {# annotation} other {# annotations}} · {features, plural, one {# linked feature} other {# linked features}}",
   "workspace": "Product workspace",
   "refresh": "Refresh product",
   "sections": "Product sections",
